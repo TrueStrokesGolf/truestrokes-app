@@ -1,0 +1,268 @@
+TRUESTROKES — BUILD CONTEXT 5
+Last updated: March 2026
+File: index.html (~2,994 lines, 59 functions, vanilla HTML/CSS/JS, no frameworks)
+Working file location: /mnt/user-data/outputs/index.html
+
+════════════════════════════════════════════════════════════
+WHAT TRUESTROKES IS
+════════════════════════════════════════════════════════════
+Web-based golf analytics calculator + practice plan app.
+Single HTML file. No backend. Data in localStorage (for now).
+4 real golfers tested — all said $15–20/month.
+Core value prop: "low cost golf coach, clear path to improvement."
+
+════════════════════════════════════════════════════════════
+CALCULATION ENGINE — DO NOT MODIFY THESE FORMULAS
+════════════════════════════════════════════════════════════
+1. Handicap Differential: diff = (score - rating) × (113 / slope)
+2. Estimated Handicap: average of best (lowest) 8 diffs from all rounds entered
+3. Tier Assignment: find tier whose rep HCP is closest to estHcp
+4. Stat Normalization:
+   userFW    = totalFwHit / (18 - par3s, summed across rounds)
+   userGIR   = totalGIR / totalHoles
+   userPutts = totalPutts / totalGIR  ← only on GIR holes
+   userScram = totalScrambles / totalMissedGreens
+5. Target Ratios (ratioFW, ratioGIR, ratioPutts inverted, ratioScram)
+6. Raw stroke losses per category:
+   rawD=-3.5×(max(0,100-ratioFW)/100), rawA=-6.0×(max(0,100-ratioGIR)/100)
+   rawP=-2.0×(max(0,100-ratioPutts)/100), rawS=-3.5×(max(0,100-ratioScram)/100)
+   scaleFactor = totalGap / (|rawD|+|rawA|+|rawP|+|rawS|)
+   strokesX = |rawX| × scaleFactor
+
+VALIDATED TEST — S4 SCENARIO (run after any engine-adjacent change):
+Target: Plus | Expected: Est HCP 20.2 → 90s → Gap 22.0 strokes
+Breakdown: Approach 10.6 / Short Game 7.1 / Driving 2.9 / Putting 1.4
+R1: Score=95, Par=72, Rating=71.6, Slope=130, Par3s=4, FW=6, GIR=4, Putts=10, Scram=2
+R2: Score=93, Par=72, Rating=71.3, Slope=128, Par3s=4, FW=6, GIR=4, Putts=9,  Scram=2
+R3: Score=97, Par=72, Rating=71.9, Slope=132, Par3s=4, FW=5, GIR=3, Putts=8,  Scram=2
+R4: Score=92, Par=72, Rating=71.0, Slope=127, Par3s=4, FW=7, GIR=4, Putts=10, Scram=2
+R5: Score=96, Par=72, Rating=72.2, Slope=133, Par3s=4, FW=5, GIR=3, Putts=8,  Scram=1
+R6: Score=94, Par=72, Rating=71.5, Slope=129, Par3s=4, FW=6, GIR=4, Putts=9,  Scram=2
+R7: Score=98, Par=72, Rating=72.4, Slope=134, Par3s=4, FW=5, GIR=3, Putts=8,  Scram=1
+
+════════════════════════════════════════════════════════════
+TIER SYSTEM — DO NOT MODIFY
+════════════════════════════════════════════════════════════
+Key       | Label            | HCP  | FW%  | GIR% | Putts/GIR | Scram%
+----------|------------------|------|------|------|-----------|-------
+100+      | 100+             | 27   | 40%  | 16%  | 2.35      | 20%
+90s       | 90s              | 21   | 43%  | 22%  | 2.30      | 22%
+Mid80s    | Mid 80s          | 14.5 | 48%  | 27%  | 2.15      | 25%
+HighSD    | Low 80s          | 9    | 49%  | 37%  | 2.05      | 32%
+Single    | Single Digit     | 5.5  | 51%  | 46%  | 2.00      | 38%
+Low       | Low Single Digit | 3.5  | 54%  | 51%  | 1.95      | 44%
+Scratch   | Scratch          | 1    | 57%  | 57%  | 1.85      | 50%
+Plus      | Plus             | -1   | 60%  | 62%  | 1.83      | 53%
+
+TIER_ORDER = ['100+','90s','Mid80s','HighSD','Single','Low','Scratch','Plus']
+100+ is NOT in the target dropdown. Plus is max target.
+
+════════════════════════════════════════════════════════════
+NAVIGATION STRUCTURE (updated this session)
+════════════════════════════════════════════════════════════
+Nav buttons (left to right):
+  My Results    (id: nav-results)   → showPage('results')
+  + Add Round   (id: nav-addround)  → showPage('addround')
+  My Plan       (id: nav-plan)      → showPage('plan')
+  My Rounds     (id: nav-rounds)    → showPage('rounds')
+  ⚙ Settings   (id: nav-settings)  → showPage('settings')
+
+showPage('results') — if no lastResults, falls back to showing form
+showPage('addround') — always shows the data entry form
+PDF and "Calculator" label are GONE. Do not reference them.
+
+════════════════════════════════════════════════════════════
+RESULTS PAGE — 6 SECTIONS (S7 Practice Plan removed)
+════════════════════════════════════════════════════════════
+S1: Identity Hero (dark green card)
+    - Golfer name
+    - "You are a [Tier]."
+    - "[X] strokes away from [Target]."
+    - Percentile block: stat + animated bar + context line (NEW this session)
+
+S2: Journey Road (tier path with dots, progress fill)
+
+S3: Coach Card (dark green, #1 priority message from COACH_MSG)
+
+S4: Where You Stand (3-col stat cards: peer avg | you | your goal)
+    Stats: Fairways Hit, Greens in Reg, Putts/GIR, Scrambling %
+
+S5: Strokes to Close (4 photo cards, sorted by gap size)
+    Categories: Approach Shots, Short Game, Driving, Putting
+    Colors: Approach #c8960a, Short Game #1565c0, Driving #c62828, Putting #e65100
+
+S6: Progress Tracking (My Stats + Last Round tabs)
+
+Results page actions: single "Add / Edit Rounds →" button (no PDF button)
+
+Tier milestone prompt: fires when golfer reaches HighSD or better for first time.
+Gold banner: "You reached Low 80s! Set a new target." Sends to addround page.
+
+════════════════════════════════════════════════════════════
+HANDICAP PERCENTILE FEATURE (NEW this session)
+════════════════════════════════════════════════════════════
+Source: USGA 2024 data, 3.35M registered US golfers, male distribution
+Function: getPercentileInfo(estHcp) → { stat, sub, barW, top }
+Table: HANDICAP_PERCENTILES array, each entry: { maxHcp, topPct, label }
+Key data points:
+  Plus (<0):      top 2%    "fewer than 1 in 50 golfers reach this level"
+  Scratch (0-1):  top 4%    elite copy
+  Low SD (2-4):   top 8%    elite copy
+  Single (5-9):   top 20%   "only 1 in 5 registered golfers"
+  Low 80s (10-14):top 37%   above average copy
+  Mid 80s (15-19):top 48%   motivating average copy
+  90s (20-24):    top 22%   encouraging copy
+  100+ (25+):     top 5-12% "measuring your game puts you ahead of millions"
+
+HTML elements: #res-percentile (wrapper), #res-percentile-stat, 
+               #res-percentile-bar (animated 300ms delay), #res-percentile-sub
+Populated in displayResults() immediately after goal statement.
+
+════════════════════════════════════════════════════════════
+MY PLAN PAGE — TABS
+════════════════════════════════════════════════════════════
+Tab order: Today's Session | 🔥 Warm Up | History | 🏅 Badges
+Tab IDs: pane-today, pane-warmup, pane-history, pane-badges
+switchPlanPageTab(tab): 'today','warmup','history','badges'
+
+TODAY'S SESSION:
+- Session label is computed from actual drills assigned (getSessionLabel)
+  Single category → "Approach Focus"
+  Mixed → "Mixed Session · 2 Approach Shots · 1 Short Game"
+- Drill checklist: tap to check → result form slides in → save → auto-complete
+- Auto-complete fires from saveDrillResult() when all drills done (NOT toggleDrillCheck)
+- Last drill gets the "how did it go" form before session completes
+
+WARM UP TAB:
+- Settings: "Pre-Round Warm-Up Time" (10/20/30/45 min)
+- buildWarmUp() reads priority1, priority2 from lastResults.breakdown
+- Always appends putting section (unless Putting is priority1)
+- WARMUP_STEPS[category][timeKey] = array of {time, desc} steps
+- PUTTING_ADDON[timeKey] = single step always appended
+- Updates automatically when tier or priority changes
+
+DRILL RESULT LOGGING:
+- After each drill check: score (number) + feel (💪/😐/😤) form
+- Saved to localStorage 'truestrokes_drill_results'
+- Each entry: { drillId, drillName, category, score, feel, date, savedAt }
+- buildSparkline(drillId, scoreMax): SVG trend line from last 5 attempts
+  Green = trending up, Red = trending down, Grey = steady
+  Shows inline below drill goal on unchecked drills
+
+PROGRESS SECTION:
+- Top banner: Session Streak 🔥 | Sessions Done | Drills Logged | Current Focus
+- buildProgressBars(): counts DRILLS per category (not sessions)
+  Iterates s.drills array on each completed session, counts by d.cat
+  Shows "X drills" label (not "sessions")
+- Session count (total) still shows on top banner
+- Mini badge row: earned badges as emoji with tooltip "BadgeName: req"
+
+PLAN TEASER CARD (on results page):
+- updatePlanTeaser() called from displayResults()
+- 3 states: in-progress ("Session 3 In Progress"), 
+            no sessions ("Start Session 1 →"),
+            ready ("Session 4 is Ready — 3 sessions completed")
+
+════════════════════════════════════════════════════════════
+DRILL LIBRARY STRUCTURE
+════════════════════════════════════════════════════════════
+DRILL_LIBRARY[category][tierGroup] = array of drills
+Categories: 'Approach Shots', 'Short Game', 'Driving', 'Putting'
+Tier groups: 'beginner' (100+/90s), 'mid' (Mid80s/HighSD), 
+             'advanced' (Single/Low), 'elite' (Scratch/Plus)
+Each drill: { id, name, where, sets, desc, goal, type('ball'|'noball'), scoreMax }
+drill.id is stable key (e.g. 'ap-b1') — maps to future video API
+
+⚠️ TODO — HIGH PRIORITY BEFORE LAUNCH:
+Only 3 improvement drills per tier per category.
+Repeats show after ~8 sessions. Needs 5-6 improvement + 3 maintenance.
+Content task (not code) — draft drills, drop into arrays.
+
+Session rotation: 6-session cycle via rotations[] array in buildSessionDrills()
+drillCount by session length: 30min=2, 45min=3, 60min=3, 90min=4
+
+════════════════════════════════════════════════════════════
+BADGES (11 total)
+════════════════════════════════════════════════════════════
+Completion: 🥉 First Rep (1), 🥈 On A Roll (5), 🥇 Committed (20)
+Improvement: 📈 Getting Sharper (3 sessions same category in a row)
+Tier milestones: 🏌️ Welcome to 90s → 👑 Plus (one per tier, HighSD through Plus)
+Checked: checkBadges(currentKey) called after every calculate + session complete
+Hover tooltip on ALL badge locations: title="BadgeName: requirement"
+
+════════════════════════════════════════════════════════════
+LOCALSTORAGE KEYS (6 total)
+════════════════════════════════════════════════════════════
+'truestrokes_data'          — rounds, name, targetKey, savedAt
+'truestrokes_settings'      — practiceFreq, sessionLength, warmupTime, 
+                               drillType, lastTier, badges[]
+'truestrokes_sessions'      — array of completed session objects
+                               Each: { sessionNum, date, savedAt, drills[], 
+                                       tierKey, focus (session label string) }
+'truestrokes_inprogress'    — { sessionNum, checkedDrillIds[] }
+'truestrokes_drill_results' — array of drill result logs
+                               Each: { drillId, drillName, category, score, 
+                                       feel, date, savedAt }
+'truestrokes_log'           — LOG_KEY, general activity log
+
+════════════════════════════════════════════════════════════
+SETTINGS PAGE
+════════════════════════════════════════════════════════════
+- Weekly Practice Sessions (1x–5x/week)   id: settings-practice-time
+- Session Length (30/45/60/90 min)         id: settings-session-length
+- Pre-Round Warm-Up Time (10/20/30/45 min) id: settings-warmup-time  ← NEW
+- Where Do You Practice: ball/noball/both  name: drill-type (radio)
+
+════════════════════════════════════════════════════════════
+DESIGN SYSTEM
+════════════════════════════════════════════════════════════
+Primary green dark:   #1b4332
+Primary green mid:    #2d6a4f
+Primary green light:  #52b788
+Background:           #f4f1eb
+Card background:      white
+Font:                 Georgia, serif
+Category colors:
+  Approach Shots:     #c8960a (amber)
+  Short Game:         #1565c0 (blue)
+  Driving:            #c62828 (red)
+  Putting:            #e65100 (orange)
+
+════════════════════════════════════════════════════════════
+REMOVED THIS SESSION
+════════════════════════════════════════════════════════════
+- jsPDF library (CDN script tag gone)
+- generatePDF() function (was 335 lines)
+- PDF download button from results page
+- "Calculator" nav label → now "My Results"
+- S7 Practice Plan section from results page
+- All showPage('calc') references → showPage('addround') or showPage('results')
+
+════════════════════════════════════════════════════════════
+WHAT'S NEXT (priority order)
+════════════════════════════════════════════════════════════
+1. DEPLOY — GitHub repo + Vercel (free hosting, live URL)
+   Then: Supabase for database + user accounts
+   (localStorage → Supabase so data persists across devices)
+
+2. DRILL CONTENT EXPANSION (flagged TODO in code)
+   5-6 improvement + 3 maintenance drills per tier per category
+
+3. COURSE API (lower priority — auto-populate rating/slope/par)
+   Requires backend — defer until Supabase is set up
+   Only saves 3 fields; golfer still enters score/stats manually
+
+════════════════════════════════════════════════════════════
+CODING RULES FOR THIS PROJECT
+════════════════════════════════════════════════════════════
+- Always tell the user the plan BEFORE writing any code. Wait for go-ahead.
+- Always use artifacts/file approach (not inline code blocks in chat)
+- Run node --check (JS syntax validation) after every edit
+- Run python3 spot-check script to verify key changes landed
+- Copy final file to /mnt/user-data/outputs/index.html
+- Use present_files tool to share with user
+- DO NOT modify the calculation engine formulas
+- DO NOT use frameworks, CDNs (jsPDF is gone), or external dependencies
+- User is learning to code — explain WHY not just WHAT
+- Keep code commented
+- Syntax errors anywhere in the JS break the ENTIRE app (learned the hard way)

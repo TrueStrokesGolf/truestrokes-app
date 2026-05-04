@@ -1,0 +1,339 @@
+=================================================================
+TRUESTROKES WEB APP - BUILD CONTEXT 2
+Last Updated: Session 4 - Results Page Redesign In Progress
+=================================================================
+
+PROJECT OVERVIEW:
+-----------------
+Building a web-based golf analytics calculator that:
+- Lets users enter multiple rounds of golf data
+- Calculates their skill tier and handicap
+- Shows strokes needed to reach target tier
+- Provides practice priorities (Driving, Approach, Putting, Short Game)
+- Tracks progress over time
+
+Based on validated Excel model (TrueStrokes_Engine_V3.xlsx)
+
+CURRENT STATUS:
+--------------
+✅ FULLY COMPLETED & VALIDATED:
+- Full calculation engine (matches Excel exactly across all 4 test scenarios)
+- Handicap differential formula
+- Tier assignment logic
+- Stat normalization (FW%, GIR%, Putts/GIR, Scramble%)
+- Strokes gained by category (Excel multiplier method)
+- Progress % toward target (Target Ratio)
+- Multi-round form with Course Info + Performance sections
+- Tooltips on all complex fields
+- Field validation (min/max on all inputs)
+- Date + Course Name fields
+- Round counter with dynamic renumbering
+- Tier rename: "Low Handicap" → "Low Single Digit"
+- Results page: Identity Hero, Journey Road, Coach Card
+- Results page: Where You Stand (stat cards)
+- Results page: Golf Hole Visual (strokes by category)
+- Results page: Progress Tracking (demo data)
+- Results page: Practice Plan
+- My Rounds page (header + table, session-only data)
+- Header navigation (Calculator / My Rounds tabs)
+
+⏳ IN PROGRESS (agreed, not yet built):
+- Section 4 (Where You Stand) — final polish pass (see NEXT STEPS)
+- Section 5 (Golf Hole) — redesign to dogleg left, left-to-right view (see NEXT STEPS)
+- Section 6 (Progress Tracking) — simplification pass (see NEXT STEPS)
+
+❌ NOT STARTED:
+- Database / saving data between sessions
+- User accounts / authentication
+- PDF report output (Word template exists in project folder)
+- Practice plan detail (deep feature, future roadmap)
+- GPS integration
+- Scorecard photo upload
+- Deployment to web
+
+TECHNICAL STACK:
+---------------
+- Single file: index.html
+- Vanilla HTML + CSS + JavaScript (no frameworks)
+- No backend (all client-side for now)
+- Session-only data storage (in-memory, resets on page reload)
+
+FILE STRUCTURE:
+--------------
+Key file: index.html (all code in one file)
+Project reference files (read-only):
+  - TrueStrokes_Engine_V3.xlsx (source Excel model)
+  - TrueStrokes_Report_Template.docx (Word report template)
+  - TrueStrokes_S1_100plus_to_Mid80s_xlsx.xlsx (test scenario 1)
+  - TrueStrokes_S2_Mid80s_to_LowSingleDigit_xlsx.xlsx (test scenario 2)
+  - TrueStrokes_S3_LowSingleDigit_to_Plus_xlsx.xlsx (test scenario 3)
+  - TrueStrokes_S4_90s_to_Plus_xlsx.xlsx (test scenario 4)
+
+=================================================================
+CALCULATION ENGINE — VALIDATED FORMULAS (DO NOT MODIFY)
+=================================================================
+
+These formulas are locked. All 4 test scenarios match Excel exactly.
+
+1. Handicap Differential (per round):
+   diff = (score - rating) × (113 / slope)
+
+2. Estimated Handicap:
+   Sort all diffs ascending → take best (lowest) up to 8 → average them
+   estHcp = sortedDiffs.slice(0,8).reduce((s,d)=>s+d,0) / min(8, numRounds)
+
+3. Tier Assignment:
+   Find tier whose representative HCP is closest to estHcp
+   TIER_ORDER = ['100+','90s','Mid80s','HighSD','Single','Low','Scratch','Plus']
+
+4. Stat Normalization:
+   userFW    = totalFwHit / (18 - par3s per round, summed)
+   userGIR   = totalGIR / totalHoles
+   userPutts = totalPutts / totalGIR  (only on GIR holes)
+   userScram = totalScrambles / totalMissedGreens
+
+5. Target Ratios (progress % toward target):
+   ratioFW    = max(0, min(100, 100 × userFW / target.fw))
+   ratioGIR   = max(0, min(100, 100 × userGIR / target.gir))
+   ratioPutts = max(0, min(100, 100 × target.putts / userPutts))  ← INVERTED (lower is better)
+   ratioScram = max(0, min(100, 100 × userScram / target.scramble))
+
+6. Strokes by Category (Excel multiplier method):
+   rawD = -3.5 × (max(0, 100 - ratioFW)    / 100)   ← Driving
+   rawA = -6.0 × (max(0, 100 - ratioGIR)   / 100)   ← Approach
+   rawP = -2.0 × (max(0, 100 - ratioPutts) / 100)   ← Putting
+   rawS = -3.5 × (max(0, 100 - ratioScram) / 100)   ← Short Game
+   scaleFactor = totalGap / (|rawD|+|rawA|+|rawP|+|rawS|)
+   strokesX = |rawX| × scaleFactor
+
+=================================================================
+TIER BASELINES DATA (from validated Excel model)
+=================================================================
+
+Key: '100+', '90s', 'Mid80s', 'HighSD', 'Single', 'Low', 'Scratch', 'Plus'
+
+Tier      | Label              | HCP   | FW%  | GIR% | Putts/GIR | Scram%
+----------|--------------------|-------|------|------|-----------|-------
+100+      | 100+ Golfer        | 27    | 40%  | 16%  | 2.35      | 20%
+90s       | 90s Golfer         | 21    | 43%  | 22%  | 2.30      | 22%
+Mid80s    | Mid 80s Golfer     | 14.5  | 48%  | 27%  | 2.15      | 25%
+HighSD    | High Single Digit  | 9     | 49%  | 37%  | 2.05      | 32%
+Single    | Single Digit       | 5.5   | 51%  | 46%  | 2.00      | 38%
+Low       | Low Single Digit   | 3.5   | 54%  | 51%  | 1.95      | 44%
+Scratch   | Scratch Golfer     | 1     | 57%  | 57%  | 1.85      | 50%
+Plus      | Plus Handicap      | -1    | 60%  | 62%  | 1.83      | 53%
+
+NOTE: 100+ tier is in the calculation engine but NOT in the target dropdown
+(nobody sets 100+ as their goal).
+
+=================================================================
+VALIDATED TEST SCENARIOS (all confirmed matching Excel)
+=================================================================
+
+S1: 100+ → Mid 80s (7 rounds, scores 103-109)
+  Est HCP: 32.2 → Current: 100+ | Gap: 12.5 strokes
+  Breakdown: Driving 1.2 / Approach 5.7 / Putting 0.4 / Short Game 5.2
+
+S2: Mid 80s → Low Single Digit (7 rounds, scores 83-88)
+  Est HCP: 12.2 → Current: Mid 80s | Gap: 9.0 strokes
+  Breakdown: Driving 0.5 / Approach 4.4 / Putting 0.3 / Short Game 3.8
+
+S3: Low Single Digit → Plus (7 rounds, scores 77-81)
+  Est HCP: 5.7 → Current: Low Single Digit | Gap: 6.5 strokes
+  Breakdown: Driving 0.6 / Approach 3.0 / Putting 0.3 / Short Game 2.7
+
+S4: 90s → Plus (7 rounds, scores 92-98) ← BEST TEST — most dramatic results
+  Est HCP: 20.2 → Current: 90s Golfer | Gap: 22.0 strokes
+  Breakdown: Driving 2.9 / Approach 10.6 / Putting 1.4 / Short Game 7.1
+
+S4 Round Data (use this to validate after any engine change):
+  R1: Score=95, Par=72, Rating=71.6, Slope=130, Par3s=4, FW=6, GIR=4, Putts=10, Scram=2
+  R2: Score=93, Par=72, Rating=71.3, Slope=128, Par3s=4, FW=6, GIR=4, Putts=9,  Scram=2
+  R3: Score=97, Par=72, Rating=71.9, Slope=132, Par3s=4, FW=5, GIR=3, Putts=8,  Scram=2
+  R4: Score=92, Par=72, Rating=71.0, Slope=127, Par3s=4, FW=7, GIR=4, Putts=10, Scram=2
+  R5: Score=96, Par=72, Rating=72.2, Slope=133, Par3s=4, FW=5, GIR=3, Putts=8,  Scram=1
+  R6: Score=94, Par=72, Rating=71.5, Slope=129, Par3s=4, FW=6, GIR=4, Putts=9,  Scram=2
+  R7: Score=98, Par=72, Rating=72.4, Slope=134, Par3s=4, FW=5, GIR=3, Putts=8,  Scram=1
+
+=================================================================
+RESULTS PAGE — CURRENT STRUCTURE (7 sections)
+=================================================================
+
+S1: IDENTITY HERO (dark green card)
+  - "You are a 90s Golfer."
+  - "You are 22.0 strokes away from Plus Handicap."
+  - Estimated handicap badge
+  - 🔥 upgrade nudge banner if within 1.5 strokes of next tier
+  STATUS: ✅ Complete, no changes needed
+
+S2: JOURNEY ROAD
+  - Horizontal path showing all 8 tiers
+  - Current tier = filled dot + "▲ You" label
+  - Target tier = 🏁 flag
+  - Passed tiers = green fill
+  STATUS: ✅ Complete, no changes needed
+
+S3: COACH CARD (dark green)
+  - Dynamic message based on #1 priority category
+  - Stat pills showing gap, % of total, 2nd priority
+  STATUS: ✅ Complete, no changes needed
+
+S4: WHERE YOU STAND
+  STATUS: ⏳ Needs polish pass (see NEXT STEPS below)
+
+S5: GOLF HOLE VISUAL
+  STATUS: ⏳ Needs redesign (see NEXT STEPS below)
+
+S6: PROGRESS TRACKING
+  STATUS: ⏳ Needs simplification (see NEXT STEPS below)
+
+S7: PRACTICE PLAN
+  - 3 tip boxes: 50% / 35% / 15% practice split
+  STATUS: ✅ Complete for now (deep feature planned later)
+
+=================================================================
+NEXT STEPS — EXACTLY WHERE WE LEFT OFF
+=================================================================
+
+These 3 changes are agreed and ready to build. Do them in order.
+
+─────────────────────────────────────────────────────
+CHANGE 1: Section 4 — Where You Stand
+─────────────────────────────────────────────────────
+REMOVE: Midpoint tier column (revert to 3 columns)
+  Columns: Avg [Current Tier] | You Right Now | Your Goal
+
+UPDATE "You Right Now" column:
+  - Sub-label: "vs. other [90s Golfers]" — dynamically uses current tier label
+  - Makes the peer comparison explicit
+
+REPLACE top-right badge:
+  - OLD: 🟢 "Above Average" / 🔴 "Below Average" badge
+  - NEW: Progress-to-target badge with bucketing:
+      🔴 0–49%   → "[X]% to your goal"
+      🟡 50–79%  → "[X]% to your goal"
+      🟢 80–99%  → "[X]% to your goal"
+      ⭐ 100%+   → "Target reached!"
+  - Badge replaces the current red/green peer badge in top-right of each stat card
+
+─────────────────────────────────────────────────────
+CHANGE 2: Section 5 — Golf Hole Visual
+─────────────────────────────────────────────────────
+REDESIGN the SVG golf hole:
+  - Orientation: LEFT TO RIGHT (tee box on left, green/flag on right)
+  - Shape: DOGLEG LEFT — fairway starts going right then bends/curves up-left toward green
+  - Longer, more elongated feel — each zone clearly distinct
+  - 4 ZONES with HIGH-CONTRAST colors that don't blend with the greens/browns of the hole:
+      Tee Box   → DRIVING    → bright blue overlay  (#1565c0, high opacity)
+      Fairway   → APPROACH   → bright purple overlay (#6a1b9a, high opacity)  ← avoids green clash
+      Fringe    → SHORT GAME → bright orange overlay (#e65100, high opacity)
+      Green     → PUTTING    → bright yellow overlay (#f9a825, high opacity)
+  - Keep water hazard and bunkers on the hole for realism
+  - LEGEND: Show only the 4 category zones (remove Water and Bunker from legend)
+  - Stroke labels float beside their zone with connector lines
+
+─────────────────────────────────────────────────────
+CHANGE 3: Section 6 — Progress Tracking
+─────────────────────────────────────────────────────
+TAB 1 — Replace "Handicap Trend" with "My Stats" summary:
+  4-stat summary card (2×2 grid):
+    🏆 Best Round (lowest differential)
+    📊 Avg Score
+    📉 Avg Differential
+    📈 Improvement (round 1 diff minus current diff = strokes dropped)
+  All demo data, clearly watermarked.
+
+TAB 2 — Simplify "Round vs. Tiers":
+  Keep concept but simplify to screenshot-worthy format:
+  - Shows LAST ROUND only (not all rounds averaged)
+  - 3 columns: You (Last Round) | [Current Tier] Avg | Your Target
+  - One row per stat (FW%, GIR%, Putts/GIR, Scramble%)
+  - Big numbers, color-coded, clean enough to screenshot and send to friends
+  - Title: "Your Last Round at a Glance"
+
+=================================================================
+DESIGN SYSTEM (colors, fonts, spacing)
+=================================================================
+
+Primary green (dark):   #1b4332
+Primary green (mid):    #2d6a4f
+Primary green (light):  #52b788
+Background:             #f4f1eb
+Card background:        white
+Font:                   Georgia, serif
+
+Tier colors (for badges/labels):
+  Current tier:         #1b4332 (dark green)
+  Target tier:          #f9a825 (amber/gold)
+  Passed tiers:         #52b788 (light green)
+
+Progress bucket colors:
+  🔴 0–49%:   #c62828 background, white text
+  🟡 50–79%:  #f57f17 background, white text
+  🟢 80–99%:  #2d6a4f background, white text
+  ⭐ 100%+:   gold gradient, white text
+
+=================================================================
+UX PRINCIPLES (maintain throughout)
+=================================================================
+
+1. "Sticky" results page — users should want to come back after every round
+2. Before/After framing — current tier baseline = "before", you = "now"
+3. Above/Below average comparisons are motivating for golfers
+4. Progress % toward target is more important than raw stat values
+5. Screenshots — Round vs. Tiers should be shareable
+6. Coach voice — results speak directly to the golfer, not like a dashboard
+7. Mobile friendly — sections stack on small screens
+
+=================================================================
+FEATURE ROADMAP (not yet started, for future sessions)
+=================================================================
+
+NEAR TERM:
+  - Save rounds between sessions (localStorage first, then database)
+  - PDF report output from Word template
+  - Real progress tracking (actual historical data, not demo)
+
+MEDIUM TERM:
+  - User accounts + authentication
+  - Practice plan detail (drills, specific recommendations)
+  - Deployment to web (domain, hosting)
+
+LONG TERM:
+  - GPS integration
+  - Scorecard photo upload / OCR
+  - Leaderboard / social features
+  - Mobile app
+
+=================================================================
+BUSINESS CONTEXT
+=================================================================
+- Tested with 4 real golfers — all positive feedback
+- All said they would pay $15–20/month
+- Key concern: retention after reaching goal
+- Timeline: MVP in 3 months
+- Approach: Build with Claude's help, learn to code in process
+- User is non-technical but learning quickly
+
+=================================================================
+HOW TO RESUME IN A NEW CHAT
+=================================================================
+
+1. Upload this file (BUILD_CONTEXT_2.txt) to the project
+2. Upload the current index.html from the outputs folder
+3. Say: "Resume TrueStrokes build. Read BUILD_CONTEXT_2.txt.
+         We are ready to implement the 3 changes in NEXT STEPS."
+4. Claude will read this file, understand the full state,
+   and implement CHANGE 1, CHANGE 2, and CHANGE 3 in order.
+5. After each change, test with S4 scenario data (listed above)
+
+IMPORTANT FOR CLAUDE:
+- Do NOT modify the calculation engine formulas
+- Always use the artifact/file approach (not code blocks in chat)
+- Test all 4 scenarios after any engine-adjacent change
+- User wants to learn WHY, not just copy/paste — explain key concepts
+- Keep code clean and commented
+
+=================================================================
+END OF BUILD CONTEXT 2
+=================================================================

@@ -1,0 +1,294 @@
+=================================================================
+TRUESTROKES WEB APP - BUILD CONTEXT 4
+Last Updated: Session 9 - Tier Cleanup Complete, Practice Plan Designed
+=================================================================
+
+HOW TO RESUME IN A NEW CHAT
+=================================================================
+1. Upload BUILD_CONTEXT_4.txt (this file) to the project
+2. Upload the current index.html from the outputs folder
+3. Say: "Resume TrueStrokes build. Read BUILD_CONTEXT_4.txt."
+4. Reference NEXT STEPS for what to build
+
+IMPORTANT FOR CLAUDE:
+- Do NOT modify the calculation engine formulas (fully validated)
+- Always use the artifact/file approach (not code blocks in chat)
+- Test with S4 scenario after any engine-adjacent change
+- User wants to learn WHY not just copy/paste — explain concepts
+- Keep code clean and commented
+
+=================================================================
+CURRENT STATUS
+=================================================================
+
+✅ FULLY COMPLETE:
+- Full calculation engine (validated against all 4 test scenarios)
+- Multi-round form with Course Info + Performance sections
+- Field validation, tooltips, date + course name fields
+- localStorage — data persists between browser sessions
+- Results page — all 7 sections:
+    S1: Identity Hero
+    S2: Journey Road
+    S3: Coach Card
+    S4: Where You Stand (3-col stat cards)
+    S5: Strokes to Close (4 photo cards)
+    S6: Progress Tracking (My Stats + Last Round tabs)
+    S7: Practice Plan (placeholder — being replaced next session)
+- My Rounds page (summary header + full round table)
+- PDF Report (one-page download via jsPDF)
+- Header navigation (Calculator / My Rounds tabs)
+- Tier rename + cleanup (Session 9):
+    · "Mid 80s Golfer" → "80s" (key: Mid80s)
+    · "High Single Digit" → "Low 80s" (key: HighSD)
+    · "Golfer" / "Handicap" suffix removed from ALL tier labels
+    · Dropdown label: "Who do you want to be?"
+    · Dropdown placeholder: "Choose your level..."
+    · Journey road and PDF short-label strip logic cleaned up
+
+🔜 NEXT SESSION — Practice Plan Rebuild (full spec below)
+
+❌ NOT STARTED:
+- Deployment to live URL
+- User accounts / authentication
+- Real progress tracking (historical data)
+- AI-generated practice plans (future premium feature)
+- Course data auto-populate
+
+=================================================================
+TIER SYSTEM — CURRENT STATE (validated, do not modify numbers)
+=================================================================
+
+Key       | Label             | Rep HCP | FW%  | GIR% | Putts | Scram%
+----------|-------------------|---------|------|------|-------|-------
+100+      | 100+              | 27      | 40%  | 16%  | 2.35  | 20%
+90s       | 90s               | 21      | 43%  | 22%  | 2.30  | 22%
+Mid80s    | 80s               | 14.5    | 48%  | 27%  | 2.15  | 25%
+HighSD    | Low 80s           | 9       | 49%  | 37%  | 2.05  | 32%
+Single    | Single Digit      | 5.5     | 51%  | 46%  | 2.00  | 38%
+Low       | Low Single Digit  | 3.5     | 54%  | 51%  | 1.95  | 44%
+Scratch   | Scratch           | 1       | 57%  | 57%  | 1.85  | 50%
+Plus      | Plus              | -1      | 60%  | 62%  | 1.83  | 53%
+
+=================================================================
+CALCULATION ENGINE — VALIDATED FORMULAS (DO NOT MODIFY)
+=================================================================
+
+1. Handicap Differential (per round):
+   diff = (score - rating) × (113 / slope)
+
+2. Estimated Handicap:
+   Sort all diffs ascending → take best (lowest) up to 8 → average
+   estHcp = sortedDiffs.slice(0,8).reduce((s,d)=>s+d,0) / min(8, n)
+
+3. Tier Assignment:
+   Find tier whose representative HCP is closest to estHcp
+
+4. Stat Normalization:
+   userFW    = totalFwHit / (18 - par3s per round, summed)
+   userGIR   = totalGIR / totalHoles
+   userPutts = totalPutts / totalGIR
+   userScram = totalScrambles / totalMissedGreens
+
+5. Target Ratios:
+   ratioFW    = max(0, min(100, 100 × userFW / target.fw))
+   ratioGIR   = max(0, min(100, 100 × userGIR / target.gir))
+   ratioPutts = max(0, min(100, 100 × target.putts / userPutts)) ← INVERTED
+   ratioScram = max(0, min(100, 100 × userScram / target.scramble))
+
+6. Strokes by Category:
+   rawD = -3.5 × (max(0, 100 - ratioFW)    / 100)
+   rawA = -6.0 × (max(0, 100 - ratioGIR)   / 100)
+   rawP = -2.0 × (max(0, 100 - ratioPutts) / 100)
+   rawS = -3.5 × (max(0, 100 - ratioScram) / 100)
+   scaleFactor = totalGap / (|rawD|+|rawA|+|rawP|+|rawS|)
+   strokesX = |rawX| × scaleFactor
+
+=================================================================
+VALIDATED TEST — S4 (use after any engine change)
+=================================================================
+
+Name: Test Golfer | Target: Plus
+R1: Score=95, Par=72, Rating=71.6, Slope=130, Par3s=4, FW=6, GIR=4, Putts=10, Scram=2
+R2: Score=93, Par=72, Rating=71.3, Slope=128, Par3s=4, FW=6, GIR=4, Putts=9,  Scram=2
+R3: Score=97, Par=72, Rating=71.9, Slope=132, Par3s=4, FW=5, GIR=3, Putts=8,  Scram=2
+R4: Score=92, Par=72, Rating=71.0, Slope=127, Par3s=4, FW=7, GIR=4, Putts=10, Scram=2
+R5: Score=96, Par=72, Rating=72.2, Slope=133, Par3s=4, FW=5, GIR=3, Putts=8,  Scram=1
+R6: Score=94, Par=72, Rating=71.5, Slope=129, Par3s=4, FW=6, GIR=4, Putts=9,  Scram=2
+R7: Score=98, Par=72, Rating=72.4, Slope=134, Par3s=4, FW=5, GIR=3, Putts=8,  Scram=1
+
+Expected: Est HCP 20.2 → 90s → Gap 22.0 strokes
+Breakdown: Approach 10.6 / Short Game 7.1 / Driving 2.9 / Putting 1.4
+
+=================================================================
+NEXT STEPS — PRACTICE PLAN REBUILD (full spec)
+=================================================================
+
+Build in this order — do not skip ahead:
+
+─────────────────────────────────────────────────────
+STEP 1: Settings (new nav tab)
+─────────────────────────────────────────────────────
+New nav button: Settings (alongside Calculator / My Rounds)
+New page section: id="settings-page"
+
+Two preference selectors:
+  · Weekly practice time: 30 min / 1 hr / 1.5 hrs / 2 hrs / 3 hrs / 4 hrs
+  · Warmup time: 10 min / 20 min / 30 min / 45 min
+
+Storage:
+  · localStorage key: 'truestrokes_settings'
+  · Save on change (no submit button needed)
+  · Load on page init
+  · Structure: { practiceTime: '1hr', warmupTime: '10min' }
+
+Defaults if not set: practiceTime = '1hr', warmupTime = '10min'
+
+─────────────────────────────────────────────────────
+STEP 2: My Plan tab (replaces current S7 Practice Plan)
+─────────────────────────────────────────────────────
+The current S7 section (3 tip boxes) is REPLACED entirely.
+
+New structure: 3 tabs inside the Practice Plan card
+  · Tab 1: My Plan
+  · Tab 2: Warm Up
+  · Tab 3: My Log
+
+MY PLAN TAB:
+Reads: settings.practiceTime + d.breakdown (priority order)
+Renders: session cards (Session 1, Session 2, etc.)
+Each session card contains drill cards.
+
+Session structure by time:
+  30 min  → 1 session: 1 improvement drill — #1 priority
+  1 hr    → 1 session: 2 improvement drills #1 + 1 drill #2
+  1.5 hrs → 2 sessions: S1: 2 drills #1 · S2: 1 drill #2 + 1 drill #3
+  2 hrs   → 2 sessions: S1: 2 drills #1 + 1 drill #2 · S2: 2 drills #2 + 1 maintenance #3/#4
+  3 hrs   → 3 sessions: S1: #1 full · S2: #2 full · S3: #3 + maintenance #4
+  4 hrs   → 4 sessions: S1-S3 each category full · S4: Rotation (label only, no specific drill)
+
+Drill card contains:
+  · Drill name
+  · Type badge: IMPROVEMENT (green) or MAINTENANCE (grey)
+  · Sets × reps (e.g. "3 sets of 10 balls")
+  · Description (1-2 sentences, specific)
+  · Success criteria (e.g. "land 7 of 10 within 6 feet")
+  · YouTube link (opens in new tab)
+  · "Log This Session" button → opens My Log entry form
+
+DRILL LIBRARY (static, per category):
+Build a DRILLS object with keys: 'Approach Shots', 'Short Game', 'Driving', 'Putting'
+Each has: improvement[] and maintenance[] arrays
+Minimum 3 improvement drills + 2 maintenance drills per category
+YouTube links: use credible instructors (Rick Shiels, MrShortGame, Mark Crossfield)
+
+─────────────────────────────────────────────────────
+STEP 3: Warm Up tab
+─────────────────────────────────────────────────────
+Always visible regardless of calculation state.
+Tied to d.breakdown[0].category (#1 priority).
+Version shown driven by settings.warmupTime.
+
+Format: numbered step list, specific and sequential.
+10-min version: parking lot friendly, no range required.
+20/30/45-min versions: range-based, progressively more thorough.
+
+4 warmup routines per category × 4 time lengths = 16 total routines.
+Each step: duration + specific instruction (club, target, feel cue).
+
+─────────────────────────────────────────────────────
+STEP 4: My Log tab
+─────────────────────────────────────────────────────
+Storage key: 'truestrokes_log'
+Structure: array of log entries
+Each entry: { drillId, drillName, category, result, total, date, sessionNum }
+  Example: { drillId: 'approach-chip-1', drillName: 'Landing Zone Chips',
+             category: 'Approach Shots', result: 14, total: 20,
+             date: '2026-03-05T14:30:00Z', sessionNum: 1 }
+
+UI:
+  · Recent log entries (last 10) shown as a table
+  · Grouped by drill
+  · Shows result trend (first attempt vs latest)
+  · "Log This Session" button on each drill card opens a modal/inline form:
+      - Drill name (pre-filled, read-only)
+      - Result: [number] of [total] (e.g. 14 of 20)
+      - Date (auto-filled, editable)
+      - Submit → saves to log, triggers badge check
+
+─────────────────────────────────────────────────────
+STEP 5: Badges
+─────────────────────────────────────────────────────
+Displayed as a badge shelf below the Practice Plan card.
+Earned: full color + name + date earned.
+Unearned: greyed out + requirement shown.
+
+COMPLETION BADGES (read from log entry count):
+  🥉 First Rep       — 1 session logged
+  🥈 On A Roll       — 5 sessions logged
+  🥇 Committed       — 20 sessions logged
+
+IMPROVEMENT BADGES (read from log, per drill):
+  📈 Getting Sharper — any drill score improves vs first attempt
+  🎯 Sharpshooter    — same drill improves 3 sessions in a row
+
+TIER MILESTONE BADGES (read from calculation results):
+  One badge per tier. Triggered when displayResults() shows a currentKey
+  that differs from the last saved currentKey in localStorage.
+  Store last tier in truestrokes_settings.lastTier.
+  Badges: Welcome to 90s 🏌️ / Welcome to 80s / Welcome to Low 80s /
+          Welcome to Single Digit / Welcome to Low Single Digit /
+          Welcome to Scratch / Welcome to Plus 🏆
+
+Badge check function: checkBadges(logEntries, currentKey)
+  Called after every log save and after every Calculate.
+  Saves earned badges to truestrokes_settings.badges = []
+
+=================================================================
+DESIGN SYSTEM (unchanged)
+=================================================================
+
+Primary green (dark):   #1b4332
+Primary green (mid):    #2d6a4f
+Primary green (light):  #52b788
+Background:             #f4f1eb
+Card background:        white
+Font:                   Georgia, serif
+
+New colors for Practice Plan:
+  Improvement badge:    #2d6a4f bg, white text
+  Maintenance badge:    #888 bg, white text
+  Badge earned:         #f9a825 (amber/gold)
+  Badge unearned:       #e8e8e0 bg, #bbb text
+
+=================================================================
+LOCALSTORAGE KEYS (all 3)
+=================================================================
+
+'truestrokes_data'     — rounds, name, targetKey, savedAt
+'truestrokes_settings' — practiceTime, warmupTime, lastTier, badges[]
+'truestrokes_log'      — array of drill log entries
+
+=================================================================
+FUTURE ROADMAP (unchanged priority order)
+=================================================================
+
+1. Deploy to live URL (GitHub + Vercel)
+2. User accounts (Supabase + auth)
+3. Payments (Stripe) — never take payments without LLC formed first
+4. Real progress tracking (historical snapshots)
+5. AI-generated practice plans (premium tier, needs 10+ rounds/user)
+6. Course data auto-populate (Golf Course API)
+
+=================================================================
+BUSINESS CONTEXT
+=================================================================
+- Tested with 4 real golfers — all positive feedback
+- All said they would pay $15-20/month
+- Practice Plan is the core GTM: "low cost golf coach, clear path"
+- Retention mechanism: logging + badges + tier milestones
+- Key metric: drill sessions logged per user per month
+- Timeline: MVP in 3 months
+
+=================================================================
+END OF BUILD CONTEXT 4
+=================================================================

@@ -1,0 +1,267 @@
+=================================================================
+TRUESTROKES WEB APP - BUILD CONTEXT
+Last Updated: Session 2 - Multi-Round Form Complete
+=================================================================
+
+PROJECT OVERVIEW:
+-----------------
+Building a web-based golf analytics calculator that:
+- Lets users enter multiple rounds of golf data
+- Calculates their skill tier and handicap
+- Shows strokes needed to reach target tier
+- Provides practice priorities (Driving, Approach, Putting, Short Game)
+
+Based on validated Excel model (TrueStrokes_Engine_V3.xlsx)
+
+CURRENT STATUS:
+--------------
+✅ COMPLETED:
+- Node.js installed (v24.13.1)
+- VS Code setup with 'code .' command
+- Project folder created: ~/Desktop/truestrokes-app/
+- Basic HTML structure working
+- CSS styling applied (looks professional)
+- Multi-round form working (can add/remove unlimited rounds)
+- Target tier dropdown added
+- Basic JavaScript working (can collect form data)
+
+⏸️ IN PROGRESS:
+- Need to add full calculation logic (Excel formulas → JavaScript)
+- Need to display results on page (instead of alert popup)
+
+❌ NOT STARTED:
+- Tier assignment logic
+- Strokes gained calculations
+- Priority breakdown
+- Results display page
+- Database/saving data
+- User accounts
+- Deployment to web
+
+TECHNICAL STACK:
+---------------
+- HTML (structure)
+- CSS (styling)
+- JavaScript (calculations & interactivity)
+- No frameworks yet (vanilla JS)
+- No backend yet (all client-side)
+
+FILE STRUCTURE:
+--------------
+truestrokes-app/
+├── index.html          (main file - all code in one file for now)
+└── BUILD_CONTEXT.txt   (this file)
+
+CURRENT CODE STATE:
+------------------
+Single file: index.html
+Contains:
+1. HTML structure with multi-round form
+2. CSS styling (golf green theme)
+3. JavaScript for:
+   - Adding/removing rounds dynamically
+   - Collecting form data
+   - Basic validation
+
+KEY FEATURES WORKING:
+--------------------
+1. Users can add unlimited rounds
+2. Each round collects:
+   - Score, Par, Course Rating, Slope
+   - Par 3s, Fairways Hit, Greens Hit
+   - Putts on GIR, Scrambles
+3. Target tier selection dropdown
+4. Remove individual rounds
+5. Calculate button (placeholder - just counts rounds)
+
+NEXT STEPS (Session 3):
+-----------------------
+1. Add calculation functions:
+   - Calculate handicap differential for each round
+   - Average best 8 of last 10 rounds → Estimated Handicap
+   - Normalize stats (FW%, GIR%, Putts/GIR, Scramble%)
+   - Assign current tier based on handicap
+   
+2. Add tier baseline data (from Excel Tier_Baselines sheet):
+   - Store tier benchmarks in JavaScript
+   - Compare user stats to target tier
+   
+3. Calculate strokes gained by category:
+   - Driving, Approach, Putting, Short Game
+   
+4. Display results on page:
+   - Current tier
+   - Target tier
+   - Strokes needed
+   - Priority breakdown (%)
+   - Stats comparison table
+
+EXCEL FORMULAS TO CONVERT:
+--------------------------
+Key formulas from TrueStrokes_Engine_V3.xlsx:
+
+1. Handicap Differential:
+   = (Score - Rating) × (113 / Slope)
+   
+2. Estimated Handicap:
+   = AVERAGE of best 8 differentials from last 10 rounds
+   
+3. Normalized Stats:
+   - FW% = (Total FW Hit / Total FW Available)
+   - GIR% = (Total GIR / Total Holes)
+   - Putts/GIR = (Total Putts on GIR / Total GIR)
+   - Scramble% = (Total Scrambles / Total Missed Greens)
+   
+4. Tier Assignment:
+   Based on Estimated Handicap ranges:
+   - 100+ Golfer: 27+ HCP
+   - 90s Golfer: 21 HCP
+   - Mid 80s: 14.5 HCP
+   - High Single Digit: 9 HCP
+   - Single Digit: 5.5 HCP
+   - Low Handicap: 3.5 HCP
+   - Scratch: 1 HCP
+   - Plus: -1 HCP
+
+5. Strokes Gained:
+   Complex formulas from Strokes_Gained sheet
+   Compares user stats to tier baselines
+   Distributes gap across 4 categories
+
+TIER BASELINES DATA:
+-------------------
+(From validated Excel model - Feb 2026 update)
+
+Tier | FW% | GIR% | Putts/GIR | Scramble%
+-----|-----|------|-----------|----------
+100+ | 40% | 16%  | 2.35      | 20%
+90s  | 43% | 22%  | 2.30      | 22%
+Mid80s| 48%| 27%  | 2.15      | 25%
+HighSD| 49%| 37%  | 2.05      | 32%
+Single| 51%| 46%  | 2.00      | 38%
+Low  | 54% | 51%  | 1.95      | 44%
+Scratch|57%| 57%  | 1.85      | 50%
+Plus | 60% | 62%  | 1.83      | 53%
+
+STUDY GUIDE NOTES:
+-----------------
+User wants to LEARN as we build, not just copy/paste.
+
+Terminal Commands Learned:
+- cd [folder] = change directory
+- mkdir [name] = make directory
+- touch [file] = create file
+- open . = open current folder in Finder
+- code . = open VS Code in current folder
+
+HTML Learned:
+- <html>, <head>, <body> structure
+- <h1>, <h2> = headings
+- <p> = paragraph
+- <label> = form labels
+- <input> = form inputs
+- <button> = clickable buttons
+- <div> = container/section
+- <select> = dropdown menu
+
+CSS Learned:
+- Selectors (h1, button, etc.)
+- Properties (color, padding, margin, etc.)
+- Colors (hex codes like #2E7D32)
+- border-radius = rounded corners
+- box-shadow = drop shadow effect
+
+JavaScript Learned:
+- const = create a variable
+- document.getElementById() = find element by ID
+- addEventListener() = listen for events (clicks, etc.)
+- querySelector() = find element
+- parseInt() = convert to whole number
+- parseFloat() = convert to decimal number
+- .value = get input value
+- .toFixed(1) = round to 1 decimal
+
+CODE SNIPPETS TO REFERENCE:
+---------------------------
+
+Adding a round dynamically:
+```javascript
+function addRound() {
+    roundCount++;
+    const roundDiv = document.createElement('div');
+    roundDiv.innerHTML = `<h2>Round ${roundCount}</h2>...`;
+    roundsContainer.appendChild(roundDiv);
+}
+```
+
+Collecting all rounds data:
+```javascript
+const rounds = document.querySelectorAll('.round');
+rounds.forEach(round => {
+    const score = parseInt(round.querySelector('.score').value);
+    // ... collect other fields
+});
+```
+
+VALIDATION TESTING DATA:
+------------------------
+Test data from Excel model (90s Golfer → Single Digit):
+
+Round 1: Score=95, Par=72, Rating=71.6, Slope=130, Par3s=4, FW=6, GIR=4, Putts=10, Scrambles=2
+Round 2: Score=93, Par=72, Rating=71.3, Slope=128, Par3s=4, FW=6, GIR=4, Putts=9, Scrambles=2
+Round 3: Score=97, Par=72, Rating=71.9, Slope=132, Par3s=4, FW=5, GIR=3, Putts=8, Scrambles=2
+Round 4: Score=92, Par=72, Rating=71.0, Slope=127, Par3s=4, FW=7, GIR=4, Putts=10, Scrambles=2
+Round 5: Score=96, Par=72, Rating=72.2, Slope=133, Par3s=4, FW=5, GIR=3, Putts=8, Scrambles=1
+Round 6: Score=94, Par=72, Rating=71.5, Slope=129, Par3s=4, FW=6, GIR=4, Putts=9, Scrambles=2
+Round 7: Score=98, Par=72, Rating=72.4, Slope=134, Par3s=4, FW=5, GIR=3, Putts=8, Scrambles=1
+
+Expected Results:
+- Est Handicap: 20.2
+- Current Tier: 90s Golfer
+- Target Tier: Single Digit
+- Strokes Needed: 15.5
+- Priority: Approach (49%), Short Game (35%), Driving (10%), Putting (6%)
+
+BUSINESS CONTEXT:
+----------------
+- Tested with 4 real golfers - all positive feedback
+- All said they would pay $15-20/month
+- Key concern: retention after reaching goal
+- Enhancement ideas: GPS, practice plans, scorecard photo upload
+- Timeline: MVP in 3 months
+- Approach: Build with Claude's help, learn to code in process
+
+DECISIONS MADE:
+--------------
+1. Build ourselves (not no-code) - user wants to learn
+2. Start simple (calculator only, no database yet)
+3. One page for now (can split later)
+4. Vanilla JavaScript (no frameworks yet)
+5. Client-side only (no backend yet)
+6. Focus on core calculations first, polish later
+
+KNOWN ISSUES:
+------------
+None currently - multi-round form working well
+
+HOW TO RESUME:
+-------------
+1. Open Terminal
+2. cd Desktop/truestrokes-app
+3. code .
+4. Open index.html
+5. Reference this file for context
+6. Continue with "NEXT STEPS" above
+
+IMPORTANT NOTES:
+---------------
+- User is non-technical but learning quickly
+- Explain WHY not just WHAT
+- Update study guide as we learn new concepts
+- Test frequently in browser
+- Keep code clean and commented
+- One feature at a time, validate before moving on
+
+=================================================================
+END OF CONTEXT FILE
+=================================================================

@@ -1,0 +1,400 @@
+=================================================================
+TRUESTROKES WEB APP - BUILD CONTEXT 3
+Last Updated: Session 8 - PDF Report Complete, Deployment Planning
+=================================================================
+
+HOW TO RESUME IN A NEW CHAT
+=================================================================
+1. Upload BUILD_CONTEXT_3.txt (this file) to the project
+2. Upload the current index.html from the outputs folder
+3. Say: "Resume TrueStrokes build. Read BUILD_CONTEXT_3.txt."
+4. Reference the NEXT STEPS section for what to build next
+
+IMPORTANT FOR CLAUDE:
+- Do NOT modify the calculation engine formulas (fully validated)
+- Always use the artifact/file approach (not code blocks in chat)
+- Test with S4 scenario after any engine-adjacent change
+- User wants to learn WHY not just copy/paste — explain concepts
+- Keep code clean and commented
+
+=================================================================
+CURRENT STATUS
+=================================================================
+
+✅ FULLY COMPLETE:
+- Full calculation engine (validated against all 4 test scenarios)
+- Handicap differential formula
+- Tier assignment logic
+- Stat normalization (FW%, GIR%, Putts/GIR, Scramble%)
+- Strokes gained by category (Excel multiplier method)
+- Multi-round form with Course Info + Performance sections
+- Field validation, tooltips, date + course name fields
+- localStorage — data persists between browser sessions
+- Results page — all 7 sections:
+    S1: Identity Hero (tier statement, gap to goal)
+    S2: Journey Road (tier path with dots)
+    S3: Coach Card (dark green, #1 priority message)
+    S4: Where You Stand (3-col stat cards, color coded)
+    S5: Strokes to Close (4 photo cards with embedded images)
+    S6: Progress Tracking (My Stats + Last Round tabs)
+    S7: Practice Plan (3 priority tip boxes)
+- My Rounds page (summary header + full round table)
+- PDF Report — one-page download via jsPDF (client-side)
+- Header navigation (Calculator / My Rounds tabs)
+
+❌ NOT STARTED (see NEXT STEPS below):
+- Deployment to live URL
+- User accounts / authentication
+- Real progress tracking (historical data, not demo)
+- Course data auto-populate (API)
+- Practice plan detail / AI-generated plans
+- Mobile app / GPS
+
+=================================================================
+CURRENT FILE STATE
+=================================================================
+
+Single file: index.html (~1,510 lines)
+All code in one file: HTML + CSS + JavaScript
+No backend, no server — fully client-side
+Data storage: localStorage (browser only, not cross-device)
+
+Libraries used:
+- jsPDF 2.5.1 (CDN) — client-side PDF generation
+- Vanilla JS only — no frameworks
+
+PDF Report contains (one page, letter size):
+- Dark green header (TrueStrokes brand + golfer name + date)
+- Identity block (tier statement + gap)
+- Journey path (all 8 tiers, current + goal marked)
+- Coach card (dark green, #1 priority + message)
+- Where You Stand table (peer avg | you | your goal)
+- Strokes to Close (4 colored boxes)
+- Practice Plan (3 boxes: 50% / 35% / 15%)
+- Footer (dark green bar)
+Download triggered by "⬇ Download Report PDF" button on results page
+Filename format: TrueStrokes_[Name]_[Date].pdf
+
+=================================================================
+CALCULATION ENGINE — VALIDATED FORMULAS (DO NOT MODIFY)
+=================================================================
+
+1. Handicap Differential (per round):
+   diff = (score - rating) × (113 / slope)
+
+2. Estimated Handicap:
+   Sort all diffs ascending → take best (lowest) up to 8 → average
+   estHcp = sortedDiffs.slice(0,8).reduce((s,d)=>s+d,0) / min(8, n)
+
+3. Tier Assignment:
+   Find tier whose representative HCP is closest to estHcp
+   TIER_ORDER = ['100+','90s','Mid80s','HighSD','Single','Low','Scratch','Plus']
+
+4. Stat Normalization:
+   userFW    = totalFwHit / (18 - par3s per round, summed)
+   userGIR   = totalGIR / totalHoles
+   userPutts = totalPutts / totalGIR
+   userScram = totalScrambles / totalMissedGreens
+
+5. Target Ratios:
+   ratioFW    = max(0, min(100, 100 × userFW / target.fw))
+   ratioGIR   = max(0, min(100, 100 × userGIR / target.gir))
+   ratioPutts = max(0, min(100, 100 × target.putts / userPutts)) ← INVERTED
+   ratioScram = max(0, min(100, 100 × userScram / target.scramble))
+
+6. Strokes by Category (Excel multiplier method):
+   rawD = -3.5 × (max(0, 100 - ratioFW)    / 100)
+   rawA = -6.0 × (max(0, 100 - ratioGIR)   / 100)
+   rawP = -2.0 × (max(0, 100 - ratioPutts) / 100)
+   rawS = -3.5 × (max(0, 100 - ratioScram) / 100)
+   scaleFactor = totalGap / (|rawD|+|rawA|+|rawP|+|rawS|)
+   strokesX = |rawX| × scaleFactor
+
+=================================================================
+TIER BASELINES (from validated Excel model)
+=================================================================
+
+Tier      | Label              | HCP   | FW%  | GIR% | Putts/GIR | Scram%
+----------|--------------------|-------|------|------|-----------|-------
+100+      | 100+ Golfer        | 27    | 40%  | 16%  | 2.35      | 20%
+90s       | 90s Golfer         | 21    | 43%  | 22%  | 2.30      | 22%
+Mid80s    | Mid 80s Golfer     | 14.5  | 48%  | 27%  | 2.15      | 25%
+HighSD    | High Single Digit  | 9     | 49%  | 37%  | 2.05      | 32%
+Single    | Single Digit       | 5.5   | 51%  | 46%  | 2.00      | 38%
+Low       | Low Single Digit   | 3.5   | 54%  | 51%  | 1.95      | 44%
+Scratch   | Scratch Golfer     | 1     | 57%  | 57%  | 1.85      | 50%
+Plus      | Plus Handicap      | -1    | 60%  | 62%  | 1.83      | 53%
+
+=================================================================
+VALIDATED TEST SCENARIOS
+=================================================================
+
+S4 (best test — use this to validate after any engine change):
+  Est HCP: 20.2 → Current: 90s Golfer → Target: Plus Handicap
+  Gap: 22.0 strokes
+  Breakdown: Driving 2.9 / Approach 10.6 / Putting 1.4 / Short Game 7.1
+
+  R1: Score=95, Par=72, Rating=71.6, Slope=130, Par3s=4, FW=6, GIR=4, Putts=10, Scram=2
+  R2: Score=93, Par=72, Rating=71.3, Slope=128, Par3s=4, FW=6, GIR=4, Putts=9,  Scram=2
+  R3: Score=97, Par=72, Rating=71.9, Slope=132, Par3s=4, FW=5, GIR=3, Putts=8,  Scram=2
+  R4: Score=92, Par=72, Rating=71.0, Slope=127, Par3s=4, FW=7, GIR=4, Putts=10, Scram=2
+  R5: Score=96, Par=72, Rating=72.2, Slope=133, Par3s=4, FW=5, GIR=3, Putts=8,  Scram=1
+  R6: Score=94, Par=72, Rating=71.5, Slope=129, Par3s=4, FW=6, GIR=4, Putts=9,  Scram=2
+  R7: Score=98, Par=72, Rating=72.4, Slope=134, Par3s=4, FW=5, GIR=3, Putts=8,  Scram=1
+
+=================================================================
+DESIGN SYSTEM
+=================================================================
+
+Primary green (dark):   #1b4332
+Primary green (mid):    #2d6a4f
+Primary green (light):  #52b788
+Background:             #f4f1eb
+Card background:        white
+Font:                   Georgia, serif
+
+Where You Stand column colors:
+  Peer avg column:      red-ish  (#fdf0f0 bg, #c62828 text)
+  You Right Now column: yellow-ish (#fffbea bg, #b8860b text)
+  Your Goal column:     green-ish (#f0faf4 bg, #2d6a4f text)
+
+Strokes to Close card accent colors:
+  Driving:    #c62828 (red)
+  Approach:   #c8960a (gold)
+  Short Game: #1565c0 (blue)
+  Putting:    #e65100 (orange)
+
+Images (embedded as base64):
+  Approach card:   /mnt/project/Approach.png (iron/ball at ground level)
+  Short Game card: /mnt/project/Scrambling.png (wedge/ball on short grass)
+  Driving card:    Unsplash photo-1535131749006 (fairway tee shot)
+  Putting card:    Unsplash photo-1587174486073 (dusk range scene)
+
+=================================================================
+NEXT STEPS — DEPLOYMENT ROADMAP
+=================================================================
+
+Recommended build order (each = roughly 1 session):
+
+─────────────────────────────────────────────────────
+STEP 1: Deploy to Live URL
+─────────────────────────────────────────────────────
+Goal: Anyone in the world can use TrueStrokes at a real URL.
+
+Tech: Vercel (free) + custom domain (~$15/year)
+New concepts: GitHub (version control), git push, environment
+
+What to build:
+1. Create GitHub account + repository
+2. Push index.html to GitHub
+3. Connect GitHub repo to Vercel — auto-deploys on every push
+4. Buy domain (truestrokes.com or similar) via Namecheap
+5. Point domain at Vercel (DNS settings)
+6. Vercel handles HTTPS/SSL automatically
+
+After this step: Live on the internet. Data still in localStorage.
+
+─────────────────────────────────────────────────────
+STEP 2: User Accounts + Authentication
+─────────────────────────────────────────────────────
+Goal: Users have real accounts. Data follows them across devices.
+
+Tech: Supabase (free tier — covers ~50k monthly active users)
+New concepts: API calls, database tables, authentication flow,
+              environment variables
+
+What to build:
+1. Create Supabase project (database + auth in one)
+2. Create database tables:
+   - users (handled by Supabase Auth automatically)
+   - rounds (user_id, date, course, score, par, rating, slope,
+             par3s, fairways, gir, putts, scrambles, created_at)
+3. Add login/signup screen to app (email + password to start)
+4. Replace localStorage calls with Supabase API calls
+5. On login from any device → rounds load from database
+
+Add Stripe for payments in this step:
+- Stripe handles subscriptions, payments, taxes, payouts
+- Decide: free trial (5 rounds?) then $15-20/month
+- Never take payments without an LLC formed first (see Legal below)
+
+─────────────────────────────────────────────────────
+STEP 3: Real Progress Tracking
+─────────────────────────────────────────────────────
+Goal: Users see their actual handicap trend over time.
+
+Depends on: Step 2 (needs database + timestamps)
+
+What to build:
+1. Save a snapshot on every Calculate:
+   - estimated_hcp, fw_pct, gir_pct, putts_per_gir, scram_pct
+   - timestamp, current_tier, target_tier
+2. Progress Tracking tab pulls real historical snapshots
+3. "Improvement" stat = true first-round vs latest comparison
+4. Handicap trend chart shows actual data points over time
+
+This is the retention feature. Users come back after every
+round to watch their line move.
+
+─────────────────────────────────────────────────────
+STEP 4: Practice Plan Detail
+─────────────────────────────────────────────────────
+Goal: Specific, actionable practice recommendations.
+
+Two options (decide at build time):
+
+Option A — Static plans (free):
+  Pre-written drill recommendations per category + tier combo
+  e.g. "90s Golfer working on Approach: practice 100-150yd shots..."
+
+Option B — AI-generated plans (tiny cost ~$0.003/generation):
+  Use Claude API to generate personalized plan based on:
+  - Their specific stats, tier, gap, top priority category
+  - Returns 3 specific drills tailored to their game
+  Example prompt: "User is a 90s Golfer targeting Single Digit.
+  GIR is 22%, target is 46%. Generate 3 specific practice drills."
+
+─────────────────────────────────────────────────────
+STEP 5 (Future): Course Data Auto-Populate
+─────────────────────────────────────────────────────
+Goal: User types course name → rating/slope/par fills in.
+
+Tech: Golf Course API (golfcourseapi.com) ~$30-100/month
+  - Search by course name
+  - Returns rating, slope, par, hole count
+  - Removes friction from data entry form
+
+NOT GPS while playing — that is a separate, much larger feature.
+
+=================================================================
+COST BREAKDOWN
+=================================================================
+
+Stage                  | Monthly Cost
+-----------------------|-------------
+Deploy (Vercel + domain)| ~$1.25/mo ($15/yr domain, Vercel free)
+User accounts (Supabase)| $0 until ~500+ DAU, then ~$25/mo
+Progress tracking      | $0 (uses same database)
+Practice plan - static | $0
+Practice plan - AI     | ~$0-5/mo at early scale
+Course API             | ~$30-100/mo when added
+Stripe payments        | 2.9% + $0.30 per transaction (no monthly fee)
+-----------------------|-------------
+Total at MVP scale     | Under $10/month
+
+Revenue at 100 users × $15/mo = $1,500/mo
+Revenue at 500 users × $15/mo = $7,500/mo
+Costs at 500 users = ~$150/mo (Supabase paid + course API)
+Margin at 500 users = ~98%
+
+=================================================================
+LEGAL CHECKLIST
+=================================================================
+
+Before going live (Step 1):
+  □ Terms of Service — use Termly or Iubenda (~$10/mo)
+  □ Privacy Policy — same service, required if collecting any data
+
+Before taking payments (Step 2):
+  □ Form an LLC — protects personal assets from business liability
+    Cost: $50-500 depending on state
+    How: Your state's Secretary of State website, or use Stripe Atlas
+  □ Business bank account — keep business and personal money separate
+  □ One-hour consultation with startup attorney — worth it before launch
+
+Ongoing:
+  □ Never call estimated handicap an "official" USGA handicap
+    (USGA owns the official GHIN handicap system)
+  □ "Estimated handicap" language is correct — keep using it
+
+IP / Patent status:
+  ✅ Strokes gained methodology — NOT patented, widely published,
+     used freely by Arccos, GolfMetrics, Circles, and others
+  ✅ TrueStrokes tier system — original methodology, not copied
+  ✅ No hardware = not subject to sensor/device patents
+  ✅ Software analytics apps are legal to build and sell
+
+=================================================================
+GPS / COURSE FEATURE DECISION FRAMEWORK
+=================================================================
+
+Near term (next 6 months):
+  Course name auto-populate via Golf Course API
+  → Removes friction, high user value, ~$30-100/mo
+
+Medium term:
+  Arccos / ShotScope import integration
+  → Their users can import round data automatically
+  → You get data without building GPS infrastructure
+  → Positions TrueStrokes as analytics layer, not a tracker
+
+Long term (v2 — only if user demand proves it):
+  Native mobile app with GPS
+  → Requires licensed course coordinate data ($500+/mo at scale)
+  → Separate product decision, not a web app feature
+
+Key insight: Don't compete with Arccos on GPS tracking.
+Compete on analytics, coaching voice, and tier identity.
+Integration beats replication.
+
+=================================================================
+COMPETITIVE LANDSCAPE
+=================================================================
+
+Main competitors:
+- Arccos: Hardware sensors + GPS + strokes gained. $130 hardware + sub.
+- ShotScope: Similar to Arccos. GPS watch focus.
+- GolfMetrics: Original strokes gained app by Mark Broadie. ~$70/yr.
+- Circles: Used by Tour pros. Expensive. Complex.
+- DECADE Golf: Course management system. Not a stats tracker.
+
+TrueStrokes differentiator:
+  "You are a 90s Golfer. Here's exactly what it takes to become
+   a Single Digit." — Tier identity + gap framing is unique.
+  No hardware required. Pure analytics and coaching layer.
+  Simpler and more motivating than raw strokes gained numbers.
+
+=================================================================
+BUSINESS METRICS TO TRACK
+=================================================================
+
+The one number that matters most:
+  → Rounds entered per user per month
+  If users enter rounds consistently = getting value = will pay
+  If users enter one round and disappear = retention problem
+
+Secondary metrics:
+  → PDF reports downloaded per user (engagement signal)
+  → % of users who enter 5+ rounds (activation threshold)
+  → Churn rate once charging (how many cancel per month)
+
+Pricing validated with 4 real test users:
+  All said they would pay $15-20/month
+  Key retention concern: what keeps them coming after reaching goal?
+  Answer: progress tracking + updated targets + social features (later)
+
+=================================================================
+TECH STACK DECISION LOG
+=================================================================
+
+Hosting: Vercel (chosen over Netlify)
+  Reason: Better developer experience, more widely used by startups,
+  easier to migrate away from if needed. Same price (free).
+
+Database + Auth: Supabase (chosen over Firebase, PlanetScale, AWS)
+  Reason: Built on PostgreSQL (scales to millions of users),
+  includes auth system, free tier is generous, simple to use.
+  Risk: Venture-backed company still maturing — but since it's
+  standard PostgreSQL underneath, migrating away is straightforward.
+
+Current stack: Vanilla HTML + CSS + JS (no framework)
+Future consideration: When the app splits into multiple pages
+  and gets more complex, consider React or Vue. Not needed yet.
+
+Payments: Stripe
+  Reason: Industry standard, handles subscriptions + taxes + payouts,
+  2.9% + $0.30 per transaction, no monthly fee until meaningful scale.
+
+=================================================================
+END OF BUILD CONTEXT 3
+=================================================================
