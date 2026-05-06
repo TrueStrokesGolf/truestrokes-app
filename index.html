@@ -4270,12 +4270,9 @@ function buildWarmUp() {
   // 3. Putting section — always, unless it's already priority 1
   const p1Steps  = (WARMUP_STEPS[priority1] || {})[wt] || [];
 
-  // For 30+ min, weave in priority 2 steps (just the first 1-2)
-  const p2Steps  = (wt === '30min' || wt === '45min') && priority2 !== priority1
-    ? ((WARMUP_STEPS[priority2] || {})[wt] || []).slice(0, wt === '45min' ? 2 : 1)
-    : [];
-
   // Putting add-on: only if putting isn't already priority 1
+  // p1Steps + puttingaddon = exactly the selected time (verified by unit test)
+  // We removed the p2 weave-in because it pushed totals over budget
   const puttingaddon = priority1 !== 'Putting' ? PUTTING_ADDON[wt] : null;
 
   // Render all sections
@@ -4302,7 +4299,6 @@ function buildWarmUp() {
   }
 
   allSteps += renderSection(p1Steps, priority1);
-  if (p2Steps.length) allSteps += renderSection(p2Steps, priority2);
   if (puttingaddon) allSteps += renderSection([puttingaddon], 'Putting');
 
   // Total time estimate
