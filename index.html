@@ -2282,7 +2282,7 @@ function initRouter() {
   if (hasSavedData) {
     // Returning user — show the app directly
     enterApp();
-  // } else {
+  } else {
     // First-time visitor — show the marketing landing page
     document.getElementById('landing-page').style.display = 'flex';
     document.getElementById('landing-page').style.flexDirection = 'column';
@@ -3073,7 +3073,7 @@ function getPercentileInfo(estHcp) {
   } else if (top >= 22) {
     stat = `Better than ${better}% of golfers`;
     sub  = `You're among the bottom third of registered golfers — but you're here, tracking your game and working on it. That already puts you ahead of the 70% of golfers who never measure their performance at all.`;
-  // } else {
+  } else {
     stat = `Better than ${better}% of golfers`;
     sub  = `Every golfer starts somewhere. The fact that you're measuring your game puts you ahead of millions who just guess. Your plan will change this number fast.`;
   }
@@ -3383,7 +3383,7 @@ function updatePlanTeaser() {
     headingEl.textContent = 'Your Practice Plan is Built';
     subEl.textContent     = 'Tier-specific drills ready for your game. Start Session 1 and begin tracking your progress.';
     btnEl.textContent     = 'Start Session 1 →';
-  // } else {
+  } else {
     headingEl.textContent = `Session ${nextNum} is Ready`;
     subEl.textContent     = `${sessions.length} session${sessions.length!==1?'s':''} completed. Keep the momentum going.`;
     btnEl.textContent     = `Go to Session ${nextNum} →`;
@@ -3840,7 +3840,7 @@ function saveDrillResult(drillId, drillName, category, sessionNum) {
 
   if (allDone) {
     setTimeout(() => markSessionComplete(sessionNum), 300);
-  // } else {
+  } else {
     renderTodaySession();
   }
 }
@@ -3924,7 +3924,7 @@ function toggleDrillCheck(drillId, sessionNum) {
 
   if (set.has(drillId)) {
     set.delete(drillId);
-  // } else {
+  } else {
     set.add(drillId);
   }
 
