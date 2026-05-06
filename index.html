@@ -2523,6 +2523,9 @@ function showPage(page) {
     } else {
       document.getElementById('results').style.display = 'block';
       document.getElementById('nav-results').classList.add('active');
+      // Re-render the results content in case it was populated via
+      // silentCalculate (which sets lastResults but doesn't render the DOM)
+      renderAnalysisPage(lastResults);
     }
   } else if (page === 'addround') {
     document.getElementById('form-section').style.display = 'block';
@@ -4468,7 +4471,24 @@ function showError(msg) {
 function hideError() { document.getElementById('error-msg').style.display='none'; }
 
 // ═══════════════════════════════════════════════════
-// SILENT CALCULATE
+// RENDER ANALYSIS PAGE
+// WHY: displayResults() both renders AND switches to the results page.
+// When a returning user navigates to My Analysis via the nav, the page
+// is already visible but the DOM is empty (silentCalculate only sets
+// lastResults, it doesn't render anything). This function re-renders
+// all the content without the page-switching side effects.
+// ═══════════════════════════════════════════════════
+function renderAnalysisPage(d) {
+  if (!d) return;
+  // Temporarily suppress the page-switch behavior by saving/restoring display state
+  const resultsEl = document.getElementById('results');
+  const wasVisible = resultsEl && resultsEl.style.display !== 'none';
+  // Call displayResults which renders everything — it will also set display:block
+  // which is fine since showPage already did that
+  displayResults(d);
+}
+
+// ═══════════════════════════════════════════════════
 // WHY: When a returning user opens the app, we need lastResults populated
 // so the dashboard and other pages work — but we don't want to trigger
 // the full displayResults() which shows the results page. This runs the
