@@ -1167,91 +1167,151 @@
     /* ═══════════════════════════════════════════
        TODAY'S SESSION — DRILL CARDS
     ═══════════════════════════════════════════ */
+
+    /* Session banner — coach card feel at the top */
+    .session-banner {
+      background: linear-gradient(135deg, var(--green-800), var(--green-700));
+      color: white;
+      border-radius: var(--radius-md) var(--radius-md) 0 0;
+      padding: 20px 24px;
+    }
+    .session-banner-eyebrow {
+      font-size: 0.65rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1.8px;
+      opacity: 0.6;
+      margin-bottom: 6px;
+      font-family: var(--font-ui);
+    }
+    .session-banner-focus {
+      font-family: var(--font-display);
+      font-size: 1.4rem;
+      font-weight: 700;
+      margin-bottom: 8px;
+      line-height: 1.2;
+    }
+    .session-banner-meta {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .session-banner-pill {
+      background: rgba(255,255,255,0.15);
+      border-radius: 50px;
+      padding: 3px 10px;
+      font-size: 0.72rem;
+      font-family: var(--font-ui);
+    }
+    .session-banner-progress {
+      font-size: 0.72rem;
+      opacity: 0.7;
+      font-family: var(--font-ui);
+    }
+
+    /* Drill list container — sits below banner */
     .session-card {
       background: var(--white);
       border-radius: 0 0 var(--radius-md) var(--radius-md);
-      padding: 24px;
-      margin-bottom: 0;
+      padding: 16px 20px 20px;
       box-shadow: var(--shadow-sm);
     }
-    .session-header {
-      display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
-      margin-bottom: 20px;
-      flex-wrap: wrap;
-      gap: 12px;
-    }
-    .session-num {
-      font-size: 0.68rem;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 1.5px;
-      color: var(--green-700);
-      margin-bottom: 4px;
-    }
-    .session-title {
-      font-family: var(--font-display);
-      font-size: 1.3rem;
-      font-weight: 600;
-      color: var(--text-primary);
-    }
-    .session-meta { font-size: 0.8rem; color: var(--text-muted); margin-top: 4px; }
+
+    /* Legacy — kept for compat */
+    .session-header { display: none; }
+    .session-num { display: none; }
+    .session-title { display: none; }
+    .session-meta { display: none; }
     .session-complete-badge {
-      background: var(--green-100);
-      color: var(--green-700);
-      border-radius: 50px;
-      padding: 6px 14px;
-      font-size: 0.78rem;
-      font-weight: 700;
-      display: none;
-      align-items: center;
-      gap: 6px;
+      background: var(--green-100); color: var(--green-700);
+      border-radius: 50px; padding: 6px 14px;
+      font-size: 0.78rem; font-weight: 700;
+      display: none; align-items: center; gap: 6px;
     }
     .session-complete-badge.visible { display: flex; }
 
-    /* Drill item */
+    /* Drill item — compact, scannable */
     .drill-item {
       border: 1.5px solid var(--border-light);
       border-radius: var(--radius-md);
-      padding: 18px 20px;
-      margin-bottom: 12px;
-      transition: all 0.2s;
-      position: relative;
+      margin-bottom: 8px;
+      transition: border-color 0.15s, background 0.15s;
+      overflow: hidden;
     }
     .drill-item:last-child { margin-bottom: 0; }
-    .drill-item.checked { border-color: var(--green-300); background: var(--green-50); opacity: 0.75; }
-    .drill-item-header { display: flex; align-items: flex-start; gap: 14px; }
+    .drill-item.checked { border-color: var(--green-300); background: var(--green-50); }
+
+    /* Top row — always visible: checkbox + name + where + expand toggle */
+    .drill-item-top-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 16px;
+      cursor: pointer; /* tapping the row expands/collapses details */
+    }
     .drill-checkbox {
-      width: 24px; height: 24px;
+      width: 22px; height: 22px;
       border-radius: 50%;
       border: 2px solid var(--border);
       display: flex; align-items: center; justify-content: center;
-      cursor: pointer; flex-shrink: 0;
+      flex-shrink: 0;
       transition: all 0.2s;
-      margin-top: 2px;
       background: white;
+      font-size: 0.75rem;
     }
     .drill-checkbox.checked { background: var(--green-700); border-color: var(--green-700); color: white; }
-    .drill-item-body { flex: 1; min-width: 0; }
-    .drill-item-top { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 6px; }
-    .drill-cat-tag {
-      font-size: 0.6rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      padding: 2px 8px;
-      border-radius: 50px;
+
+    .drill-item-summary { flex: 1; min-width: 0; }
+    .drill-item-top {
+      display: flex; align-items: center; gap: 6px;
+      flex-wrap: wrap; margin-bottom: 2px;
     }
-    .drill-item-name { font-size: 0.96rem; font-weight: 600; color: var(--text-primary); }
+    .drill-cat-tag {
+      font-size: 0.58rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 1px;
+      padding: 2px 7px; border-radius: 50px;
+    }
+    .drill-item-name {
+      font-size: 0.92rem; font-weight: 600; color: var(--text-primary);
+    }
     .drill-item.checked .drill-item-name { text-decoration: line-through; color: var(--text-muted); }
-    .drill-item-where { font-size: 0.72rem; color: var(--text-muted); margin-bottom: 8px; display: flex; align-items: center; gap: 4px; }
-    .drill-item-desc { font-size: 0.85rem; color: var(--text-secondary); line-height: 1.65; margin-bottom: 8px; }
-    .drill-item-goal { font-size: 0.8rem; color: var(--green-700); font-style: italic; margin-bottom: 10px; }
-    .drill-sparkline { display: flex; align-items: center; gap: 8px; margin-top: 6px; margin-bottom: 2px; }
-    .drill-sparkline-label { font-size: 0.67rem; color: var(--text-muted); white-space: nowrap; }
-    .drill-item-footer { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
-    .drill-item-yt { font-size: 0.75rem; color: var(--red); font-weight: 700; text-decoration: none; }
+    .drill-item-where {
+      font-size: 0.68rem; color: var(--text-muted);
+      display: flex; align-items: center; gap: 3px;
+    }
+
+    /* Expand toggle chevron */
+    .drill-expand-toggle {
+      font-size: 0.72rem; color: var(--text-muted);
+      flex-shrink: 0; transition: transform 0.2s;
+      padding: 4px;
+    }
+    .drill-item.expanded .drill-expand-toggle { transform: rotate(180deg); }
+
+    /* Detail panel — hidden by default, shown when expanded */
+    .drill-item-detail {
+      display: none;
+      padding: 0 16px 14px 50px; /* indent to align with name */
+      border-top: 1px solid var(--border-light);
+    }
+    .drill-item.expanded .drill-item-detail { display: block; }
+    /* Checked drills collapse their instructions (detail panel) automatically.
+       The result form lives outside this panel so it stays visible. */
+    .drill-item.checked .drill-item-detail { display: none; }
+
+    .drill-item-desc {
+      font-size: 0.84rem; color: var(--text-secondary);
+      line-height: 1.6; margin: 12px 0 8px;
+    }
+    .drill-item-goal {
+      font-size: 0.78rem; color: var(--green-700);
+      font-style: italic; margin-bottom: 10px;
+    }
+    .drill-sparkline { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+    .drill-sparkline-label { font-size: 0.65rem; color: var(--text-muted); white-space: nowrap; }
+    .drill-item-footer { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-top: 8px; }
+    .drill-item-yt { font-size: 0.74rem; color: var(--red); font-weight: 700; text-decoration: none; }
     .drill-item-yt:hover { text-decoration: underline; }
 
     /* Drill result form */
@@ -3906,111 +3966,112 @@ function getSessionLabel(drills) {
 
 // Render the current "today's session"
 function renderTodaySession() {
-  const wrap     = document.getElementById('today-session-wrap');
-  const sessions = getCompletedSessions();
-  const nextNum  = sessions.length + 1;
+  const wrap       = document.getElementById('today-session-wrap');
+  const sessions   = getCompletedSessions();
+  const nextNum    = sessions.length + 1;
   const inProgress = getInProgressSession();
   const sessionNum = inProgress ? inProgress.sessionNum : nextNum;
   const drills     = buildSessionDrills(sessionNum);
   const checked    = inProgress ? new Set(inProgress.checkedDrillIds) : new Set();
   const doneCount  = drills.filter(d => checked.has(d.id)).length;
+  const allDone    = drills.length > 0 && doneCount === drills.length;
 
-  const tierLabel = lastResults ? lastResults.current.label : '';
-  const settings  = getSettings();
-  const lenLabel  = {'30min':'30 min','45min':'45 min','60min':'60 min','90min':'90 min'}[settings.sessionLength] || '';
+  const settings = getSettings();
+  const lenLabel = {'30min':'30 min','45min':'45 min','60min':'60 min','90min':'90 min'}[settings.sessionLength] || '';
+  const { label: sessionFocusLabel } = getSessionLabel(drills);
 
-  // Accurate session label based on actual drills assigned
-  const { label: sessionFocusLabel, detail: sessionDetail } = getSessionLabel(drills);
-  const catColors = {'Approach Shots':'#c8960a','Short Game':'#1565c0','Driving':'#c62828','Putting':'#e65100'};
-  // For single-focus sessions, color the label; mixed sessions use neutral
-  const unique = [...new Set(drills.map(d => d.cat))];
-  const focusColor = unique.length === 1 ? (catColors[unique[0]] || '#1b4332') : '#555';
+  // Progress text shown in banner
+  const progressText = doneCount > 0
+    ? `${doneCount} of ${drills.length} done`
+    : `${drills.length} drills`;
 
-  const progressPill = doneCount > 0
-    ? `<span style="background:#e8f5e9;color:#2d6a4f;border-radius:20px;padding:4px 12px;font-size:0.75rem;font-weight:bold;">${doneCount} of ${drills.length} done</span>`
-    : '';
-
+  // WHY a separate banner above the card:
+  // The old session-header was flat metadata. A green coach-card banner makes
+  // the focus feel like an assignment, not a label. Users know immediately
+  // what they're working on before they look at a single drill.
   wrap.innerHTML = `
-    <div class="session-card">
-      <div class="session-header">
-        <div>
-          <div class="session-num">Session ${sessionNum} · ${lenLabel} · ${tierLabel}</div>
-          <div class="session-title">Today's Practice</div>
-          <div class="session-meta" style="margin-top:6px;">
-            <strong style="color:${focusColor}">${sessionFocusLabel}</strong>
-            ${sessionDetail ? `<span style="color:#bbb;margin-left:6px;">· ${sessionDetail}</span>` : ''}
-            ${progressPill ? `<span style="margin-left:8px;">${progressPill}</span>` : ''}
-          </div>
-        </div>
+    <div class="session-banner">
+      <div class="session-banner-eyebrow">Session ${sessionNum} · ${lenLabel}</div>
+      <div class="session-banner-focus">${sessionFocusLabel}</div>
+      <div class="session-banner-meta">
+        <span class="session-banner-pill">${progressText}</span>
+        ${allDone ? '<span class="session-banner-pill">✓ Complete</span>' : ''}
       </div>
+    </div>
 
+    <div class="session-card">
       <div id="drill-list">
         ${drills.length === 0
-          ? `<p style="color:#aaa;font-size:0.88rem;padding:20px 0;">No drills found for your settings. <a href="javascript:void(0)" onclick="showPage('settings')" style="color:#2d6a4f;">Check Settings →</a></p>`
+          ? `<p style="color:var(--text-muted);font-size:0.88rem;padding:20px 0;text-align:center;">
+               No drills found for your settings.
+               <a href="javascript:void(0)" onclick="showPage('settings')" style="color:var(--green-700);font-weight:600;">Check Settings →</a>
+             </p>`
           : drills.map((drill, i) => renderDrillItem(drill, checked.has(drill.id), i, sessionNum)).join('')
         }
       </div>
-
-      <p style="font-size:0.75rem;color:#bbb;margin-top:16px;text-align:center;">
-        Check off each drill as you complete it — session saves automatically when all are done.
-      </p>
+      ${drills.length > 0 ? `
+        <p style="font-size:0.72rem;color:var(--text-muted);margin-top:14px;text-align:center;">
+          Tap a drill to see instructions · check off when done
+        </p>` : ''}
     </div>`;
 }
 
 function renderDrillItem(drill, isChecked, index, sessionNum) {
   const catColor = {'Approach Shots':'#c8960a','Short Game':'#1565c0','Driving':'#c62828','Putting':'#e65100'}[drill.cat] || '#2d6a4f';
   const locIcon  = drill.type === 'noball' ? '🏠 At Home' : drill.where;
-
-  // Direct channel search link — always routes to the right instructor's videos
-
-  // Sparkline: show trend from previous attempts on this drill
   const sparkline = buildSparkline(drill.id, drill.scoreMax || 10);
 
-  // After checking off: show inline "How did it go?" form
-  const resultForm = isChecked ? `
-    <div class="drill-result-form" id="result-form-${drill.id}">
-      <div class="drill-result-title">How did it go?</div>
-      <div class="drill-result-row">
-        <span class="drill-result-label">Result</span>
-        <input type="number" class="drill-result-score" id="score-${drill.id}"
-          placeholder="e.g. 7" min="0" max="99" style="width:60px;"/>
-        <span style="font-size:0.82rem;color:#888;">/ ${drill.scoreMax || 10}</span>
-      </div>
-      <div class="drill-result-row" style="margin-top:8px;">
-        <span class="drill-result-label">Feel</span>
-        <div class="drill-feel-btns" id="feel-${drill.id}">
-          <button class="drill-feel-btn" onclick="setFeel('${drill.id}','💪 Strong')">💪 Strong</button>
-          <button class="drill-feel-btn" onclick="setFeel('${drill.id}','😐 OK')">😐 OK</button>
-          <button class="drill-feel-btn" onclick="setFeel('${drill.id}','😤 Struggled')">😤 Struggled</button>
-        </div>
-      </div>
-      <button class="drill-result-save" onclick="saveDrillResult('${drill.id}','${drill.name.replace(/'/g,"\\'")}','${drill.cat}',${sessionNum})">
-        Save & Continue →
-      </button>
-    </div>` : '';
+  // WHY collapsible drill cards:
+  // Name + where tells an experienced golfer almost everything.
+  // Desc + goal expand on tap — reduces overwhelm, keeps list scannable.
+  // Checked drills auto-collapse via CSS so the list compresses as you work through it.
 
+  // Result form is now injected dynamically by toggleDrillCheck — not rendered statically.
+  // This avoids the re-render-everything problem that was resetting expanded states.
+  const resultForm = '';
+
+  // WHY expanded class on checked drills:
+  // The result form needs to be visible after checking off.
+  // We move the form OUTSIDE .drill-item-detail so it isn't hidden by
+  // the .drill-item.checked .drill-item-detail { display:none } rule.
+  // The detail panel (instructions) collapses on check — the form stays visible.
   return `
     <div class="drill-item ${isChecked ? 'checked' : ''}" id="drill-item-${drill.id}">
-      <div class="drill-item-header">
+      <div class="drill-item-top-row" onclick="toggleDrillExpand('${drill.id}')">
         <div class="drill-checkbox ${isChecked ? 'checked' : ''}"
-          onclick="toggleDrillCheck('${drill.id}',${sessionNum})">
+          onclick="event.stopPropagation(); toggleDrillCheck('${drill.id}',${sessionNum})">
           ${isChecked ? '✓' : ''}
         </div>
-        <div class="drill-item-body">
+        <div class="drill-item-summary">
           <div class="drill-item-top">
             <span class="drill-cat-tag" style="background:${catColor}22;color:${catColor};">${drill.cat}</span>
             <span class="drill-item-name">${drill.name}</span>
           </div>
           <div class="drill-item-where">${locIcon} · <em>${drill.sets}</em></div>
-          ${!isChecked ? `
-            <div class="drill-item-desc">${drill.desc}</div>
-            <div class="drill-item-goal">🎯 ${drill.goal}</div>
-            ${sparkline}` : ''}
-          ${resultForm}
         </div>
+        ${!isChecked ? '<span class="drill-expand-toggle">▾</span>' : ''}
       </div>
+
+      <!-- Instructions — only visible when expanded, auto-hides when checked -->
+      <div class="drill-item-detail">
+        <div class="drill-item-desc">${drill.desc}</div>
+        <div class="drill-item-goal">🎯 ${drill.goal}</div>
+        ${sparkline}
+      </div>
+
+      <!-- Result form injected here dynamically by toggleDrillCheck -->
     </div>`;
 }
+
+// Toggle drill detail expand/collapse
+// Tap row = see instructions. Check circle = mark done. Two different actions.
+function toggleDrillExpand(drillId) {
+  const item = document.getElementById('drill-item-' + drillId);
+  if (item && !item.classList.contains('checked')) {
+    item.classList.toggle('expanded');
+  }
+}
+
 
 // Track selected "feel" per drill
 const _drillFeels = {};
@@ -4042,13 +4103,9 @@ function setFeel(drillId, feel) {
 //     and will map to a video record when a video API is integrated
 
 function saveDrillResult(drillId, drillName, category, sessionNum) {
-  const scoreEl = document.getElementById(`score-${drillId}`);
+  const scoreEl = document.getElementById('score-' + drillId);
   const score   = scoreEl ? scoreEl.value.trim() : '';
   const feel    = _drillFeels[drillId] || '';
-
-  if (!score && !feel) {
-    // Allow skipping — just move on
-  }
 
   // Save to drill results log
   const results = getDrillResults();
@@ -4062,17 +4119,37 @@ function saveDrillResult(drillId, drillName, category, sessionNum) {
   localStorage.setItem('truestrokes_drill_results', JSON.stringify(results));
   delete _drillFeels[drillId];
 
-  // Check if all drills are checked AND this was the last result form.
-  // If so, auto-complete the session now that every drill has been logged.
+  // WHY replace the form in place instead of re-rendering the whole session:
+  // Re-rendering resets all expanded states and feels jarring.
+  // Instead: swap the result form for a small "Saved ✓" confirmation,
+  // then check if the session is fully complete.
+  const formEl = document.getElementById('result-form-' + drillId);
+  if (formEl) {
+    const saved = score ? `${score} / ${formEl.querySelector('span')?.textContent?.replace('/ ','') || '10'}` : '';
+    const feelText = feel ? feel.split(' ')[0] : '';
+    formEl.innerHTML = `
+      <div style="display:flex;align-items:center;gap:8px;padding:8px 0;font-size:0.82rem;color:var(--green-700);font-weight:600;">
+        ✓ Logged ${saved ? '· ' + saved : ''} ${feelText}
+      </div>`;
+  }
+
+  // Check if all drills are now done — if so, complete the session
   const drills  = buildSessionDrills(sessionNum);
   const inProg  = getInProgressSession();
   const checked = inProg ? new Set(inProg.checkedDrillIds) : new Set();
   const allDone = drills.length > 0 && drills.every(d => checked.has(d.id));
 
   if (allDone) {
-    setTimeout(() => markSessionComplete(sessionNum), 300);
+    setTimeout(() => markSessionComplete(sessionNum), 600);
   } else {
-    renderTodaySession();
+    // Just update the banner progress count — no full re-render
+    const wrap = document.getElementById('today-session-wrap');
+    const bannerProgress = wrap ? wrap.querySelector('.session-banner-progress') : null;
+    const doneCount = drills.filter(d => checked.has(d.id)).length;
+    if (bannerProgress) bannerProgress.textContent = doneCount + ' of ' + drills.length + ' done';
+    // Also update the pill in the banner
+    const pill = wrap ? wrap.querySelector('.session-banner-pill') : null;
+    if (pill) pill.textContent = doneCount + ' of ' + drills.length + ' done';
   }
 }
 
@@ -4152,20 +4229,78 @@ function toggleDrillCheck(drillId, sessionNum) {
   const drills     = buildSessionDrills(sessionNum);
   const inProgress = getInProgressSession() || { sessionNum, checkedDrillIds: [] };
   const set        = new Set(inProgress.checkedDrillIds);
+  const nowChecked = !set.has(drillId);
 
-  if (set.has(drillId)) {
-    set.delete(drillId);
-  } else {
-    set.add(drillId);
-  }
+  if (nowChecked) { set.add(drillId); } else { set.delete(drillId); }
 
   inProgress.checkedDrillIds = [...set];
   inProgress.sessionNum      = sessionNum;
   saveInProgressSession(inProgress);
 
-  // Always re-render so the result form shows on the newly-checked drill.
-  // Auto-complete fires from saveDrillResult once the last form is submitted.
-  renderTodaySession();
+  // WHY update in place instead of re-rendering:
+  // renderTodaySession() rebuilds the entire list — every card loses its
+  // expanded/collapsed state and scroll position resets. Feels broken.
+  // Instead: update just the card that was checked.
+  // 1. Toggle the visual checked state (circle + strikethrough)
+  // 2. Show or hide the result form
+  // 3. Collapse the instructions (detail panel) when checked
+  const cardEl   = document.getElementById('drill-item-' + drillId);
+  const checkEl  = cardEl ? cardEl.querySelector('.drill-checkbox') : null;
+  const formEl   = cardEl ? cardEl.querySelector('.drill-result-form') : null;
+
+  if (cardEl) {
+    cardEl.classList.toggle('checked', nowChecked);
+    cardEl.classList.remove('expanded'); // collapse instructions either way
+  }
+  if (checkEl) {
+    checkEl.classList.toggle('checked', nowChecked);
+    checkEl.textContent = nowChecked ? '✓' : '';
+  }
+
+  // If checking: inject the result form below the top row
+  // If unchecking: remove the result form
+  if (nowChecked) {
+    const drill = drills.find(d => d.id === drillId);
+    if (drill && cardEl && !formEl) {
+      const form = document.createElement('div');
+      form.className = 'drill-result-form';
+      form.id = 'result-form-' + drillId;
+      form.style.margin = '0 16px 14px';
+      form.innerHTML = `
+        <div class="drill-result-title">How did it go?</div>
+        <div class="drill-result-row">
+          <span class="drill-result-label">Result</span>
+          <input type="number" class="drill-result-score" id="score-${drillId}"
+            placeholder="e.g. 7" min="0" max="99" style="width:60px;"/>
+          <span style="font-size:0.82rem;color:#888;">/ ${drill.scoreMax || 10}</span>
+        </div>
+        <div class="drill-result-row" style="margin-top:8px;">
+          <span class="drill-result-label">Feel</span>
+          <div class="drill-feel-btns" id="feel-${drillId}">
+            <button class="drill-feel-btn" onclick="setFeel('${drillId}','💪 Strong')">💪 Strong</button>
+            <button class="drill-feel-btn" onclick="setFeel('${drillId}','😐 OK')">😐 OK</button>
+            <button class="drill-feel-btn" onclick="setFeel('${drillId}','😤 Struggled')">😤 Struggled</button>
+          </div>
+        </div>
+        <button class="drill-result-save"
+          data-drill-id="${drillId}"
+          data-drill-name="${(drill.name||'').replace(/"/g,'&quot;')}"
+          data-drill-cat="${drill.cat}"
+          data-session-num="${sessionNum}"
+          onclick="saveDrillResult(this.dataset.drillId, this.dataset.drillName, this.dataset.drillCat, parseInt(this.dataset.sessionNum))">
+          Save &amp; Continue →
+        </button>`;
+      cardEl.appendChild(form);
+    }
+  } else {
+    // Unchecking — remove the form if present
+    if (formEl) formEl.remove();
+  }
+
+  // Update banner pill
+  const doneCount = drills.filter(d => set.has(d.id)).length;
+  const pill = document.querySelector('.session-banner-pill');
+  if (pill) pill.textContent = doneCount + ' of ' + drills.length + ' done';
 }
 
 function getInProgressSession() {
