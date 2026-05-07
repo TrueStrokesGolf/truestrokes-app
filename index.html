@@ -1314,6 +1314,43 @@
     .drill-item-yt { font-size: 0.74rem; color: var(--red); font-weight: 700; text-decoration: none; }
     .drill-item-yt:hover { text-decoration: underline; }
 
+    /* Swap drill button */
+    .btn-swap-drill {
+      font-size: 0.7rem; color: var(--text-muted);
+      background: none; border: 1px solid var(--border);
+      border-radius: var(--radius-sm); padding: 3px 9px;
+      cursor: pointer; font-family: var(--font-ui);
+      transition: all 0.15s; flex-shrink: 0;
+    }
+    .btn-swap-drill:hover { border-color: var(--green-700); color: var(--green-700); }
+    .btn-swap-drill:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    /* AI-generated drill badge */
+    .drill-ai-badge {
+      font-size: 0.58rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.8px;
+      background: var(--green-50); color: var(--green-700);
+      border: 1px solid var(--green-100);
+      border-radius: 50px; padding: 2px 7px;
+    }
+
+    /* Session loading state */
+    .session-loading {
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 40px 20px; gap: 12px;
+      color: var(--text-muted); font-family: var(--font-ui);
+      font-size: 0.88rem;
+    }
+    .session-loading-spinner {
+      width: 28px; height: 28px;
+      border: 3px solid var(--border);
+      border-top-color: var(--green-700);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
     /* Drill result form */
     .drill-result-form {
       margin-top: 12px;
@@ -3895,7 +3932,159 @@ function saveCompletedSession(session) {
 }
 
 // Build the drills for a given session number based on tier + priority + settings
-function buildSessionDrills(sessionNum) {
+// ── DRILL PERFORMANCE HELPERS ────────────────────────────────────────────
+
+// Get drills the golfer struggled with (score < 50% OR feel = Struggled)
+// These get priority slots in the next session
+function getStruggleDrills() {
+  const results = getDrillResults();
+  const seen = new Set();
+  const struggles = [];
+  for (const r of results) {
+    if (seen.has(r.drillId)) continue; // only most recent result per drill
+    seen.add(r.drillId);
+    const scorePct = r.score && r.score !== '—' && r.scoreMax
+      ? parseFloat(r.score) / r.scoreMax
+      : null;
+    const struggled = r.feel === '😤 Struggled';
+    const lowScore  = scorePct !== null && scorePct < 0.5;
+    if (struggled || lowScore) {
+      struggles.push({
+        drillId:   r.drillId,
+        drillName: r.drillName,
+        category:  r.category,
+        score:     r.score,
+        scoreMax:  r.scoreMax,
+        feel:      r.feel,
+      });
+    }
+  }
+  return struggles;
+}
+
+// Get last N drill results across all drills for context
+function getRecentDrillHistory(n = 10) {
+  return getDrillResults().slice(0, n).map(r => ({
+    name:     r.drillName,
+    category: r.category,
+    score:    r.score,
+    feel:     r.feel,
+    date:     r.date,
+  }));
+}
+
+// ── STATIC FALLBACK (original logic, now a named function) ────────────────
+function buildStaticDrills(slotCats, tierGroup, drillType) {
+  const usedIds = new Set(getLog().map(e => e.drillId));
+  const picked = [];
+  const categoryDrillIdx = {};
+
+  slotCats.forEach(cat => {
+    const pool     = (DRILL_LIBRARY[cat] || {})[tierGroup] || [];
+    const filtered = drillType === 'both' ? pool : pool.filter(d => d.type === drillType);
+    const usable   = filtered.length ? filtered : pool;
+    const key      = cat + '-' + tierGroup;
+    if (!categoryDrillIdx[key]) categoryDrillIdx[key] = 0;
+    const unlogged = usable.filter(d => !usedIds.has(d.id));
+    const drill    = unlogged.length > 0
+      ? unlogged[categoryDrillIdx[key] % unlogged.length]
+      : usable[categoryDrillIdx[key] % usable.length];
+    categoryDrillIdx[key]++;
+    if (drill) picked.push({ ...drill, cat });
+  });
+
+  return picked;
+}
+
+// ── CLAUDE API DRILL GENERATOR ────────────────────────────────────────────
+// Calls Claude API to generate fresh drills for the session.
+// Returns array of drill objects matching static library format.
+// Falls back to static library on any error.
+async function generateDrillsFromAPI(slotCats, tierGroup, sessionNum, drillType, struggleDrills, recentHistory) {
+  try {
+    // Build a deduplicated list of categories needed and how many of each
+    const catCounts = {};
+    slotCats.forEach(c => { catCounts[c] = (catCounts[c] || 0) + 1; });
+
+    // Drills to repeat (struggled last time)
+    const repeatDrills = struggleDrills.filter(s => slotCats.includes(s.category));
+
+    const tierLabels = {
+      beginner: '90s-100+ golfer (high handicap, 20+ HCP)',
+      mid:      '80s golfer (mid handicap, 10-20 HCP)',
+      advanced: 'single digit golfer (low handicap, 2-10 HCP)',
+      elite:    'scratch or plus golfer (0 or better HCP)',
+    };
+
+    // WHY string concat instead of template literal:
+    // The prompt is a long string that contains backtick characters (in examples).
+    // You can't nest backtick template literals in JS — the inner backtick
+    // closes the outer one, causing a syntax error. String concat avoids this.
+    const repeatSection = repeatDrills.length > 0
+      ? 'IMPORTANT - These drills must be included again because the golfer struggled:\n' +
+        repeatDrills.map(d => '- "' + d.drillName + '" (' + d.category + ') - scored ' + d.score + ', felt ' + d.feel).join('\n') + '\n'
+      : '';
+
+    const historySection = recentHistory.length > 0
+      ? recentHistory.map(r => '- ' + r.name + ' (' + r.category + ')').join('\n')
+      : 'None yet';
+
+    const drillPref = drillType === 'both' ? 'any drills'
+      : drillType === 'ball' ? 'on-course/range drills only (no at-home)'
+      : 'at-home drills only';
+
+    const prompt = 'You are a PGA-certified golf instructor building a practice session.\n\n' +
+      'Golfer profile:\n' +
+      '- Skill tier: ' + (tierLabels[tierGroup] || tierGroup) + '\n' +
+      '- Session number: ' + sessionNum + ' (higher = more experienced, can handle more complexity)\n' +
+      '- Drill preference: ' + drillPref + '\n\n' +
+      'Drills needed per category: ' + JSON.stringify(catCounts) + '\n\n' +
+      repeatSection +
+      'Recent drill history (avoid repeating these):\n' + historySection + '\n\n' +
+      'Generate exactly ' + slotCats.length + ' golf practice drills. Each must be specific, actionable, and appropriate for the skill level.\n\n' +
+      'Respond ONLY with a JSON array. No explanation, no markdown, no backticks. Each object must have exactly these fields:\n' +
+      '[{"id":"api-[abbrev]-[4digits]","name":"Drill name","cat":"[Approach Shots|Short Game|Driving|Putting]",' +
+      '"type":"[ball|noball]","where":"[location with emoji]","sets":"[sets and reps]",' +
+      '"desc":"[2-3 sentence how-to]","goal":"[measurable success criteria]","scoreMax":10,"aiGenerated":true}]';
+
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        messages: [{ role: 'user', content: prompt }],
+      }),
+    });
+
+    if (!response.ok) throw new Error('API error: ' + response.status);
+
+    const data = await response.json();
+    const text = data.content.map(b => b.text || '').join('').trim();
+
+    // Strip any accidental markdown fences
+    const clean = text.replace(/```json|```/g, '').trim();
+    const drills = JSON.parse(clean);
+
+    // Validate — must be array with required fields
+    if (!Array.isArray(drills)) throw new Error('Not an array');
+    drills.forEach(d => {
+      if (!d.id || !d.name || !d.cat || !d.desc) throw new Error('Missing fields');
+    });
+
+    return drills;
+
+  } catch (err) {
+    console.warn('TrueStrokes: Claude API drill generation failed, using static library.', err);
+    return null; // signals caller to use static fallback
+  }
+}
+
+// ── MAIN SESSION BUILDER (async) ──────────────────────────────────────────
+// WHY async: the Claude API call is a network request — it takes time.
+// async/await lets us wait for it without freezing the UI.
+// The caller (renderTodaySession) shows a loading spinner while we wait.
+async function buildSessionDrills(sessionNum) {
   if (!lastResults) return [];
   const settings   = getSettings();
   const tierGroup  = getTierGroup(lastResults.currentKey);
@@ -3905,7 +4094,7 @@ function buildSessionDrills(sessionNum) {
 
   const drillCount = { '30min':2, '45min':3, '60min':3, '90min':4 }[sessionLen] || 3;
 
-  // Session rotation: repeating pattern that shifts focus each session
+  // Session rotation — which categories fill each slot
   const rotations = [
     [priority[0], priority[0], priority[1], priority[2]||priority[1]],
     [priority[1], priority[0], priority[1], priority[0]],
@@ -3917,28 +4106,35 @@ function buildSessionDrills(sessionNum) {
   const rotation = rotations[(sessionNum - 1) % rotations.length];
   const slotCats = rotation.slice(0, drillCount);
 
-  const usedIds = new Set(getLog().map(e => e.drillId));
-  const picked = [];
-  const categoryDrillIdx = {};
+  // Check for struggled drills — these get priority regardless of source
+  const struggleDrills  = getStruggleDrills();
+  const recentHistory   = getRecentDrillHistory(10);
 
-  slotCats.forEach(cat => {
-    const pool     = (DRILL_LIBRARY[cat] || {})[tierGroup] || [];
-    const filtered = drillType === 'both' ? pool : pool.filter(d => d.type === drillType);
-    const usable   = filtered.length ? filtered : pool;
+  // Try Claude API first (default)
+  const apiDrills = await generateDrillsFromAPI(
+    slotCats, tierGroup, sessionNum, drillType, struggleDrills, recentHistory
+  );
 
-    const key = `${cat}-${tierGroup}`;
-    if (!categoryDrillIdx[key]) categoryDrillIdx[key] = 0;
+  if (apiDrills && apiDrills.length > 0) {
+    // Ensure struggled drills are included — replace matching category slots
+    const final = [...apiDrills];
+    struggleDrills.forEach(s => {
+      if (!slotCats.includes(s.category)) return;
+      // Check if it's already in the API results
+      const alreadyIn = final.some(d => d.name === s.drillName);
+      if (!alreadyIn) {
+        // Find a static drill matching this id to inject
+        const allStatic = Object.values(DRILL_LIBRARY).flatMap(tg => Object.values(tg).flat());
+        const staticDrill = allStatic.find(d => d.id === s.drillId);
+        if (staticDrill) final.unshift({ ...staticDrill, cat: s.category });
+      }
+    });
+    return final.slice(0, drillCount).map(d => ({ ...d, cat: d.cat || slotCats[0] }));
+  }
 
-    const unlogged = usable.filter(d => !usedIds.has(d.id));
-    const drill    = unlogged.length > 0
-      ? unlogged[categoryDrillIdx[key] % unlogged.length]
-      : usable[categoryDrillIdx[key] % usable.length];
-
-    categoryDrillIdx[key]++;
-    if (drill) picked.push({ ...drill, cat });
-  });
-
-  return picked;
+  // Fallback: static library
+  console.log('TrueStrokes: Using static drill library.');
+  return buildStaticDrills(slotCats, tierGroup, drillType);
 }
 
 // Compute a human-readable label for a set of drills.
@@ -3965,30 +4161,44 @@ function getSessionLabel(drills) {
 }
 
 // Render the current "today's session"
-function renderTodaySession() {
-  const wrap       = document.getElementById('today-session-wrap');
+// renderTodaySession is async because buildSessionDrills now calls the Claude API
+async function renderTodaySession() {
+  const wrap = document.getElementById('today-session-wrap');
+  if (!wrap) return;
+
   const sessions   = getCompletedSessions();
   const nextNum    = sessions.length + 1;
   const inProgress = getInProgressSession();
   const sessionNum = inProgress ? inProgress.sessionNum : nextNum;
-  const drills     = buildSessionDrills(sessionNum);
   const checked    = inProgress ? new Set(inProgress.checkedDrillIds) : new Set();
-  const doneCount  = drills.filter(d => checked.has(d.id)).length;
-  const allDone    = drills.length > 0 && doneCount === drills.length;
+  const settings   = getSettings();
+  const lenLabel   = {'30min':'30 min','45min':'45 min','60min':'60 min','90min':'90 min'}[settings.sessionLength] || '';
 
-  const settings = getSettings();
-  const lenLabel = {'30min':'30 min','45min':'45 min','60min':'60 min','90min':'90 min'}[settings.sessionLength] || '';
+  // Show loading spinner while API generates drills
+  // WHY: buildSessionDrills is now async (network call). Without this,
+  // the UI would show blank/stale content while waiting.
+  wrap.innerHTML = `
+    <div class="session-banner">
+      <div class="session-banner-eyebrow">Session ${sessionNum} · ${lenLabel}</div>
+      <div class="session-banner-focus">Building your session...</div>
+      <div class="session-banner-meta"><span class="session-banner-pill">Loading</span></div>
+    </div>
+    <div class="session-card">
+      <div class="session-loading">
+        <div class="session-loading-spinner"></div>
+        <span>Personalizing your drills...</span>
+      </div>
+    </div>`;
+
+  // Await the async drill builder
+  const drills  = await buildSessionDrills(sessionNum);
+  const doneCount = drills.filter(d => checked.has(d.id)).length;
+  const allDone   = drills.length > 0 && doneCount === drills.length;
   const { label: sessionFocusLabel } = getSessionLabel(drills);
-
-  // Progress text shown in banner
   const progressText = doneCount > 0
     ? `${doneCount} of ${drills.length} done`
-    : `${drills.length} drills`;
+    : `${drills.length} drill${drills.length !== 1 ? 's' : ''}`;
 
-  // WHY a separate banner above the card:
-  // The old session-header was flat metadata. A green coach-card banner makes
-  // the focus feel like an assignment, not a label. Users know immediately
-  // what they're working on before they look at a single drill.
   wrap.innerHTML = `
     <div class="session-banner">
       <div class="session-banner-eyebrow">Session ${sessionNum} · ${lenLabel}</div>
@@ -3998,7 +4208,6 @@ function renderTodaySession() {
         ${allDone ? '<span class="session-banner-pill">✓ Complete</span>' : ''}
       </div>
     </div>
-
     <div class="session-card">
       <div id="drill-list">
         ${drills.length === 0
@@ -4059,6 +4268,19 @@ function renderDrillItem(drill, isChecked, index, sessionNum) {
         ${sparkline}
       </div>
 
+      <!-- Swap button + AI badge — outside detail panel so always accessible -->
+      <!-- shown below the top row but above the result form -->
+      <div class="drill-item-actions" style="padding:0 16px 12px 50px;display:flex;align-items:center;gap:8px;">
+        <button class="btn-swap-drill"
+          data-drill-id="${drill.id}"
+          data-drill-cat="${drill.cat}"
+          data-session-num="${sessionNum}"
+          onclick="event.stopPropagation(); swapDrill(this)">
+          ⟳ Swap
+        </button>
+        ${drill.aiGenerated ? '<span class="drill-ai-badge">✦ AI</span>' : ''}
+      </div>
+
       <!-- Result form injected here dynamically by toggleDrillCheck -->
     </div>`;
 }
@@ -4069,6 +4291,79 @@ function toggleDrillExpand(drillId) {
   const item = document.getElementById('drill-item-' + drillId);
   if (item && !item.classList.contains('checked')) {
     item.classList.toggle('expanded');
+  }
+}
+
+// Swap a drill the golfer doesn't want.
+// Calls Claude API for one replacement in the same category/tier.
+// Falls back to a different static drill if API fails.
+// WHY we pass the button element: we need to disable it during loading
+// and update just this card without re-rendering the entire session.
+async function swapDrill(btnEl) {
+  const drillId    = btnEl.dataset.drillId;
+  const cat        = btnEl.dataset.drillCat;
+  const sessionNum = parseInt(btnEl.dataset.sessionNum);
+  const cardEl     = document.getElementById('drill-item-' + drillId);
+  if (!cardEl || !lastResults) return;
+
+  // Disable button and show loading
+  btnEl.disabled    = true;
+  btnEl.textContent = '⟳ Finding a drill...';
+
+  const tierGroup     = getTierGroup(lastResults.currentKey);
+  const settings      = getSettings();
+  const drillType     = settings.drillType;
+  const recentHistory = getRecentDrillHistory(10);
+
+  // Track swapped-out drill so it doesn't come back
+  const swappedKey = 'truestrokes_swapped';
+  let swapped = [];
+  try { swapped = JSON.parse(localStorage.getItem(swappedKey) || '[]'); } catch(e) {}
+  if (!swapped.includes(drillId)) {
+    swapped.push(drillId);
+    localStorage.setItem(swappedKey, JSON.stringify(swapped));
+  }
+
+  // Try API for a fresh drill
+  const apiDrills = await generateDrillsFromAPI(
+    [cat], tierGroup, sessionNum, drillType, [], recentHistory
+  );
+
+  let newDrill = null;
+
+  if (apiDrills && apiDrills.length > 0) {
+    newDrill = { ...apiDrills[0], cat };
+  } else {
+    // Static fallback — pick a drill not already used or swapped
+    const pool = (DRILL_LIBRARY[cat] || {})[tierGroup] || [];
+    const usedIds = new Set([
+      ...getLog().map(e => e.drillId),
+      ...swapped,
+      drillId,
+    ]);
+    const unused = pool.filter(d => !usedIds.has(d.id));
+    newDrill = unused.length > 0
+      ? { ...unused[0], cat }
+      : pool.length > 0 ? { ...pool[0], cat } : null;
+  }
+
+  if (!newDrill) {
+    btnEl.disabled    = false;
+    btnEl.textContent = '⟳ Swap this drill';
+    btnEl.style.color = 'var(--red)';
+    setTimeout(() => { btnEl.style.color = ''; btnEl.textContent = '⟳ Swap'; }, 2000);
+    return;
+  }
+
+  // Re-render just this card with the new drill in place
+  // We need the card element fresh since btnEl may be inside it
+  const freshCard = document.getElementById('drill-item-' + drillId);
+  if (freshCard) {
+    const isChecked = freshCard.classList.contains('checked');
+    freshCard.outerHTML = renderDrillItem(newDrill, isChecked, 0, sessionNum);
+    // Auto-expand the new card so user sees the instructions
+    const newCard = document.getElementById('drill-item-' + newDrill.id);
+    if (newCard) newCard.classList.add('expanded');
   }
 }
 
@@ -4133,23 +4428,21 @@ function saveDrillResult(drillId, drillName, category, sessionNum) {
       </div>`;
   }
 
-  // Check if all drills are now done — if so, complete the session
-  const drills  = buildSessionDrills(sessionNum);
-  const inProg  = getInProgressSession();
-  const checked = inProg ? new Set(inProg.checkedDrillIds) : new Set();
-  const allDone = drills.length > 0 && drills.every(d => checked.has(d.id));
+  // Check if all drills done by counting checked IDs vs the rendered drill list
+  // WHY: we avoid calling buildSessionDrills() here (it's now async/API).
+  // Instead, count the drill cards currently rendered on the page.
+  const inProg      = getInProgressSession();
+  const checkedIds  = inProg ? inProg.checkedDrillIds : [];
+  const renderedCards = document.querySelectorAll('#drill-list .drill-item');
+  const totalDrills   = renderedCards.length;
+  const doneCount     = checkedIds.length;
+  const allDone       = totalDrills > 0 && doneCount >= totalDrills;
 
   if (allDone) {
     setTimeout(() => markSessionComplete(sessionNum), 600);
   } else {
-    // Just update the banner progress count — no full re-render
-    const wrap = document.getElementById('today-session-wrap');
-    const bannerProgress = wrap ? wrap.querySelector('.session-banner-progress') : null;
-    const doneCount = drills.filter(d => checked.has(d.id)).length;
-    if (bannerProgress) bannerProgress.textContent = doneCount + ' of ' + drills.length + ' done';
-    // Also update the pill in the banner
-    const pill = wrap ? wrap.querySelector('.session-banner-pill') : null;
-    if (pill) pill.textContent = doneCount + ' of ' + drills.length + ' done';
+    const pill = document.querySelector('.session-banner-pill');
+    if (pill) pill.textContent = doneCount + ' of ' + totalDrills + ' done';
   }
 }
 
@@ -4226,7 +4519,9 @@ function buildSparkline(drillId, scoreMax) {
 }
 
 function toggleDrillCheck(drillId, sessionNum) {
-  const drills     = buildSessionDrills(sessionNum);
+  // WHY no buildSessionDrills here: it's async (API call) and we don't need
+  // the full drill list — just the one drill being checked. We find it from
+  // the static library or from data already on the rendered card.
   const inProgress = getInProgressSession() || { sessionNum, checkedDrillIds: [] };
   const set        = new Set(inProgress.checkedDrillIds);
   const nowChecked = !set.has(drillId);
@@ -4260,7 +4555,22 @@ function toggleDrillCheck(drillId, sessionNum) {
   // If checking: inject the result form below the top row
   // If unchecking: remove the result form
   if (nowChecked) {
-    const drill = drills.find(d => d.id === drillId);
+    // Look up drill from static library; API-generated drills store their
+    // data in the card's data attributes via the swap button
+    const allStatic = Object.values(DRILL_LIBRARY).flatMap(tg => Object.values(tg).flat());
+    let drill = allStatic.find(d => d.id === drillId);
+    // For API-generated drills, read from the swap button's data attributes
+    if (!drill && cardEl) {
+      const swapBtn = cardEl.querySelector('.btn-swap-drill');
+      if (swapBtn) {
+        drill = {
+          id: drillId,
+          cat: swapBtn.dataset.drillCat,
+          scoreMax: 10,
+          name: cardEl.querySelector('.drill-item-name')?.textContent || '',
+        };
+      }
+    }
     if (drill && cardEl && !formEl) {
       const form = document.createElement('div');
       form.className = 'drill-result-form';
@@ -4297,10 +4607,13 @@ function toggleDrillCheck(drillId, sessionNum) {
     if (formEl) formEl.remove();
   }
 
-  // Update banner pill
-  const doneCount = drills.filter(d => set.has(d.id)).length;
+  // Update banner pill using rendered card count (avoids async API call)
+  const renderedCards2 = document.querySelectorAll('#drill-list .drill-item');
+  const doneCount2 = [...set].filter(id =>
+    [...renderedCards2].some(el => el.id === 'drill-item-' + id)
+  ).length;
   const pill = document.querySelector('.session-banner-pill');
-  if (pill) pill.textContent = doneCount + ' of ' + drills.length + ' done';
+  if (pill) pill.textContent = doneCount2 + ' of ' + renderedCards2.length + ' done';
 }
 
 function getInProgressSession() {
@@ -4318,8 +4631,8 @@ function clearInProgressSession() {
   localStorage.removeItem('truestrokes_inprogress');
 }
 
-function markSessionComplete(sessionNum) {
-  const drills  = buildSessionDrills(sessionNum);
+async function markSessionComplete(sessionNum) {
+  const drills  = await buildSessionDrills(sessionNum);
   const { label: sessionFocusLabel } = getSessionLabel(drills);
   const session = {
     sessionNum,
@@ -4352,38 +4665,31 @@ function markSessionComplete(sessionNum) {
 }
 
 function showCompletionCelebration(sessionNum, onNext) {
-  const wrap      = document.getElementById('today-session-wrap');
-  const nextNum   = sessionNum + 1;
-  const nextDrills = buildSessionDrills(nextNum);
-  const catLabel  = lastResults ? lastResults.breakdown[0].category : '';
+  const wrap    = document.getElementById('today-session-wrap');
+  const nextNum = sessionNum + 1;
 
   wrap.innerHTML = `
     <div class="completed-session-banner" style="animation: celebrateIn 0.4s ease;">
-      <div class="check-circle">✓</div>
-      <div style="font-size:1.4rem;font-weight:bold;margin-bottom:6px;">Session ${sessionNum} Complete! 🎉</div>
+      <div class="check-circle">&#10003;</div>
+      <div style="font-size:1.4rem;font-weight:bold;margin-bottom:6px;">Session ${sessionNum} Complete! &#127881;</div>
       <div style="font-size:0.9rem;opacity:0.9;margin-bottom:4px;">Great work. Keep the momentum going.</div>
     </div>
     <div class="next-session-preview">
-      <div class="next-session-label">Up Next — Session ${nextNum}</div>
-      <div style="font-size:0.82rem;color:#666;margin-bottom:12px;line-height:1.6;">
-        ${nextDrills.length
-          ? nextDrills.map(d => `<span style="display:inline-block;margin:3px 4px 3px 0;padding:3px 10px;background:#e8f5e9;border-radius:10px;font-size:0.75rem;color:#2d6a4f;font-weight:bold;">${d.name}</span>`).join('')
-          : 'Loading next session…'}
+      <div class="next-session-label">Up Next &#8212; Session ${nextNum}</div>
+      <div style="font-size:0.85rem;color:#666;margin-bottom:14px;line-height:1.6;">
+        Your next personalized session is ready. Drills will be tailored based on today&#39;s performance.
       </div>
-      <button class="btn btn-green" style="padding:10px 24px;" onclick="${onNext.toString().replace(/\n/g,'').replace(/"/g,"'")}">Start Session ${nextNum} →</button>
+      <button class="btn btn-green" style="padding:10px 24px;">Start Session ${nextNum} &#8594;</button>
     </div>`;
 
-  // Inline button won't work with closure — use a global flag instead
   window._planNextCallback = onNext;
   wrap.querySelector('button').onclick = () => { if (window._planNextCallback) window._planNextCallback(); };
 }
 
+
 // After completing a session, show the completion banner + next session preview
 function renderCompletedView(sessionNum) {
-  const nextNum  = sessionNum + 1;
-  const nextDrills = buildSessionDrills(nextNum);
-  const catLabel = lastResults ? lastResults.breakdown[0].category : '';
-
+  const nextNum = sessionNum + 1;
   return `
     <div class="completed-session-banner">
       <div class="check-circle">✓</div>
@@ -4392,8 +4698,8 @@ function renderCompletedView(sessionNum) {
     </div>
     <div class="next-session-preview">
       <div class="next-session-label">Up Next — Session ${nextNum}</div>
-      <div style="font-size:0.88rem;color:#555;margin-bottom:12px;">
-        ${nextDrills.map(d => `<span style="display:inline-block;margin:3px 6px 3px 0;padding:3px 10px;background:#e8f5e9;border-radius:10px;font-size:0.78rem;color:#2d6a4f;">${d.name}</span>`).join('')}
+      <div style="font-size:0.85rem;color:#555;margin-bottom:12px;line-height:1.6;">
+        Your next personalized session is ready. Tap below to start.
       </div>
       <button class="btn btn-green" onclick="renderTodaySession()">Start Session ${nextNum} →</button>
     </div>`;
