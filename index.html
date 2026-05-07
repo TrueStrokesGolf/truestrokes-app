@@ -4315,18 +4315,20 @@ async function swapDrill(btnEl) {
   const drillType     = settings.drillType;
   const recentHistory = getRecentDrillHistory(10);
 
-  // Track swapped-out drill so it doesn't come back
-  const swappedKey = 'truestrokes_swapped';
-  let swapped = [];
-  try { swapped = JSON.parse(localStorage.getItem(swappedKey) || '[]'); } catch(e) {}
-  if (!swapped.includes(drillId)) {
-    swapped.push(drillId);
-    localStorage.setItem(swappedKey, JSON.stringify(swapped));
-  }
+  // Only avoid drills currently visible on screen — not entire history.
+  // WHY: passing the full history to the API shrinks the viable pool
+  // with every session until it runs dry. For swaps we just need something
+  // different from what's already showing right now.
+  const currentlyShown = [...document.querySelectorAll('#drill-list .drill-item')]
+    .map(el => el.id.replace('drill-item-', ''))
+    .filter(id => id !== drillId); // exclude the one being swapped out
+
+  // Pass only currently-shown drills as "avoid" context — keeps the pool huge
+  const swapContext = currentlyShown.map(id => ({ name: id, category: cat }));
 
   // Try API for a fresh drill
   const apiDrills = await generateDrillsFromAPI(
-    [cat], tierGroup, sessionNum, drillType, [], recentHistory
+    [cat], tierGroup, sessionNum, drillType, [], swapContext
   );
 
   let newDrill = null;
@@ -4334,17 +4336,19 @@ async function swapDrill(btnEl) {
   if (apiDrills && apiDrills.length > 0) {
     newDrill = { ...apiDrills[0], cat };
   } else {
-    // Static fallback — pick a drill not already used or swapped
+    // Static fallback — cycle through all drills in the pool, avoiding only
+    // what is currently on screen (not the full history).
+    // WHY cycle not exclude: with only 3 static drills per slot, excluding
+    // used ones runs out after 3 swaps. Cycling means infinite swaps.
     const pool = (DRILL_LIBRARY[cat] || {})[tierGroup] || [];
-    const usedIds = new Set([
-      ...getLog().map(e => e.drillId),
-      ...swapped,
-      drillId,
-    ]);
-    const unused = pool.filter(d => !usedIds.has(d.id));
-    newDrill = unused.length > 0
-      ? { ...unused[0], cat }
-      : pool.length > 0 ? { ...pool[0], cat } : null;
+    const screenIds = new Set([...currentlyShown, drillId]);
+    const offScreen = pool.filter(d => !screenIds.has(d.id));
+    // Prefer off-screen drills, but cycle back through all if needed
+    newDrill = offScreen.length > 0
+      ? { ...offScreen[0], cat }
+      : pool.filter(d => d.id !== drillId)[0]
+        ? { ...pool.filter(d => d.id !== drillId)[0], cat }
+        : pool.length > 0 ? { ...pool[0], cat } : null;
   }
 
   if (!newDrill) {
