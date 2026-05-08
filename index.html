@@ -7,6 +7,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,600&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <!-- Supabase JS library — gives us the `supabase` object for auth + database -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     /* ═══════════════════════════════════════════
        DESIGN TOKENS
@@ -1954,8 +1956,8 @@
       <div class="landing-logo-name">TrueStrokes</div>
     </div>
     <div class="landing-header-actions">
-      <button class="btn-ghost-light" onclick="enterApp()">Sign In</button>
-      <button class="btn-signup" onclick="enterApp()">Get Started Free</button>
+      <button class="btn-ghost-light" onclick="showAuthPage()">Sign In</button>
+      <button class="btn-signup" onclick="showAuthPage()">Get Started Free</button>
     </div>
   </header>
 
@@ -1969,7 +1971,7 @@
       Enter your rounds. TrueStrokes calculates your true handicap, pinpoints exactly where you're losing strokes, and builds a practice plan specific to your game.
     </p>
     <div class="landing-cta-group">
-      <button class="landing-cta-primary" onclick="enterApp()">
+      <button class="landing-cta-primary" onclick="showAuthPage()">
         Calculate My Handicap →
       </button>
       <button class="landing-cta-secondary" onclick="scrollToFeatures()">
@@ -2047,7 +2049,7 @@
   <section class="landing-final-cta">
     <h2>Ready to actually improve?</h2>
     <p>Enter 3 rounds. Get your analysis in 60 seconds. No signup required to start.</p>
-    <button class="landing-cta-primary" onclick="enterApp()">
+    <button class="landing-cta-primary" onclick="showAuthPage()">
       Start Your Analysis →
     </button>
     <p class="landing-fine-print">Free to use · No credit card · Data stays in your browser</p>
@@ -2057,12 +2059,101 @@
   <footer class="landing-footer">
     <div class="landing-footer-brand">TrueStrokes</div>
     <div class="landing-footer-links">
-      <a href="javascript:void(0)" onclick="enterApp()">Get Started</a>
+      <a href="javascript:void(0)" onclick="showAuthPage()">Get Started</a>
       <a href="javascript:void(0)">Privacy</a>
       <a href="javascript:void(0)">Contact</a>
     </div>
   </footer>
 
+</div>
+
+<!-- ═══════════════════════════════════════════
+     AUTH PAGE — Login / Signup
+     Shown to any unauthenticated visitor.
+     Replaces the old "get started" flow.
+═══════════════════════════════════════════ -->
+<div id="auth-page" style="display:none; min-height:100vh; background:var(--green-900); align-items:center; justify-content:center; padding:24px;">
+  <div style="width:100%; max-width:420px;">
+
+    <!-- Brand -->
+    <div style="text-align:center; margin-bottom:32px;">
+      <div style="font-size:2.5rem; margin-bottom:8px;">⛳</div>
+      <div style="font-family:var(--font-display); font-size:1.8rem; color:#fff; font-weight:700;">TrueStrokes</div>
+      <div style="color:var(--green-300); font-size:0.9rem; margin-top:4px;">Know Your Game. Close the Gap.</div>
+    </div>
+
+    <!-- Card -->
+    <div style="background:#fff; border-radius:var(--radius-lg); padding:32px; box-shadow:var(--shadow-lg);">
+
+      <!-- Tab toggle: Sign In / Sign Up -->
+      <div style="display:flex; background:var(--green-50); border-radius:var(--radius-sm); padding:4px; margin-bottom:24px;">
+        <button id="auth-tab-signin" onclick="switchAuthTab('signin')"
+          style="flex:1; padding:8px; border:none; border-radius:6px; background:var(--green-800); color:#fff; font-family:var(--font-ui); font-size:0.9rem; font-weight:600; cursor:pointer;">
+          Sign In
+        </button>
+        <button id="auth-tab-signup" onclick="switchAuthTab('signup')"
+          style="flex:1; padding:8px; border:none; border-radius:6px; background:transparent; color:var(--text-secondary); font-family:var(--font-ui); font-size:0.9rem; font-weight:500; cursor:pointer;">
+          Create Account
+        </button>
+      </div>
+
+      <!-- Sign In form -->
+      <div id="auth-signin-form">
+        <div style="margin-bottom:16px;">
+          <label style="display:block; font-size:0.85rem; font-weight:600; margin-bottom:6px; color:var(--text-primary);">Email</label>
+          <input id="signin-email" type="email" placeholder="you@example.com"
+            style="width:100%; padding:11px 14px; border:1.5px solid var(--border); border-radius:var(--radius-sm); font-family:var(--font-ui); font-size:0.95rem; outline:none;"
+            onkeydown="if(event.key==='Enter') authSignIn()">
+        </div>
+        <div style="margin-bottom:20px;">
+          <label style="display:block; font-size:0.85rem; font-weight:600; margin-bottom:6px; color:var(--text-primary);">Password</label>
+          <input id="signin-password" type="password" placeholder="••••••••"
+            style="width:100%; padding:11px 14px; border:1.5px solid var(--border); border-radius:var(--radius-sm); font-family:var(--font-ui); font-size:0.95rem; outline:none;"
+            onkeydown="if(event.key==='Enter') authSignIn()">
+        </div>
+        <button onclick="authSignIn()"
+          style="width:100%; padding:13px; background:var(--green-800); color:#fff; border:none; border-radius:var(--radius-sm); font-family:var(--font-ui); font-size:1rem; font-weight:600; cursor:pointer;">
+          Sign In →
+        </button>
+      </div>
+
+      <!-- Sign Up form -->
+      <div id="auth-signup-form" style="display:none;">
+        <div style="margin-bottom:16px;">
+          <label style="display:block; font-size:0.85rem; font-weight:600; margin-bottom:6px; color:var(--text-primary);">Your Name</label>
+          <input id="signup-name" type="text" placeholder="First name is fine"
+            style="width:100%; padding:11px 14px; border:1.5px solid var(--border); border-radius:var(--radius-sm); font-family:var(--font-ui); font-size:0.95rem; outline:none;"
+            onkeydown="if(event.key==='Enter') authSignUp()">
+        </div>
+        <div style="margin-bottom:16px;">
+          <label style="display:block; font-size:0.85rem; font-weight:600; margin-bottom:6px; color:var(--text-primary);">Email</label>
+          <input id="signup-email" type="email" placeholder="you@example.com"
+            style="width:100%; padding:11px 14px; border:1.5px solid var(--border); border-radius:var(--radius-sm); font-family:var(--font-ui); font-size:0.95rem; outline:none;"
+            onkeydown="if(event.key==='Enter') authSignUp()">
+        </div>
+        <div style="margin-bottom:20px;">
+          <label style="display:block; font-size:0.85rem; font-weight:600; margin-bottom:6px; color:var(--text-primary);">Password <span style="color:var(--text-muted); font-weight:400;">(min 6 characters)</span></label>
+          <input id="signup-password" type="password" placeholder="••••••••"
+            style="width:100%; padding:11px 14px; border:1.5px solid var(--border); border-radius:var(--radius-sm); font-family:var(--font-ui); font-size:0.95rem; outline:none;"
+            onkeydown="if(event.key==='Enter') authSignUp()">
+        </div>
+        <button onclick="authSignUp()"
+          style="width:100%; padding:13px; background:var(--green-800); color:#fff; border:none; border-radius:var(--radius-sm); font-family:var(--font-ui); font-size:1rem; font-weight:600; cursor:pointer;">
+          Create Account →
+        </button>
+      </div>
+
+      <!-- Error / status message -->
+      <div id="auth-message" style="display:none; margin-top:16px; padding:10px 14px; border-radius:var(--radius-sm); font-size:0.875rem; text-align:center;"></div>
+
+    </div>
+
+    <!-- Footer note -->
+    <div style="text-align:center; margin-top:20px; color:var(--green-300); font-size:0.8rem; opacity:0.7;">
+      Your data is private and secure. No credit card required.
+    </div>
+
+  </div>
 </div>
 
 <!-- ═══════════════════════════════════════════
@@ -2522,21 +2613,149 @@
 
 <script>
 // ═══════════════════════════════════════════════════
+// SUPABASE CLIENT
+// WHY: We create ONE client at the top of the file so every function
+// below can use it. `createClient` takes your project URL and anon key.
+// The anon key is safe here — Row Level Security policies in the database
+// enforce what each logged-in user can actually read or write.
+// ═══════════════════════════════════════════════════
+const SUPABASE_URL  = 'https://twladdpyswrusnfekczv.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR3bGFkZHB5c3dydXNuZmVrY3p2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgxOTEwMTYsImV4cCI6MjA5Mzc2NzAxNn0.uf41muOxEv0LBp5-IPqny8ItpoMMi80LJURH0U2fG_s';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+
+// Tracks the currently logged-in user — null if nobody is signed in
+let currentUser = null;
+
+// ═══════════════════════════════════════════════════
 // LANDING PAGE / APP ROUTING
 // ═══════════════════════════════════════════════════
 
-// Determines whether to show the marketing landing page or the app
-function initRouter() {
-  // WHY: We check localStorage first. If the user has saved data, they're a
-  // returning user — skip the landing page and go straight to the app.
-  // If no saved data, show the marketing landing page.
-  const hasSavedData = localStorage.getItem('truestrokes_data');
+// ═══════════════════════════════════════════════════
+// AUTH FUNCTIONS
+// WHY: These handle Supabase sign up, sign in, and the tab toggle.
+// Each calls the Supabase client (sb) and either enters the app or
+// shows an error message. The pattern is: await the async call,
+// check for error, act on result.
+// ═══════════════════════════════════════════════════
 
-  if (hasSavedData) {
-    // Returning user — show the app directly
+function showAuthPage() {
+  document.getElementById('landing-page').style.display = 'none';
+  document.getElementById('auth-page').style.display    = 'flex';
+}
+
+function hideAuthPage() {
+  document.getElementById('auth-page').style.display = 'none';
+}
+
+function switchAuthTab(tab) {
+  // Toggle which form is visible and which tab button looks active
+  const isSignIn = tab === 'signin';
+  document.getElementById('auth-signin-form').style.display = isSignIn ? 'block' : 'none';
+  document.getElementById('auth-signup-form').style.display = isSignIn ? 'none'  : 'block';
+
+  const activeStyle   = 'background:var(--green-800); color:#fff;';
+  const inactiveStyle = 'background:transparent; color:var(--text-secondary);';
+  document.getElementById('auth-tab-signin').style.cssText = isSignIn ? activeStyle : inactiveStyle;
+  document.getElementById('auth-tab-signup').style.cssText = isSignIn ? inactiveStyle : activeStyle;
+
+  showAuthMessage('', ''); // clear any previous error
+}
+
+function showAuthMessage(text, type) {
+  // type: 'error' (red) | 'success' (green) | '' (hide)
+  const el = document.getElementById('auth-message');
+  if (!text) { el.style.display = 'none'; return; }
+  el.style.display    = 'block';
+  el.style.background = type === 'error' ? '#fdecea' : '#e8f5e9';
+  el.style.color      = type === 'error' ? '#c62828' : '#2e7d32';
+  el.textContent      = text;
+}
+
+async function authSignIn() {
+  const email    = document.getElementById('signin-email').value.trim();
+  const password = document.getElementById('signin-password').value;
+
+  if (!email || !password) {
+    showAuthMessage('Please enter your email and password.', 'error');
+    return;
+  }
+
+  showAuthMessage('Signing in…', 'success');
+
+  // WHY async/await: Supabase's signInWithPassword talks to a remote server.
+  // That takes time. `await` pauses here until we get the response back,
+  // then we check if it worked.
+  const { data, error } = await sb.auth.signInWithPassword({ email, password });
+
+  if (error) {
+    showAuthMessage(error.message, 'error');
+    return;
+  }
+
+  // Success — store the user and enter the app
+  currentUser = data.user;
+  hideAuthPage();
+  enterApp();
+}
+
+async function authSignUp() {
+  const name     = document.getElementById('signup-name').value.trim();
+  const email    = document.getElementById('signup-email').value.trim();
+  const password = document.getElementById('signup-password').value;
+
+  if (!name || !email || !password) {
+    showAuthMessage('Please fill in all fields.', 'error');
+    return;
+  }
+  if (password.length < 6) {
+    showAuthMessage('Password must be at least 6 characters.', 'error');
+    return;
+  }
+
+  showAuthMessage('Creating your account…', 'success');
+
+  // WHY options.data: this passes the name into raw_user_meta_data on the
+  // auth.users record. Our database trigger reads it and writes it to profiles.name.
+  const { data, error } = await sb.auth.signUp({
+    email,
+    password,
+    options: { data: { name } }
+  });
+
+  if (error) {
+    showAuthMessage(error.message, 'error');
+    return;
+  }
+
+  // Supabase may require email confirmation depending on your project settings.
+  // If confirmations are ON, data.user exists but data.session is null.
+  if (data.session) {
+    currentUser = data.user;
+    hideAuthPage();
     enterApp();
   } else {
-    // First-time visitor — show the marketing landing page
+    showAuthMessage('Account created! Check your email to confirm, then sign in.', 'success');
+  }
+}
+
+// ═══════════════════════════════════════════════════
+// ROUTER
+// ═══════════════════════════════════════════════════
+
+// Determines whether to show auth, landing, or the app
+async function initRouter() {
+  // WHY: First check if Supabase already has an active session for this browser.
+  // Sessions persist via a cookie/localStorage token that Supabase manages.
+  // If the user logged in yesterday, they're still logged in today.
+  const { data: { session } } = await sb.auth.getSession();
+
+  if (session) {
+    // Already logged in — go straight to the app
+    currentUser = session.user;
+    enterApp();
+  } else {
+    // Not logged in — show the marketing page first.
+    // The "Get Started" and "Sign In" buttons on landing call showAuthPage().
     document.getElementById('landing-page').style.display = 'flex';
     document.getElementById('landing-page').style.flexDirection = 'column';
   }
