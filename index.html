@@ -2119,11 +2119,19 @@
 
       <!-- Sign Up form -->
       <div id="auth-signup-form" style="display:none;">
-        <div style="margin-bottom:16px;">
-          <label style="display:block; font-size:0.85rem; font-weight:600; margin-bottom:6px; color:var(--text-primary);">Your Name</label>
-          <input id="signup-name" type="text" placeholder="First name is fine"
-            style="width:100%; padding:11px 14px; border:1.5px solid var(--border); border-radius:var(--radius-sm); font-family:var(--font-ui); font-size:0.95rem; outline:none;"
-            onkeydown="if(event.key==='Enter') authSignUp()">
+        <div style="display:flex; gap:12px; margin-bottom:16px;">
+          <div style="flex:1;">
+            <label style="display:block; font-size:0.85rem; font-weight:600; margin-bottom:6px; color:var(--text-primary);">First Name</label>
+            <input id="signup-firstname" type="text" placeholder="John"
+              style="width:100%; padding:11px 14px; border:1.5px solid var(--border); border-radius:var(--radius-sm); font-family:var(--font-ui); font-size:0.95rem; outline:none;"
+              onkeydown="if(event.key==='Enter') authSignUp()">
+          </div>
+          <div style="flex:1;">
+            <label style="display:block; font-size:0.85rem; font-weight:600; margin-bottom:6px; color:var(--text-primary);">Last Name</label>
+            <input id="signup-lastname" type="text" placeholder="Smith"
+              style="width:100%; padding:11px 14px; border:1.5px solid var(--border); border-radius:var(--radius-sm); font-family:var(--font-ui); font-size:0.95rem; outline:none;"
+              onkeydown="if(event.key==='Enter') authSignUp()">
+          </div>
         </div>
         <div style="margin-bottom:16px;">
           <label style="display:block; font-size:0.85rem; font-weight:600; margin-bottom:6px; color:var(--text-primary);">Email</label>
@@ -2699,11 +2707,12 @@ async function authSignIn() {
 }
 
 async function authSignUp() {
-  const name     = document.getElementById('signup-name').value.trim();
-  const email    = document.getElementById('signup-email').value.trim();
-  const password = document.getElementById('signup-password').value;
+  const firstName = document.getElementById('signup-firstname').value.trim();
+  const lastName  = document.getElementById('signup-lastname').value.trim();
+  const email     = document.getElementById('signup-email').value.trim();
+  const password  = document.getElementById('signup-password').value;
 
-  if (!name || !email || !password) {
+  if (!firstName || !lastName || !email || !password) {
     showAuthMessage('Please fill in all fields.', 'error');
     return;
   }
@@ -2714,12 +2723,13 @@ async function authSignUp() {
 
   showAuthMessage('Creating your account…', 'success');
 
-  // WHY options.data: this passes the name into raw_user_meta_data on the
-  // auth.users record. Our database trigger reads it and writes it to profiles.name.
+  // WHY options.data: passes name fields into raw_user_meta_data on auth.users.
+  // Our trigger reads first_name + last_name and writes them to profiles.
+  // We also store full name as `name` for backwards compatibility.
   const { data, error } = await sb.auth.signUp({
     email,
     password,
-    options: { data: { name } }
+    options: { data: { first_name: firstName, last_name: lastName, name: `${firstName} ${lastName}` } }
   });
 
   if (error) {
