@@ -2119,19 +2119,11 @@
 
       <!-- Sign Up form -->
       <div id="auth-signup-form" style="display:none;">
-        <div style="display:flex; gap:12px; margin-bottom:16px;">
-          <div style="flex:1;">
-            <label style="display:block; font-size:0.85rem; font-weight:600; margin-bottom:6px; color:var(--text-primary);">First Name</label>
-            <input id="signup-firstname" type="text" placeholder="John"
-              style="width:100%; padding:11px 14px; border:1.5px solid var(--border); border-radius:var(--radius-sm); font-family:var(--font-ui); font-size:0.95rem; outline:none;"
-              onkeydown="if(event.key==='Enter') authSignUp()">
-          </div>
-          <div style="flex:1;">
-            <label style="display:block; font-size:0.85rem; font-weight:600; margin-bottom:6px; color:var(--text-primary);">Last Name</label>
-            <input id="signup-lastname" type="text" placeholder="Smith"
-              style="width:100%; padding:11px 14px; border:1.5px solid var(--border); border-radius:var(--radius-sm); font-family:var(--font-ui); font-size:0.95rem; outline:none;"
-              onkeydown="if(event.key==='Enter') authSignUp()">
-          </div>
+        <div style="margin-bottom:16px;">
+          <label style="display:block; font-size:0.85rem; font-weight:600; margin-bottom:6px; color:var(--text-primary);">Your Name</label>
+          <input id="signup-name" type="text" placeholder="First name is fine"
+            style="width:100%; padding:11px 14px; border:1.5px solid var(--border); border-radius:var(--radius-sm); font-family:var(--font-ui); font-size:0.95rem; outline:none;"
+            onkeydown="if(event.key==='Enter') authSignUp()">
         </div>
         <div style="margin-bottom:16px;">
           <label style="display:block; font-size:0.85rem; font-weight:600; margin-bottom:6px; color:var(--text-primary);">Email</label>
@@ -2614,6 +2606,16 @@
         <div style="font-size:0.78rem;color:var(--text-muted);line-height:1.55;">Changes apply to your next session. Sessions already in progress are not affected.</div>
       </div>
     </div>
+
+    <!-- Account section -->
+    <div class="card" style="margin-top:20px;">
+      <h2>👤 Account</h2>
+      <div id="account-info" style="margin-bottom:20px; font-size:0.9rem; color:var(--text-secondary); line-height:1.8;"></div>
+      <button onclick="authSignOut()"
+        style="padding:10px 24px; background:transparent; color:var(--red); border:1.5px solid var(--red); border-radius:var(--radius-sm); font-family:var(--font-ui); font-size:0.9rem; font-weight:600; cursor:pointer;">
+        Sign Out
+      </button>
+    </div>
   </div>
 
 </div><!-- /container -->
@@ -2707,12 +2709,11 @@ async function authSignIn() {
 }
 
 async function authSignUp() {
-  const firstName = document.getElementById('signup-firstname').value.trim();
-  const lastName  = document.getElementById('signup-lastname').value.trim();
-  const email     = document.getElementById('signup-email').value.trim();
-  const password  = document.getElementById('signup-password').value;
+  const name     = document.getElementById('signup-name').value.trim();
+  const email    = document.getElementById('signup-email').value.trim();
+  const password = document.getElementById('signup-password').value;
 
-  if (!firstName || !lastName || !email || !password) {
+  if (!name || !email || !password) {
     showAuthMessage('Please fill in all fields.', 'error');
     return;
   }
@@ -2723,13 +2724,12 @@ async function authSignUp() {
 
   showAuthMessage('Creating your account…', 'success');
 
-  // WHY options.data: passes name fields into raw_user_meta_data on auth.users.
-  // Our trigger reads first_name + last_name and writes them to profiles.
-  // We also store full name as `name` for backwards compatibility.
+  // WHY options.data: this passes the name into raw_user_meta_data on the
+  // auth.users record. Our database trigger reads it and writes it to profiles.name.
   const { data, error } = await sb.auth.signUp({
     email,
     password,
-    options: { data: { first_name: firstName, last_name: lastName, name: `${firstName} ${lastName}` } }
+    options: { data: { name } }
   });
 
   if (error) {
@@ -2746,6 +2746,34 @@ async function authSignUp() {
   } else {
     showAuthMessage('Account created! Check your email to confirm, then sign in.', 'success');
   }
+}
+
+// ═══════════════════════════════════════════════════
+// SIGN OUT + ACCOUNT INFO
+// ═══════════════════════════════════════════════════
+
+async function authSignOut() {
+  // WHY: sb.auth.signOut() tells Supabase to invalidate the session token.
+  // Then we clear currentUser and reload the page — cleanest way to reset
+  // all app state without manually clearing every variable.
+  await sb.auth.signOut();
+  currentUser = null;
+  window.location.reload();
+}
+
+function loadAccountInfo() {
+  // Populate the account card in Settings with the user's name + email.
+  // WHY read from currentUser: it's already in memory from login, no extra
+  // database call needed just to show a name.
+  if (!currentUser) return;
+  const el = document.getElementById('account-info');
+  if (!el) return;
+  const meta = currentUser.user_metadata || {};
+  const name  = [meta.first_name, meta.last_name].filter(Boolean).join(' ') || meta.name || '—';
+  el.innerHTML = `
+    <div><strong>Name:</strong> ${name}</div>
+    <div><strong>Email:</strong> ${currentUser.email}</div>
+  `;
 }
 
 // ═══════════════════════════════════════════════════
@@ -2780,6 +2808,7 @@ function enterApp() {
 
   loadSettingsUI();
   buildBadgeShelf();
+  loadAccountInfo();
 
   const hasSavedData = localStorage.getItem('truestrokes_data');
   if (hasSavedData) {
