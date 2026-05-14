@@ -2899,7 +2899,13 @@ async function loadSupabaseData() {
       showPage('dashboard');
 
     } else {
-      // No Supabase rounds yet — check if localStorage has data to migrate
+      // No Supabase rounds yet — clear any stale in-memory results
+      // WHY: lastResults persists in memory across page loads via the browser
+      // keeping JS state. If the user deleted their rounds, we must clear it
+      // explicitly so the dashboard doesn't show stale analysis.
+      lastResults = null;
+
+      // Check if localStorage has data to migrate
       const localRaw = localStorage.getItem('truestrokes_data');
       if (localRaw) {
         console.log('Migrating localStorage data to Supabase...');
