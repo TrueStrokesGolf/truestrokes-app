@@ -2606,16 +2606,6 @@
         <div style="font-size:0.78rem;color:var(--text-muted);line-height:1.55;">Changes apply to your next session. Sessions already in progress are not affected.</div>
       </div>
     </div>
-
-    <!-- Account section -->
-    <div class="card" style="margin-top:20px;">
-      <h2>👤 Account</h2>
-      <div id="account-info" style="margin-bottom:20px; font-size:0.9rem; color:var(--text-secondary); line-height:1.8;"></div>
-      <button onclick="authSignOut()"
-        style="padding:10px 24px; background:transparent; color:var(--red); border:1.5px solid var(--red); border-radius:var(--radius-sm); font-family:var(--font-ui); font-size:0.9rem; font-weight:600; cursor:pointer;">
-        Sign Out
-      </button>
-    </div>
   </div>
 
 </div><!-- /container -->
@@ -2749,34 +2739,6 @@ async function authSignUp() {
 }
 
 // ═══════════════════════════════════════════════════
-// SIGN OUT + ACCOUNT INFO
-// ═══════════════════════════════════════════════════
-
-async function authSignOut() {
-  // WHY: sb.auth.signOut() tells Supabase to invalidate the session token.
-  // Then we clear currentUser and reload the page — cleanest way to reset
-  // all app state without manually clearing every variable.
-  await sb.auth.signOut();
-  currentUser = null;
-  window.location.reload();
-}
-
-function loadAccountInfo() {
-  // Populate the account card in Settings with the user's name + email.
-  // WHY read from currentUser: it's already in memory from login, no extra
-  // database call needed just to show a name.
-  if (!currentUser) return;
-  const el = document.getElementById('account-info');
-  if (!el) return;
-  const meta = currentUser.user_metadata || {};
-  const name  = [meta.first_name, meta.last_name].filter(Boolean).join(' ') || meta.name || '—';
-  el.innerHTML = `
-    <div><strong>Name:</strong> ${name}</div>
-    <div><strong>Email:</strong> ${currentUser.email}</div>
-  `;
-}
-
-// ═══════════════════════════════════════════════════
 // ROUTER
 // ═══════════════════════════════════════════════════
 
@@ -2810,23 +2772,282 @@ function enterApp() {
   buildBadgeShelf();
   loadAccountInfo();
 
-  const hasSavedData = localStorage.getItem('truestrokes_data');
-  if (hasSavedData) {
-    // Returning user: restore their rounds, silently recalculate, land on dashboard
-    loadFromStorage();
-    try {
-      const payload = JSON.parse(hasSavedData);
-      if (payload.rounds && payload.rounds.length && payload.targetKey) {
-        silentCalculate(payload.rounds, payload.name || 'Golfer', payload.targetKey);
-      }
-    } catch(e) { /* ignore bad data */ }
-    showPage('dashboard');
-  } else {
-    // First-time user: start with 2 empty round forms ready to fill in
-    addRound();
-    addRound();
-    showPage('addround');
+  // WHY async IIFE here: enterApp() itself isn't async (other code calls it
+  // synchronously), but we need to await Supabase. An immediately-invoked
+  // async function lets us use await inside without changing enterApp's signature.
+  (async () => {
+    await loadSupabaseData();
+  })();
+}
+
+// ═══════════════════════════════════════════════════
+// SUPABASE DATA LAYER
+// Loads all user data from Supabase on login.
+// Falls back to localStorage if Supabase is unreachable.
+// On first login, migrates any existing localStorage data to Supabase.
+// ═══════════════════════════════════════════════════
+
+async function loadSupabaseData() {
+  if (!currentUser) {
+    // Not logged in — fall back to localStorage (dev/offline mode)
+    _loadFromLocalStorage();
+    return;
   }
+
+  try {
+    // ── Load settings from profiles ──────────────────
+    const { data: profile } = await sb
+      .from('profiles')
+      .select('target_tier, practice_frequency, session_length, warmup_time, practice_location')
+      .eq('id', currentUser.id)
+      .single();
+
+    if (profile) {
+      // Load baseline state into memory
+      // WHY: calculate() is synchronous — it reads baselineLocked and activeBaseline
+      // from memory rather than awaiting a DB call mid-calculation.
+      baselineLocked = profile.baseline_locked || false;
+      if (baselineLocked) {
+        const { data: bl } = await sb.from('baselines')
+          .select('*')
+          .eq('user_id', currentUser.id)
+          .eq('is_active', true)
+          .single()
+          .catch(() => ({ data: null }));
+        if (bl) activeBaseline = bl;
+      }
+
+      // Sync profile settings into localStorage so existing getSettings() calls work
+      const existing = getSettings();
+      const merged = {
+        ...existing,
+        practiceFreq:  profile.practice_frequency || existing.practiceFreq,
+        sessionLength: profile.session_length      || existing.sessionLength,
+        warmupTime:    profile.warmup_time         || existing.warmupTime,
+        drillType:     profile.practice_location   || existing.drillType,
+        lastTier:      profile.target_tier         || existing.lastTier,
+      };
+      localStorage.setItem('truestrokes_settings', JSON.stringify(merged));
+      loadSettingsUI();
+    }
+
+    // ── Load rounds from Supabase ─────────────────────
+    const { data: sbRounds } = await sb
+      .from('rounds')
+      .select('*')
+      .eq('user_id', currentUser.id)
+      .order('played_on', { ascending: false });
+
+    if (sbRounds && sbRounds.length > 0) {
+      // Has Supabase rounds — use them as source of truth
+      const rounds = sbRounds.map(r => ({
+        date:      r.played_on    || '',
+        course:    r.course_name  || '',
+        score:     r.score        || '',
+        par:       r.par          || '',
+        rating:    r.rating       || '',
+        slope:     r.slope        || '',
+        par3s:     r.par3s        || '',
+        fw:        r.fairways_hit || '',
+        gir:       r.gir          || '',
+        putts:     r.putts_on_gir || '',
+        scrambles: r.scrambles    || '',
+      }));
+
+      const targetKey = profile?.target_tier || '';
+      const name = [currentUser.user_metadata?.first_name, currentUser.user_metadata?.last_name]
+        .filter(Boolean).join(' ') || currentUser.user_metadata?.name || 'Golfer';
+
+      // Rebuild the round form UI from Supabase data
+      _populateRoundForm(rounds, name, targetKey);
+
+      if (rounds.length && targetKey) {
+        silentCalculate(rounds, name, targetKey);
+      }
+      showPage('dashboard');
+
+    } else {
+      // No Supabase rounds yet — check if localStorage has data to migrate
+      const localRaw = localStorage.getItem('truestrokes_data');
+      if (localRaw) {
+        console.log('Migrating localStorage data to Supabase...');
+        await migrateLocalStorageToSupabase();
+      } else {
+        // Truly new user — show the add round form
+        addRound();
+        addRound();
+        showPage('addround');
+      }
+    }
+
+    // ── Load sessions from Supabase ───────────────────
+    const { data: sbSessions } = await sb
+      .from('sessions')
+      .select('*')
+      .eq('user_id', currentUser.id)
+      .order('completed_at', { ascending: false });
+
+    if (sbSessions && sbSessions.length > 0) {
+      // Sync into localStorage format so existing session logic works unchanged
+      const sessions = sbSessions.map(s => ({
+        sessionNum:  s.session_number,
+        date:        s.completed_at ? s.completed_at.slice(0,10) : '',
+        savedAt:     s.completed_at,
+        focus:       s.focus_category,
+        drills:      [],
+        tierKey:     '',
+      }));
+      localStorage.setItem('truestrokes_sessions', JSON.stringify(sessions));
+    }
+
+    // ── Load drill results from Supabase ──────────────
+    const { data: sbDrills } = await sb
+      .from('drill_results')
+      .select('*')
+      .eq('user_id', currentUser.id)
+      .order('logged_at', { ascending: false });
+
+    if (sbDrills && sbDrills.length > 0) {
+      const drills = sbDrills.map(d => ({
+        drillId:   d.drill_name,
+        drillName: d.drill_name,
+        category:  d.category,
+        score:     d.score     !== null ? String(d.score) : '—',
+        scoreMax:  d.score_max !== null ? String(d.score_max) : '—',
+        feel:      d.feel      || '—',
+        date:      d.logged_at ? d.logged_at.slice(0,10) : '',
+        savedAt:   d.logged_at,
+      }));
+      localStorage.setItem('truestrokes_drill_results', JSON.stringify(drills));
+    }
+
+  } catch(err) {
+    console.warn('Supabase load failed, falling back to localStorage:', err);
+    _loadFromLocalStorage();
+  }
+}
+
+// One-time migration: reads localStorage and writes everything to Supabase
+async function migrateLocalStorageToSupabase() {
+  try {
+    const raw = localStorage.getItem('truestrokes_data');
+    if (!raw) return;
+    const payload = JSON.parse(raw);
+
+    // ── Migrate rounds ────────────────────────────────
+    if (payload.rounds && payload.rounds.length) {
+      const roundRows = payload.rounds.map(r => ({
+        user_id:      currentUser.id,
+        course_name:  r.course    || null,
+        played_on:    r.date      || null,
+        score:        r.score     ? parseInt(r.score)     : null,
+        par:          r.par       ? parseInt(r.par)       : null,
+        rating:       r.rating    ? parseFloat(r.rating)  : null,
+        slope:        r.slope     ? parseInt(r.slope)     : null,
+        par3s:        r.par3s     ? parseInt(r.par3s)     : null,
+        fairways_hit: r.fw        ? parseInt(r.fw)        : null,
+        gir:          r.gir       ? parseInt(r.gir)       : null,
+        putts_on_gir: r.putts     ? parseInt(r.putts)     : null,
+        scrambles:    r.scrambles ? parseInt(r.scrambles) : null,
+      }));
+      await sb.from('rounds').insert(roundRows);
+    }
+
+    // ── Migrate target_tier + settings to profiles ────
+    const settings = getSettings();
+    await sb.from('profiles').update({
+      target_tier:        payload.targetKey          || null,
+      practice_frequency: settings.practiceFreq      || null,
+      session_length:     settings.sessionLength     || null,
+      warmup_time:        settings.warmupTime        || null,
+      practice_location:  settings.drillType         || null,
+    }).eq('id', currentUser.id);
+
+    // ── Migrate completed sessions ────────────────────
+    const localSessions = JSON.parse(localStorage.getItem('truestrokes_sessions') || '[]');
+    if (localSessions.length) {
+      const sessionRows = localSessions.map(s => ({
+        user_id:        currentUser.id,
+        session_number: s.sessionNum  || null,
+        focus_category: s.focus       || null,
+        drill_count:    s.drills ? s.drills.length : null,
+        completed_at:   s.savedAt     || s.date    || null,
+      }));
+      await sb.from('sessions').insert(sessionRows);
+    }
+
+    // ── Migrate drill results ─────────────────────────
+    const localDrills = JSON.parse(localStorage.getItem('truestrokes_drill_results') || '[]');
+    if (localDrills.length) {
+      const drillRows = localDrills.map(d => ({
+        user_id:   currentUser.id,
+        drill_name: d.drillName || d.drillId || null,
+        category:   d.category  || null,
+        score:      d.score && d.score !== '—' ? parseInt(d.score)    : null,
+        score_max:  d.scoreMax && d.scoreMax !== '—' ? parseInt(d.scoreMax) : null,
+        feel:       d.feel && d.feel !== '—' ? d.feel : null,
+        logged_at:  d.savedAt   || d.date    || null,
+      }));
+      await sb.from('drill_results').insert(drillRows);
+    }
+
+    console.log('Migration complete.');
+
+    // Now reload from Supabase so the app uses the migrated data
+    await loadSupabaseData();
+
+  } catch(err) {
+    console.warn('Migration failed, loading from localStorage:', err);
+    _loadFromLocalStorage();
+  }
+}
+
+// Internal helper — loads from localStorage the old way (fallback + dev mode)
+function _loadFromLocalStorage() {
+  loadFromStorage();
+  try {
+    const raw = localStorage.getItem('truestrokes_data');
+    if (!raw) { addRound(); addRound(); showPage('addround'); return; }
+    const payload = JSON.parse(raw);
+    if (payload.rounds && payload.rounds.length && payload.targetKey) {
+      silentCalculate(payload.rounds, payload.name || 'Golfer', payload.targetKey);
+    }
+    showPage('dashboard');
+  } catch(e) { addRound(); addRound(); showPage('addround'); }
+}
+
+// Internal helper — populates the round form UI from an array of round objects
+function _populateRoundForm(rounds, name, targetKey) {
+  if (document.getElementById('golfer-name')) {
+    document.getElementById('golfer-name').value = name;
+  }
+  if (document.getElementById('target-tier') && targetKey) {
+    document.getElementById('target-tier').value = targetKey;
+  }
+  document.getElementById('rounds-container').innerHTML = '';
+  roundCount = 0;
+  rounds.forEach(r => {
+    addRound();
+    const cards = document.querySelectorAll('.round-card');
+    const card  = cards[cards.length - 1];
+    if (r.roundId) {
+      const idEl = card.querySelector('.r-id');
+      if (idEl) idEl.value = r.roundId;
+    }
+    card.querySelector('.r-date').value      = r.date      || '';
+    card.querySelector('.r-course').value    = r.course    || '';
+    card.querySelector('.r-score').value     = r.score     || '';
+    card.querySelector('.r-par').value       = r.par       || '';
+    card.querySelector('.r-rating').value    = r.rating    || '';
+    card.querySelector('.r-slope').value     = r.slope     || '';
+    card.querySelector('.r-par3').value      = r.par3s     || '';
+    card.querySelector('.r-fw').value        = r.fw        || '';
+    card.querySelector('.r-gir').value       = r.gir       || '';
+    card.querySelector('.r-putts').value     = r.putts     || '';
+    card.querySelector('.r-scrambles').value = r.scrambles || '';
+    updateRoundSummary(card.querySelector('.r-date'));
+    card.classList.add('collapsed');
+  });
 }
 
 function scrollToFeatures() {
@@ -2862,10 +3083,71 @@ let sessionRounds = [];
 const STORAGE_KEY = 'truestrokes_data';
 
 // SAVE: called after every successful Calculate
+// Writes to localStorage immediately (fast, synchronous),
+// then writes to Supabase in the background (async, non-blocking).
 function saveToStorage(rounds, name, targetKey) {
   const payload = { rounds, name, targetKey, savedAt: new Date().toISOString() };
   localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
   updateSaveNotice(payload.savedAt);
+
+  // WHY fire-and-forget: we don't want the UI to wait for Supabase.
+  // localStorage saves instantly; Supabase saves in the background.
+  // If Supabase fails, localStorage still has the data as backup.
+  if (currentUser) {
+    _saveRoundsToSupabase(rounds, name, targetKey).catch(e =>
+      console.warn('Supabase save failed (localStorage backup kept):', e)
+    );
+  }
+}
+
+async function _saveRoundsToSupabase(rounds, name, targetKey) {
+  // WHY upsert instead of delete+reinsert:
+  // Users can have unlimited rounds over years of play. Delete+reinsert
+  // would wipe the entire history every time they hit Calculate.
+  // Upsert matches on round_id — existing rounds update, new rounds insert.
+  // Nothing is ever deleted unless the user explicitly removes a round card.
+  //
+  // For rounds without a round_id (migrated from localStorage), we fall back
+  // to matching on played_on + course_name to avoid duplicates.
+
+  for (const r of rounds) {
+    const row = {
+      user_id:      currentUser.id,
+      round_id:     r.roundId   || null,
+      course_name:  r.course    || null,
+      played_on:    r.date      || null,
+      score:        r.score     ? parseInt(r.score)     : null,
+      par:          r.par       ? parseInt(r.par)       : null,
+      rating:       r.rating    ? parseFloat(r.rating)  : null,
+      slope:        r.slope     ? parseInt(r.slope)     : null,
+      par3s:        r.par3s     ? parseInt(r.par3s)     : null,
+      fairways_hit: r.fw        ? parseInt(r.fw)        : null,
+      gir:          r.gir       ? parseInt(r.gir)       : null,
+      putts_on_gir: r.putts     ? parseInt(r.putts)     : null,
+      scrambles:    r.scrambles ? parseInt(r.scrambles) : null,
+    };
+
+    if (r.roundId) {
+      // Known round — upsert on round_id
+      await sb.from('rounds')
+        .upsert(row, { onConflict: 'round_id' });
+    } else {
+      // Legacy round (no ID) — insert only if not already present
+      const { data: existing } = await sb.from('rounds')
+        .select('id')
+        .eq('user_id', currentUser.id)
+        .eq('played_on', r.date || '')
+        .eq('course_name', r.course || '')
+        .maybeSingle();
+      if (!existing) {
+        await sb.from('rounds').insert(row);
+      }
+    }
+  }
+
+  // Update target_tier on the profile
+  await sb.from('profiles').update({ target_tier: targetKey })
+    .eq('id', currentUser.id);
 }
 
 // LOAD: called on page open — fills in the form if saved data exists
@@ -3019,7 +3301,12 @@ function addRound() {
   const div = document.createElement('div');
   div.className = 'round-card'; // no 'collapsed' — new rounds open by default
   div.id = `round-${roundCount}`;
+  // WHY roundId: each card gets a stable ID generated at creation time.
+  // When we upsert to Supabase we match on this ID — so existing rounds
+  // update in place and new rounds insert. Nothing ever gets deleted.
+  const roundId = `round_${Date.now()}_${Math.random().toString(36).slice(2,6)}`;
   div.innerHTML = `
+    <input type="hidden" class="r-id" value="${roundId}">
     <div class="round-card-header" onclick="toggleRound('round-${roundCount}')">
       <div class="round-card-header-left">
         <span class="round-card-title">Round ${roundCount}</span>
@@ -3114,29 +3401,37 @@ function removeRound(id) {
 // so we can show the marketing landing page to first-time visitors first.
 
 // ═══════════════════════════════════════════════════
-// CALCULATION ENGINE (validated — do not modify)
+// CALCULATION ENGINE
+// Three modes based on baseline state:
+//   Mode 1 — Pre-baseline  (rounds < 5)   : full analysis, labeled early
+//   Mode 2 — Baseline lock (rounds === 5)  : lock baseline, store it
+//   Mode 3 — Post-baseline (locked)        : use stored baseline gap
+// Core math is IDENTICAL in all three modes — only what we do with the
+// result changes. This keeps the engine validated and predictable.
 // ═══════════════════════════════════════════════════
 function calculate() {
   hideError();
   const roundEls = document.querySelectorAll('.round-card');
   if (!roundEls.length) return showError('Please add at least 1 round.');
 
+  // ── Read round data from form ─────────────────────────────────────
   const rounds = [];
   for (const el of roundEls) {
-    const score=parseFloat(el.querySelector('.r-score').value),
-          par  =parseFloat(el.querySelector('.r-par').value),
-          rating=parseFloat(el.querySelector('.r-rating').value),
-          slope =parseFloat(el.querySelector('.r-slope').value),
-          par3s =parseFloat(el.querySelector('.r-par3').value),
-          fw    =parseFloat(el.querySelector('.r-fw').value),
-          gir   =parseFloat(el.querySelector('.r-gir').value),
-          putts =parseFloat(el.querySelector('.r-putts').value),
-          scrambles=parseFloat(el.querySelector('.r-scrambles').value),
-          date  =el.querySelector('.r-date').value,
-          course=el.querySelector('.r-course').value;
+    const score     = parseFloat(el.querySelector('.r-score').value),
+          par       = parseFloat(el.querySelector('.r-par').value),
+          rating    = parseFloat(el.querySelector('.r-rating').value),
+          slope     = parseFloat(el.querySelector('.r-slope').value),
+          par3s     = parseFloat(el.querySelector('.r-par3').value),
+          fw        = parseFloat(el.querySelector('.r-fw').value),
+          gir       = parseFloat(el.querySelector('.r-gir').value),
+          putts     = parseFloat(el.querySelector('.r-putts').value),
+          scrambles = parseFloat(el.querySelector('.r-scrambles').value),
+          date      = el.querySelector('.r-date').value,
+          course    = el.querySelector('.r-course').value,
+          roundId   = el.querySelector('.r-id') ? el.querySelector('.r-id').value : null;
     if ([score,par,rating,slope,par3s,fw,gir,putts,scrambles].some(isNaN))
       return showError('Please fill in all fields for every round.');
-    rounds.push({score,par,rating,slope,par3s,fw,gir,putts,scrambles,date,course});
+    rounds.push({score,par,rating,slope,par3s,fw,gir,putts,scrambles,date,course,roundId});
   }
 
   const name = document.getElementById('golfer-name').value || 'Golfer';
@@ -3144,6 +3439,10 @@ function calculate() {
   if (!targetKey) return showError('Please select a target tier.');
   const target = TIERS[targetKey];
 
+  // ── Core math (unchanged — runs in all three modes) ───────────────
+  // WHY run full math even post-baseline: we need estHcp to stay current
+  // so the user can see their handicap improving. Only the GAP shown on
+  // dashboard is frozen at baseline — the handicap estimate stays live.
   const diffs = rounds.map(r => (r.score - r.rating) * (113 / r.slope));
   const sortedDiffs = [...diffs].sort((a,b) => a-b);
   const estHcp = sortedDiffs.slice(0,8).reduce((s,d) => s+d, 0) / Math.min(8, rounds.length);
@@ -3158,19 +3457,31 @@ function calculate() {
   const tiIdx = TIER_ORDER.indexOf(targetKey);
   if (tiIdx <= ciIdx) return showError(`Your handicap (${estHcp.toFixed(1)}) is already at or above ${target.label}. Choose a more ambitious target!`);
 
-  const totalHoles  = rounds.length * 18;
-  const totalFwAvail= rounds.reduce((s,r) => s+(18-r.par3s), 0);
-  const totalFwHit  = rounds.reduce((s,r) => s+r.fw, 0);
-  const totalGIR    = rounds.reduce((s,r) => s+r.gir, 0);
-  const totalPutts  = rounds.reduce((s,r) => s+r.putts, 0);
-  const totalMissed = totalHoles - totalGIR;
-  const totalScram  = rounds.reduce((s,r) => s+r.scrambles, 0);
+  const totalHoles   = rounds.length * 18;
+  const totalFwAvail = rounds.reduce((s,r) => s+(18-r.par3s), 0);
+  const totalFwHit   = rounds.reduce((s,r) => s+r.fw, 0);
+  const totalGIR     = rounds.reduce((s,r) => s+r.gir, 0);
+  const totalPutts   = rounds.reduce((s,r) => s+r.putts, 0);
+  const totalMissed  = totalHoles - totalGIR;
+  const totalScram   = rounds.reduce((s,r) => s+r.scrambles, 0);
 
   const userFW    = totalFwHit / totalFwAvail;
   const userGIR   = totalGIR / totalHoles;
   const userPutts = totalGIR > 0 ? totalPutts / totalGIR : 2.2;
   const userScram = totalMissed > 0 ? totalScram / totalMissed : 0.25;
-  const totalGap  = current.hcp - target.hcp;
+
+  // ── Determine which gap to use ────────────────────────────────────
+  // Pre/lock: gap from live calculation
+  // Post-baseline: gap frozen at baseline — dashboard never moves
+  const liveGap     = current.hcp - target.hcp;
+  const displayGap  = baselineLocked && activeBaseline
+                      ? activeBaseline.gap_to_target
+                      : liveGap;
+
+  // WHY use displayGap for ratios post-baseline: the breakdown percentages
+  // (driving 35%, approach 45% etc) should reflect the baseline gap, not
+  // a recalculated live gap. This keeps the practice plan consistent.
+  const gapForRatios = displayGap;
 
   const ratioFW    = Math.max(0, Math.min(100, 100*userFW/target.fw));
   const ratioGIR   = Math.max(0, Math.min(100, 100*userGIR/target.gir));
@@ -3182,21 +3493,64 @@ function calculate() {
         rawP=-2.0*(Math.max(0,100-ratioPutts)/100),
         rawS=-3.5*(Math.max(0,100-ratioScram)/100);
   const rawTotal = Math.abs(rawD)+Math.abs(rawA)+Math.abs(rawP)+Math.abs(rawS);
-  const sf = rawTotal > 0 ? totalGap / rawTotal : 1;
+  const sf = rawTotal > 0 ? gapForRatios / rawTotal : 1;
 
   const breakdown = [
     {category:'Approach Shots', strokes:Math.abs(rawA)*sf},
     {category:'Short Game',     strokes:Math.abs(rawS)*sf},
     {category:'Driving',        strokes:Math.abs(rawD)*sf},
     {category:'Putting',        strokes:Math.abs(rawP)*sf},
-  ].map(item => ({...item, pct:(item.strokes/totalGap)*100}))
+  ].map(item => ({...item, pct:(item.strokes/gapForRatios)*100}))
    .sort((a,b) => b.strokes-a.strokes);
 
   sessionRounds = rounds.map((r,i) => ({...r, diff:diffs[i]}));
   saveToStorage(rounds, name, targetKey);
 
+  // ── Mode routing ──────────────────────────────────────────────────
+  const isPostBaseline = baselineLocked && activeBaseline;
+  const isBaselineLock = !baselineLocked && rounds.length >= BASELINE_ROUNDS;
+  const baselineMode   = isPostBaseline ? 'post' : isBaselineLock ? 'lock' : 'pre';
+
+  // Mode 2: lock baseline now (fire-and-forget to Supabase)
+  if (baselineMode === 'lock') {
+    const newBaseline = {
+      fw_baseline:    userFW,
+      gir_baseline:   userGIR,
+      putts_baseline: userPutts,
+      scram_baseline: userScram,
+      tier_key:       currentKey,
+      gap_to_target:  liveGap,
+      round_count:    rounds.length,
+    };
+    activeBaseline  = newBaseline;
+    baselineLocked  = true;
+
+    if (currentUser) {
+      (async () => {
+        // Deactivate any existing baselines
+        await sb.from('baselines')
+          .update({ is_active: false })
+          .eq('user_id', currentUser.id);
+        // Insert the new baseline
+        await sb.from('baselines').insert({
+          user_id: currentUser.id,
+          ...newBaseline,
+          is_active: true,
+        });
+        // Mark profile as baseline_locked
+        await sb.from('profiles')
+          .update({ baseline_locked: true })
+          .eq('id', currentUser.id);
+      })().catch(e => console.warn('Baseline lock failed:', e));
+    }
+  }
+
   displayResults({
-    name, estHcp, currentKey, current, targetKey, target, totalGap, breakdown,
+    name, estHcp, currentKey, current, targetKey, target,
+    totalGap: displayGap,
+    breakdown,
+    baselineMode,
+    roundCount: rounds.length,
     stats: {
       fw:    {you:userFW,    target:target.fw,       pct:ratioFW,    peer:current.fw,       higherBetter:true},
       gir:   {you:userGIR,   target:target.gir,      pct:ratioGIR,   peer:current.gir,      higherBetter:true},
@@ -3219,6 +3573,14 @@ const COACH_MSG = {
 // Store last calculated results for PDF generation
 let lastResults = null;
 
+// ── Baseline globals ──────────────────────────────────────────────────
+// WHY globals: calculate() runs synchronously. It can't await a Supabase
+// call mid-calculation. So we load these on login and keep them in memory.
+// Any function that needs baseline state reads these — no extra DB calls.
+let baselineLocked  = false;   // mirrors profiles.baseline_locked
+let activeBaseline  = null;    // the user's locked baseline object
+const BASELINE_ROUNDS = 5;     // how many rounds before baseline locks
+
 function displayResults(d) {
   lastResults = d;
   ['dashboard-page','form-section','rounds-page'].forEach(id => {
@@ -3239,7 +3601,31 @@ function displayResults(d) {
   // S1 Identity
   document.getElementById('res-name').textContent = d.name;
   document.getElementById('res-tier-statement').textContent = `You are a ${d.current.label}.`;
-  document.getElementById('res-goal-statement').innerHTML = `You are <strong>${d.totalGap.toFixed(1)} strokes</strong> away from ${d.target.label}.`;
+
+  // WHY three different messages: each mode tells a different story.
+  // Pre-baseline: honest about where they are, motivates them to keep entering rounds.
+  // Lock: celebration moment — this is a product milestone for the user.
+  // Post-baseline: gap is frozen, shows the fixed starting point.
+  if (d.baselineMode === 'pre') {
+    const remaining = Math.max(0, BASELINE_ROUNDS - d.roundCount);
+    document.getElementById('res-goal-statement').innerHTML =
+      `<span style="color:var(--green-700);font-size:0.85rem;display:block;margin-bottom:4px;">
+        ⏳ Early analysis — enter ${remaining} more round${remaining !== 1 ? 's' : ''} to lock your baseline
+      </span>
+      You are <strong>${d.totalGap.toFixed(1)} strokes</strong> away from ${d.target.label}.`;
+  } else if (d.baselineMode === 'lock') {
+    document.getElementById('res-goal-statement').innerHTML =
+      `<span style="color:var(--green-700);font-size:0.85rem;display:block;margin-bottom:4px;">
+        🔒 Baseline locked — your starting point is set
+      </span>
+      You are <strong>${d.totalGap.toFixed(1)} strokes</strong> away from ${d.target.label}. This gap is now your fixed reference point.`;
+  } else {
+    document.getElementById('res-goal-statement').innerHTML =
+      `<span style="color:var(--green-700);font-size:0.85rem;display:block;margin-bottom:4px;">
+        📍 Baseline gap (locked ${new Date(activeBaseline?.locked_at||Date.now()).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})})
+      </span>
+      You started <strong>${d.totalGap.toFixed(1)} strokes</strong> from ${d.target.label}. Check My Game to see your progress.`;
+  }
 
   // Percentile block
   const pct = getPercentileInfo(d.estHcp);
@@ -3591,6 +3977,18 @@ function saveSettings() {
   if (wtEl)  current.warmupTime    = wtEl.value;
   if (dtEl)  current.drillType     = dtEl.value;
   localStorage.setItem(SETTINGS_KEY, JSON.stringify(current));
+
+  // Write settings to Supabase profiles in the background
+  if (currentUser) {
+    sb.from('profiles').update({
+      practice_frequency: current.practiceFreq,
+      session_length:     current.sessionLength,
+      warmup_time:        current.warmupTime,
+      practice_location:  current.drillType,
+    }).eq('id', currentUser.id)
+    .then(() => {})
+    .catch(e => console.warn('Settings sync failed:', e));
+  }
 }
 
 function loadSettingsUI() {
@@ -4187,6 +4585,17 @@ function saveCompletedSession(session) {
   const sessions = getCompletedSessions();
   sessions.unshift(session);
   localStorage.setItem('truestrokes_sessions', JSON.stringify(sessions));
+
+  // Write to Supabase in background
+  if (currentUser) {
+    sb.from('sessions').insert({
+      user_id:        currentUser.id,
+      session_number: session.sessionNum  || null,
+      focus_category: session.focus       || null,
+      drill_count:    session.drills ? session.drills.length : null,
+      completed_at:   session.savedAt     || null,
+    }).then(() => {}).catch(e => console.warn('Session sync failed:', e));
+  }
 }
 
 // Build the drills for a given session number based on tier + priority + settings
@@ -4674,6 +5083,20 @@ function saveDrillResult(drillId, drillName, category, sessionNum) {
     savedAt: new Date().toISOString(),
   });
   localStorage.setItem('truestrokes_drill_results', JSON.stringify(results));
+
+  // Write this drill result to Supabase in background
+  if (currentUser) {
+    const latest = results[0];
+    sb.from('drill_results').insert({
+      user_id:   currentUser.id,
+      drill_name: latest.drillName || latest.drillId || null,
+      category:   latest.category  || null,
+      score:      latest.score && latest.score !== '—' ? parseInt(latest.score) : null,
+      score_max:  latest.scoreMax && latest.scoreMax !== '—' ? parseInt(latest.scoreMax) : null,
+      feel:       latest.feel && latest.feel !== '—' ? latest.feel : null,
+      logged_at:  latest.savedAt || null,
+    }).then(() => {}).catch(e => console.warn('Drill result sync failed:', e));
+  }
   delete _drillFeels[drillId];
 
   // WHY replace the form in place instead of re-rendering the whole session:
@@ -5378,9 +5801,18 @@ function silentCalculate(rounds, name, targetKey) {
 
     sessionRounds = rounds.map((r,i) => ({...r, diff:diffs[i]}));
 
+    // Use frozen baseline gap if locked, otherwise live gap
+    const displayGap = (baselineLocked && activeBaseline)
+      ? activeBaseline.gap_to_target
+      : totalGap;
+
     // Store result silently — same shape as lastResults from displayResults()
     lastResults = {
-      name, estHcp, currentKey, current, targetKey, target, totalGap, breakdown,
+      name, estHcp, currentKey, current, targetKey, target,
+      totalGap: displayGap,
+      breakdown,
+      baselineMode: (baselineLocked && activeBaseline) ? 'post' : 'pre',
+      roundCount: rounds.length,
       stats: {
         fw:    {you:userFW,    target:target.fw,       pct:ratioFW,    peer:current.fw,       higherBetter:true},
         gir:   {you:userGIR,   target:target.gir,      pct:ratioGIR,   peer:current.gir,      higherBetter:true},
@@ -5414,7 +5846,15 @@ function renderDashboard() {
 
     // Analysis summary card
     document.getElementById('dash-current-tier').textContent = `You are a ${d.current.label}.`;
-    document.getElementById('dash-goal-line').textContent    = `Working toward ${d.target.label} · ${d.totalGap.toFixed(1)} strokes to close`;
+    // WHY conditional: post-baseline the gap is frozen at activeBaseline.gap_to_target.
+    // Pre-baseline it uses the live calculated gap. Dashboard reflects this split.
+    const dashGap = (baselineLocked && activeBaseline)
+      ? activeBaseline.gap_to_target
+      : d.totalGap;
+    const dashGapLabel = (baselineLocked && activeBaseline)
+      ? `Baseline: ${dashGap.toFixed(1)} strokes to close`
+      : `Working toward ${d.target.label} · ${dashGap.toFixed(1)} strokes to close`;
+    document.getElementById('dash-goal-line').textContent = dashGapLabel;
 
     // Plan headline based on session progress
     const nextNum = sessions.length + 1;
