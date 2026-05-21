@@ -5823,30 +5823,39 @@ function validateRounds(rounds, roundEls) {
 
     // ── Cross-field checks ──────────────────────────
     // Par 3s: soft warning — unusual but not impossible.
-    // WHY data attribute: we use a 'data-par3-warned' flag on the card itself.
-    // First time this fires → expand the card, show a warning, set the flag, stop.
-    // Second time (user already saw the warning and clicked Calculate again) → proceed.
-    // This never navigates away or clears data — it just pauses in place.
+    // Par 3s soft warning — show YES/NO prompt inline on the card.
+    // WHY not a second Calculate click: that was confusing. Instead we show
+    // a proper Yes/No prompt right on the card. Yes clears it and resumes
+    // calculation. No collapses to the par3 field so they can fix it.
     if (r.par3s <= 2 || r.par3s >= 5) {
       const cardEl = roundEls[i];
-      if (cardEl.dataset.par3Warned !== 'true') {
-        cardEl.dataset.par3Warned = 'true';
-        expandRoundCard(cardEl);
-        // Show warning inline on the card
-        let warnEl = cardEl.querySelector('.par3-warning');
-        if (!warnEl) {
-          warnEl = document.createElement('div');
-          warnEl.className = 'par3-warning';
-          warnEl.style.cssText = 'margin:8px 0;padding:10px 14px;background:#fff8e1;border:1.5px solid #f9a825;border-radius:6px;font-size:0.85rem;color:#6d4c00;line-height:1.5;';
-          cardEl.querySelector('.round-card-body').appendChild(warnEl);
-        }
-        warnEl.innerHTML = `⚠️ <strong>Par 3 holes is set to ${r.par3s}.</strong> Most courses have 4 par 3s. If that's correct, click <strong>Calculate</strong> again to continue.`;
-        return ''; // stop silently — card is already expanded with the warning
+      // If already confirmed, clear flag and proceed
+      if (cardEl.dataset.par3Confirmed === 'true') {
+        cardEl.dataset.par3Confirmed = 'false';
       } else {
-        // User already saw the warning and clicked Calculate again — proceed
-        cardEl.dataset.par3Warned = 'false';
-        const warnEl = cardEl.querySelector('.par3-warning');
-        if (warnEl) warnEl.remove();
+        expandRoundCard(cardEl);
+        // Remove any existing warning first
+        const existing = cardEl.querySelector('.par3-warning');
+        if (existing) existing.remove();
+        // Build inline yes/no prompt
+        const warnEl = document.createElement('div');
+        warnEl.className = 'par3-warning';
+        warnEl.style.cssText = 'margin:10px 0 4px;padding:12px 14px;background:#fff8e1;border:1.5px solid #f9a825;border-radius:6px;font-size:0.85rem;color:#6d4c00;line-height:1.6;';
+        warnEl.innerHTML = `
+          <div style="margin-bottom:8px;">⚠️ <strong>You entered ${r.par3s} par 3 holes.</strong> Most courses have 4. Is ${r.par3s} correct for this course?</div>
+          <div style="display:flex;gap:8px;">
+            <button onclick="par3Confirm(this, true)"
+              style="padding:6px 16px;background:var(--green-800);color:#fff;border:none;border-radius:4px;font-size:0.82rem;font-weight:600;cursor:pointer;">
+              Yes, that's correct
+            </button>
+            <button onclick="par3Confirm(this, false)"
+              style="padding:6px 16px;background:transparent;color:#6d4c00;border:1.5px solid #f9a825;border-radius:4px;font-size:0.82rem;font-weight:600;cursor:pointer;">
+              No, let me fix it
+            </button>
+          </div>`;
+        cardEl.querySelector('.round-card-body').appendChild(warnEl);
+        cardEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        return ''; // pause calculation — user must respond
       }
     }
 
@@ -5902,6 +5911,29 @@ function expandRoundCard(cardEl) {
   if (!cardEl) return;
   cardEl.classList.remove('collapsed');
   setTimeout(() => cardEl.scrollIntoView({ behavior: 'smooth', block: 'center' }), 100);
+}
+
+// Called by the Yes/No buttons inside the par3 inline warning
+function par3Confirm(btnEl, confirmed) {
+  const cardEl = btnEl.closest('.round-card');
+  const warnEl = cardEl.querySelector('.par3-warning');
+  if (confirmed) {
+    // User says it's correct — set flag and re-trigger Calculate
+    cardEl.dataset.par3Confirmed = 'true';
+    if (warnEl) warnEl.remove();
+    calculate(); // resume
+  } else {
+    // User wants to fix it — remove warning, keep card open, focus par3 field
+    if (warnEl) warnEl.remove();
+    cardEl.dataset.par3Confirmed = 'false';
+    const par3Input = cardEl.querySelector('.r-par3');
+    if (par3Input) {
+      par3Input.focus();
+      par3Input.select();
+      par3Input.style.border = '2px solid #f9a825';
+      setTimeout(() => par3Input.style.border = '', 2000);
+    }
+  }
 }
 
 function showError(msg) {
