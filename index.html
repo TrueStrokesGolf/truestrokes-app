@@ -4288,16 +4288,48 @@ function renderMGProgress() {
       ? Math.max(0, targetVal - curVal)
       : Math.max(0, curVal - targetVal);
 
-    // Context-aware sub-text — reframes proximity as a nudge, not a finish line
+    // Golf-specific action language — calculates real strokes/actions needed
+    // WHY: abstract percentages don't motivate. "2 more fairways" does.
     let goalSub;
+    const tierLabel = d.target.label;
     if (hitTarget) {
-      goalSub = 'Can you do it again next round?';
-    } else if (toGoPct <= 0.03) {
-      goalSub = toGo + ' to go — so close!';
-    } else if (toGoPct <= 0.10) {
-      goalSub = toGo + ' to go — keep pushing';
+      goalSub = 'You played like a ' + tierLabel + ' today — can you do it again?';
     } else {
-      goalSub = toGo + ' to go';
+      // Translate gap into a concrete golf action
+      let actionNudge = '';
+      if (s.key === 'fw') {
+        // Available fairways this round (use last round's par3s)
+        const availFW = 18 - (lastRound.par3s || 4);
+        const fwNeeded = Math.ceil(toGoPct * availFW);
+        if (fwNeeded <= 3) {
+          actionNudge = fwNeeded === 1
+            ? 'Hit one more fairway and you’re playing like a ' + tierLabel
+            : 'Hit ' + fwNeeded + ' more fairways and you’re playing like a ' + tierLabel;
+        }
+      } else if (s.key === 'gir') {
+        const girsNeeded = Math.ceil(toGoPct * 18);
+        if (girsNeeded <= 3) {
+          actionNudge = girsNeeded === 1
+            ? 'Hit one more green and you’re playing like a ' + tierLabel
+            : 'Hit ' + girsNeeded + ' more greens and you’re playing like a ' + tierLabel;
+        }
+      } else if (s.key === 'putts') {
+        // toGoPct is putts per GIR gap — multiply by GIR to get total putts
+        const gir = lastRound.gir || 9;
+        const puttsNeeded = Math.ceil(toGoPct * gir * 10) / 10;
+        if (puttsNeeded <= 3) {
+          actionNudge = 'Shave ' + puttsNeeded.toFixed(1) + ' putt' + (puttsNeeded !== 1 ? 's' : '') + ' and you’re playing like a ' + tierLabel;
+        }
+      } else if (s.key === 'scram') {
+        const missedGreens = 18 - (lastRound.gir || 9);
+        const scramNeeded = Math.ceil(toGoPct * missedGreens);
+        if (scramNeeded <= 3) {
+          actionNudge = scramNeeded === 1
+            ? 'Convert one more scramble and you’re playing like a ' + tierLabel
+            : 'Convert ' + scramNeeded + ' more scrambles and you’re playing like a ' + tierLabel;
+        }
+      }
+      goalSub = actionNudge || (toGo + ' to go');
     }
     const goalColor = hitTarget ? '#3B6D11' : labelColor;
     const goalValOpacity = hitTarget ? '1' : '0.5';
