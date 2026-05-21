@@ -4113,13 +4113,19 @@ function renderMGScoreboard() {
       : '';
     document.getElementById('mg-locked').textContent = `locked ${lockedDate}`;
 
-    // Gap closed = baseline gap minus current live gap estimate
-    const liveGap = d.estHcp - TIERS[d.targetKey].hcp;
-    const closed  = activeBaseline.gap_to_target - Math.max(0, liveGap);
-    const closedEl = document.getElementById('mg-gap-closed');
-    closedEl.textContent = closed > 0 ? `+${closed.toFixed(1)}` : closed.toFixed(1);
-    document.getElementById('mg-gap-closed-cell').style.background = closed > 0 ? 'var(--green-50)' : '#fdecea';
-    closedEl.style.color = closed > 0 ? 'var(--green-800)' : '#c62828';
+    // Gap closed — only meaningful after baseline is set AND user has played post-baseline rounds
+    // WHY: with exactly 5 rounds (all baseline rounds), there's nothing to compare against yet.
+    const postBaselineRounds = sessionRounds.length - BASELINE_ROUNDS;
+    if (postBaselineRounds > 0) {
+      const liveGap = d.estHcp - TIERS[d.targetKey].hcp;
+      const closed  = activeBaseline.gap_to_target - Math.max(0, liveGap);
+      const closedEl = document.getElementById('mg-gap-closed');
+      closedEl.textContent = closed > 0 ? `+${closed.toFixed(1)}` : closed.toFixed(1);
+      document.getElementById('mg-gap-closed-cell').style.background = closed > 0 ? 'var(--green-50)' : '#fdecea';
+      closedEl.style.color = closed > 0 ? 'var(--green-800)' : '#c62828';
+    } else {
+      document.getElementById('mg-gap-closed').textContent = '—';
+    }
 
     // Category gaps
     const catGapsEl = document.getElementById('mg-category-gaps');
@@ -4217,87 +4223,101 @@ function renderMGProgress() {
       <div style="height:0.5px;background:var(--border);margin:0 0 14px;"></div>`;
   }
 
-  // Last round stats vs baseline + vs previous round
+  // Stat cards — last round vs baseline
   const lastRound = rounds[rounds.length - 1];
-  const prevRound = rounds.length >= 2 ? rounds[rounds.length - 2] : null;
 
   const statDefs = [
-    { label: 'Fairways hit',        key: 'fw',
+    { label: 'Fairways hit',         key: 'fw',
       cur:  r => r.par3s > 0 ? r.fw / (18 - r.par3s) : 0,
-      base: bl.fw_baseline, fmt: v => (v * 100).toFixed(0) + '%', higherBetter: true },
+      base: bl.fw_baseline,    fmt: v => (v * 100).toFixed(0) + '%',
+      fmtDelta: v => (v * 100).toFixed(0) + '%', higherBetter: true },
     { label: 'Greens in regulation', key: 'gir',
       cur:  r => r.gir / 18,
-      base: bl.gir_baseline, fmt: v => (v * 100).toFixed(0) + '%', higherBetter: true },
+      base: bl.gir_baseline,   fmt: v => (v * 100).toFixed(0) + '%',
+      fmtDelta: v => (v * 100).toFixed(0) + '%', higherBetter: true },
     { label: 'Putts per GIR',        key: 'putts',
       cur:  r => r.gir > 0 ? r.putts / r.gir : 2.5,
-      base: bl.putts_baseline, fmt: v => v.toFixed(2), higherBetter: false },
+      base: bl.putts_baseline, fmt: v => v.toFixed(2),
+      fmtDelta: v => v.toFixed(2), higherBetter: false },
     { label: 'Scrambling',           key: 'scram',
       cur:  r => (18 - r.gir) > 0 ? r.scrambles / (18 - r.gir) : 0,
-      base: bl.scram_baseline, fmt: v => (v * 100).toFixed(0) + '%', higherBetter: true },
+      base: bl.scram_baseline, fmt: v => (v * 100).toFixed(0) + '%',
+      fmtDelta: v => (v * 100).toFixed(0) + '%', higherBetter: true },
   ];
 
-  const target = TIERS[d.targetKey];
+  const target    = TIERS[d.targetKey];
   const targetVals = { fw: target.fw, gir: target.gir, putts: target.putts, scram: target.scramble };
 
-  const statBars = statDefs.map(s => {
-    const curVal  = s.cur(lastRound);
-    const prevVal = prevRound ? s.cur(prevRound) : null;
-    const baseVal = s.base || 0;
+  // WHY progressDelta: + always means moving toward goal, - always means moving away.
+  // For higher-is-better stats (FW, GIR, Scram): raw delta = curVal - baseVal.
+  // For lower-is-better stats (Putts): we invert — improvement is a decrease,
+  // so progressDelta = baseVal - curVal (positive when putts went DOWN = good).
+  const progressDelta = (curVal, baseVal, hb) => hb ? curVal - baseVal : baseVal - curVal;
+
+  const statCards = statDefs.map(s => {
+    const curVal   = s.cur(lastRound);
+    const baseVal  = s.base || 0;
     const targetVal = targetVals[s.key];
+    const hb       = s.higherBetter;
 
-    const vsBase = curVal - baseVal;
-    const vsPrev = prevVal !== null ? curVal - prevVal : null;
-    const hb = s.higherBetter;
-
-    const improving = hb ? vsBase > 0.005 : vsBase < -0.005;
+    const delta    = progressDelta(curVal, baseVal, hb);
     const hitTarget = hb ? curVal >= targetVal : curVal <= targetVal;
+    const improving = delta > 0.005;
+    const declining = delta < -0.005;
 
-    const barPct = Math.min(100, Math.max(0, (curVal / (targetVal || 1)) * 100));
-    const basePct = Math.min(98, Math.max(0, (baseVal / (targetVal || 1)) * 100));
-    const barColor = hitTarget ? '#EF9F27' : improving ? '#639922' : '#E24B4A';
+    const cardState = hitTarget ? 'achieved' : improving ? 'improved' : declining ? 'declined' : 'neutral';
 
-    const fmtDelta = (val, hb, isVal) => {
-      if (val === null) return '';
-      const sign = val > 0 ? '+' : '';
-      const str = isVal ? sign + val.toFixed(2) : sign + (val * 100).toFixed(0) + '%';
-      return str;
-    };
+    const cardBg    = hitTarget ? '#FAEEDA' : improving ? '#EAF3DE' : declining ? '#FCEBEB' : 'var(--green-50)';
+    const nameColor = hitTarget ? '#412402'  : improving ? '#173404' : declining ? '#501313' : 'var(--text-primary)';
+    const valColor  = hitTarget ? '#633806'  : improving ? '#27500A' : declining ? '#A32D2D' : 'var(--text-primary)';
+    const labelColor= hitTarget ? '#633806'  : improving ? '#3B6D11' : declining ? '#791F1F' : 'var(--text-muted)';
+    const divColor  = hitTarget ? '#FAC775'  : improving ? '#C0DD97' : declining ? '#F7C1C1' : 'var(--border)';
+    const badgeBg   = hitTarget ? '#FAC775'  : improving ? '#C0DD97' : declining ? '#F7C1C1' : 'var(--border)';
+    const badgeColor= hitTarget ? '#412402'  : improving ? '#173404' : declining ? '#501313' : 'var(--text-muted)';
 
-    const vsBaseStr = s.key === 'putts'
-      ? fmtDelta(vsBase, hb, true)
-      : fmtDelta(vsBase, hb, false);
-    const vsPrevStr = vsPrev !== null
-      ? (s.key === 'putts' ? fmtDelta(vsPrev, hb, true) : fmtDelta(vsPrev, hb, false))
-      : null;
+    // Badge text: + for progress, - for regression, always reflects improvement direction
+    let badgeText;
+    if (hitTarget) {
+      badgeText = '⭐ Goal reached';
+    } else {
+      const sign = delta >= 0 ? '+' : '-';
+      const abs  = Math.abs(delta);
+      const str  = s.fmtDelta(abs);
+      badgeText  = `${sign}${str} vs baseline`;
+    }
 
-    const baseGood = hb ? vsBase > 0.005 : vsBase < -0.005;
-    const baseBad  = hb ? vsBase < -0.005 : vsBase > 0.005;
-    const prevGood = vsPrev !== null ? (hb ? vsPrev > 0.005 : vsPrev < -0.005) : null;
-    const prevBad  = vsPrev !== null ? (hb ? vsPrev < -0.005 : vsPrev > 0.005) : null;
-
-    const baseDeltaClass = hitTarget ? 'mg-delta-target' : baseGood ? 'mg-delta-up' : baseBad ? 'mg-delta-down' : 'mg-delta-flat';
-    const prevDeltaClass = prevGood ? 'mg-delta-up' : prevBad ? 'mg-delta-down' : 'mg-delta-flat';
+    // "to go" label
+    const toGo = hb
+      ? s.fmtDelta(Math.max(0, targetVal - curVal))
+      : s.fmtDelta(Math.max(0, curVal - targetVal));
+    const goalSub = hitTarget ? '✓ achieved' : `${toGo} to go`;
+    const goalColor = hitTarget ? '#3B6D11' : labelColor;
+    const goalValOpacity = hitTarget ? '1' : '0.5';
 
     return `
-      <div class="mg-stat-row">
-        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px;">
-          <span style="font-size:12px;color:var(--text-muted);">${s.label}</span>
-          <span style="font-size:15px;font-weight:600;color:${hitTarget ? '#633806' : 'var(--text-primary)'};">${s.fmt(curVal)}</span>
+      <div style="border-radius:16px;padding:1.25rem 1.5rem;margin-bottom:10px;background:${cardBg};">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+          <span style="font-size:13px;font-weight:600;color:${nameColor};">${s.label}</span>
+          <span style="font-size:11px;font-weight:600;padding:3px 10px;border-radius:20px;background:${badgeBg};color:${badgeColor};">${badgeText}</span>
         </div>
-        <div class="mg-bar-track">
-          <div class="mg-bar-fill" style="width:${barPct}%;background:${barColor};"></div>
-          <div class="mg-baseline-pin" style="left:${basePct}%;"></div>
-        </div>
-        <div style="display:flex;gap:6px;flex-wrap:wrap;">
-          <span class="mg-delta ${baseDeltaClass}">${hitTarget ? '⭐ Target reached' : vsBaseStr + ' vs baseline'}</span>
-          ${vsPrevStr ? `<span class="mg-delta ${prevDeltaClass}">${vsPrevStr} vs last round</span>` : ''}
+        <div style="display:grid;grid-template-columns:1fr 1px 1fr;align-items:center;">
+          <div style="padding-right:16px;">
+            <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;color:${labelColor};margin-bottom:6px;">Latest round</div>
+            <div style="font-size:36px;font-weight:500;line-height:1;color:${valColor};">${s.fmt(curVal)}</div>
+          </div>
+          <div style="width:1px;height:60px;background:${divColor};"></div>
+          <div style="padding-left:16px;">
+            <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;color:${labelColor};margin-bottom:6px;">Your goal</div>
+            <div style="font-size:24px;font-weight:500;line-height:1;color:${valColor};opacity:${goalValOpacity};margin-bottom:4px;">${s.fmt(targetVal)}</div>
+            <div style="font-size:11px;color:${goalColor};opacity:0.8;">${goalSub}</div>
+          </div>
         </div>
       </div>`;
   }).join('');
 
-  const lastDate = lastRound.date ? new Date(lastRound.date).toLocaleDateString('en-US',{month:'short',day:'numeric'}) : '';
+  const lastDate   = lastRound.date ? new Date(lastRound.date + 'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'}) : '';
   const lastCourse = lastRound.course || '';
-  const subtitle = [lastDate, lastCourse].filter(Boolean).join(' · ');
+  const subtitle   = [lastDate, lastCourse].filter(Boolean).join(' · ');
 
   // Next milestone nudge
   const badgeProgress = getBadgeProgress();
@@ -4318,7 +4338,7 @@ function renderMGProgress() {
         Stats — last round vs baseline
         ${subtitle ? `<span style="font-size:11px;font-weight:400;color:var(--text-muted);margin-left:4px;">${subtitle}</span>` : ''}
       </div>
-      ${statBars}
+      ${statCards}
       ${nudgeHTML}
     </div>`;
 }
