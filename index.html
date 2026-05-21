@@ -4275,16 +4275,10 @@ function renderMGProgress() {
     const badgeBg   = hitTarget ? '#FAC775'  : improving ? '#C0DD97' : declining ? '#F7C1C1' : 'var(--border)';
     const badgeColor= hitTarget ? '#412402'  : improving ? '#173404' : declining ? '#501313' : 'var(--text-muted)';
 
-    // Badge text: + for progress, - for regression, always reflects improvement direction
-    let badgeText;
-    if (hitTarget) {
-      badgeText = '⭐ Goal reached';
-    } else {
-      const sign = delta >= 0 ? '+' : '-';
-      const abs  = Math.abs(delta);
-      const str  = s.fmtDelta(abs);
-      badgeText  = `${sign}${str} vs baseline`;
-    }
+    // Badge always shows raw delta — + means progress, - means regression
+    const sign     = delta >= 0 ? '+' : '-';
+    const absVal   = Math.abs(delta);
+    const badgeText = sign + s.fmtDelta(absVal) + ' vs baseline';
 
     // "to go" label
     const toGo = hb
@@ -4304,7 +4298,7 @@ function renderMGProgress() {
           <div style="padding-right:16px;">
             <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;color:${labelColor};margin-bottom:6px;">Latest round</div>
             <div style="font-size:36px;font-weight:500;line-height:1;color:${valColor};">${s.fmt(curVal)}</div>
-          ${hitTarget ? `<div style="font-size:11px;color:${labelColor};margin-top:5px;font-weight:600;">Goal hit this round!</div>` : ''}
+          ${hitTarget ? '<div style="font-size:11px;color:'+labelColor+';margin-top:5px;font-weight:600;">Goal hit this round!</div>' : ''}
           </div>
           <div style="width:1px;height:60px;background:${divColor};"></div>
           <div style="padding-left:16px;">
@@ -4320,29 +4314,51 @@ function renderMGProgress() {
   const lastCourse = lastRound.course || '';
   const subtitle   = [lastDate, lastCourse].filter(Boolean).join(' · ');
 
-  // Next milestone nudge
-  const badgeProgress = getBadgeProgress();
-  const nudge = badgeProgress.find(b => !b.earned && b.pct < 1);
-  const nudgeHTML = nudge ? `
-    <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--green-50);border-radius:var(--radius-sm);border:0.5px solid var(--border);margin-top:4px;">
-      <div style="font-size:18px;">🎯</div>
-      <div>
-        <div style="font-size:12px;color:var(--text-primary);">${nudge.nudge}</div>
-        <div style="font-size:11px;color:var(--text-muted);margin-top:2px;">${nudge.sub}</div>
-      </div>
-    </div>` : '';
+  // Nudge card removed from Progress tab — lives on Badges tab only
 
-  // Build momentum section for bottom placement
-  const momentumSection = momentumHTML ? `
-    <div class="card" style="margin-top:10px;">
-      <div style="font-size:13px;font-weight:600;color:var(--text-primary);margin-bottom:6px;">
-        Momentum
-        <span style="font-size:11px;font-weight:400;color:var(--text-muted);margin-left:4px;">last 3 rounds</span>
-      </div>
-      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;">
-        ${momentumHTML.replace(/<div style="font-size:13px[^<]+<\/div>/, '').replace(/<div style="display:grid[^>]+>/, '').replace(/<\/div>\s*<div style="height[^>]+><\/div>/, '')}
-      </div>
-    </div>` : '';
+  // Rebuild momentum cells cleanly for bottom section
+  let momentumSection = '';
+  if (rounds.length >= 2) {
+    const statFns2 = {
+      FW:    r => r.par3s > 0 ? r.fw / (18 - r.par3s) : 0,
+      GIR:   r => r.gir / 18,
+      Putts: r => r.gir > 0 ? r.putts / r.gir : 2.5,
+      Scram: r => (18 - r.gir) > 0 ? r.scrambles / (18 - r.gir) : 0,
+    };
+    const hb2 = { FW: true, GIR: true, Putts: false, Scram: true };
+    const last3b = rounds.slice(-3);
+    const prev3b = rounds.length >= 4 ? rounds.slice(-6,-3) : rounds.slice(0,-3);
+    const avg2 = (arr, fn) => arr.length ? arr.reduce((s,r) => s + fn(r), 0) / arr.length : 0;
+
+    const cells = Object.entries(statFns2).map(([label, fn]) => {
+      const cur  = avg2(last3b, fn);
+      const prv  = avg2(prev3b.length ? prev3b : last3b.slice(0,-1), fn);
+      const diff = cur - prv;
+      const good = hb2[label] ? diff > 0.005 : diff < -0.005;
+      const bad  = hb2[label] ? diff < -0.005 : diff > 0.005;
+      // Progress delta: + = good, - = bad (same sign convention as stat cards)
+      const progDiff = hb2[label] ? diff : -diff;
+      const sign = progDiff >= 0 ? '+' : '-';
+      const absDiff = Math.abs(diff);
+      const sub = label === 'Putts' ? sign + absDiff.toFixed(2) : sign + (absDiff * 100).toFixed(0) + '%';
+      const arrow = good ? '↑' : bad ? '↓' : '→';
+      const color = good ? '#27500A' : bad ? '#A32D2D' : 'var(--text-muted)';
+      const bg    = good ? '#EAF3DE' : bad ? '#FCEBEB' : 'var(--color-background-secondary)';
+      return `<div style="text-align:center;padding:10px 4px;background:${bg};border-radius:8px;">
+        <div style="font-size:16px;color:${color};line-height:1;margin-bottom:2px;">${arrow}</div>
+        <div style="font-size:10px;color:var(--text-muted);">${label}</div>
+        <div style="font-size:10px;color:${color};margin-top:1px;font-weight:600;">${sub}</div>
+      </div>`;
+    }).join('');
+
+    momentumSection = `
+      <div class="card" style="margin-top:10px;">
+        <div style="font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:10px;">
+          Momentum <span style="font-weight:400;text-transform:none;letter-spacing:0;">last 3 rounds</span>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;">${cells}</div>
+      </div>`;
+  }
 
   el.innerHTML = `
     <div>
@@ -4350,7 +4366,6 @@ function renderMGProgress() {
         Latest round${subtitle ? ` <span style="font-weight:400;text-transform:none;letter-spacing:0;">· ${subtitle}</span>` : ''}
       </div>
       ${statCards}
-      ${nudgeHTML}
       ${momentumSection}
     </div>`;
 }
