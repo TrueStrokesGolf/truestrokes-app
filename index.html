@@ -3389,19 +3389,19 @@ function addRound() {
         <div class="sc-field">
           <label class="sc-label">Par</label>
           <span class="sc-hint">Usually 70–72</span>
-          <input type="number" class="r-par" min="65" max="73" placeholder="72"/>
+          <input type="number" class="r-par" min="65" max="73" placeholder="72" onblur="checkRoundField(this)"/>
         </div>
         <div class="sc-field">
           <label class="sc-label">Course Rating</label>
           <span class="sc-hint">On scorecard</span>
-          <input type="number" class="r-rating" step="0.1" min="60" max="80" placeholder="71.6"/>
+          <input type="number" class="r-rating" step="0.1" min="60" max="80" placeholder="71.6" onblur="checkRoundField(this)"/>
         </div>
       </div>
       <div class="sc-row-2">
         <div class="sc-field">
           <label class="sc-label">Slope</label>
           <span class="sc-hint">Range 55–155</span>
-          <input type="number" class="r-slope" min="55" max="155" placeholder="130"/>
+          <input type="number" class="r-slope" min="55" max="155" placeholder="130" onblur="checkRoundField(this)"/>
         </div>
         <div class="sc-field">
           <label class="sc-label">Par 3 Holes</label>
@@ -3414,30 +3414,30 @@ function addRound() {
         <div class="sc-field">
           <label class="sc-label">Score</label>
           <span class="sc-hint">Total strokes</span>
-          <input type="number" class="r-score" min="50" max="150" placeholder="92" oninput="updateRoundSummary(this)"/>
+          <input type="number" class="r-score" min="50" max="150" placeholder="92" oninput="updateRoundSummary(this)" onblur="checkRoundField(this)"/>
         </div>
         <div class="sc-field">
           <label class="sc-label">Fairways Hit</label>
           <span class="sc-hint">Par 4s &amp; 5s only</span>
-          <input type="number" class="r-fw" min="0" max="18" placeholder="6"/>
+          <input type="number" class="r-fw" min="0" max="18" placeholder="6" onblur="checkRoundField(this)"/>
         </div>
       </div>
       <div class="sc-row-2">
         <div class="sc-field">
           <label class="sc-label">Greens in Reg</label>
           <span class="sc-hint">Par3=1, Par4=2, Par5=3</span>
-          <input type="number" class="r-gir" min="0" max="18" placeholder="4"/>
+          <input type="number" class="r-gir" min="0" max="18" placeholder="4" onblur="checkRoundField(this)"/>
         </div>
         <div class="sc-field">
           <label class="sc-label">Putts on GIR</label>
           <span class="sc-hint">Only on GIR holes</span>
-          <input type="number" class="r-putts" min="0" max="54" placeholder="9"/>
+          <input type="number" class="r-putts" min="0" max="54" placeholder="9" onblur="checkRoundField(this)"/>
         </div>
       </div>
       <div class="sc-field">
         <label class="sc-label">Scrambles Made</label>
         <span class="sc-hint">Par or better after missing the green</span>
-        <input type="number" class="r-scrambles" min="0" max="18" placeholder="2"/>
+        <input type="number" class="r-scrambles" min="0" max="18" placeholder="2" onblur="checkRoundField(this)"/>
       </div>
     </div>`;
   document.getElementById('rounds-container').appendChild(div);
@@ -5912,6 +5912,139 @@ function expandRoundCard(cardEl) {
   if (!cardEl) return;
   cardEl.classList.remove('collapsed');
   setTimeout(() => cardEl.scrollIntoView({ behavior: 'smooth', block: 'center' }), 100);
+}
+
+// ═══════════════════════════════════════════════════
+// FIELD-LEVEL BLUR VALIDATION
+// Called onblur for every round input. Reads sibling field values
+// from the same card to do cross-field checks. Shows inline warnings
+// or errors immediately — before the user hits Calculate.
+// ═══════════════════════════════════════════════════
+
+function checkRoundField(inputEl) {
+  const cardEl  = inputEl.closest('.round-card');
+  const get     = cls => parseFloat(cardEl.querySelector(cls)?.value) || 0;
+
+  const score   = get('.r-score');
+  const par     = get('.r-par');
+  const rating  = get('.r-rating');
+  const slope   = get('.r-slope');
+  const par3s   = get('.r-par3');
+  const fw      = get('.r-fw');
+  const gir     = get('.r-gir');
+  const putts   = get('.r-putts');
+  const scrambles = get('.r-scrambles');
+
+  const availFW     = 18 - par3s;
+  const missedGreens = 18 - gir;
+  const cls         = inputEl.className;
+
+  // Clear any existing field-level warning on THIS input
+  clearFieldWarning(inputEl);
+
+  // ── Hard errors (always wrong) ────────────────────
+  if (cls.includes('r-fw') && par3s > 0 && fw > availFW) {
+    return showFieldError(inputEl,
+      `Can't hit more fairways (${fw}) than available (${availFW}). You have ${par3s} par 3 holes — check that number.`);
+  }
+
+  if (cls.includes('r-gir') && gir > 18) {
+    return showFieldError(inputEl, `Greens in regulation can't exceed 18.`);
+  }
+
+  if (cls.includes('r-scrambles') && gir > 0 && scrambles > missedGreens) {
+    return showFieldError(inputEl,
+      `Scrambles (${scrambles}) can't exceed missed greens (${missedGreens}). You hit ${gir} greens, missing ${missedGreens}.`);
+  }
+
+  if (cls.includes('r-putts') && gir > 0 && putts > gir * 5) {
+    return showFieldError(inputEl,
+      `Putts on GIR (${putts}) seems very high for ${gir} greens hit — that's over 5 per green.`);
+  }
+
+  if (cls.includes('r-putts') && gir > 0 && putts === 0) {
+    return showFieldError(inputEl,
+      `You hit ${gir} greens but entered 0 putts on GIR. Enter total putts on holes where you hit the green.`);
+  }
+
+  // Also re-check fw when par3 changes, and scrambles/putts when gir changes
+  if (cls.includes('r-par3') && par3s > 0 && fw > 0 && fw > availFW) {
+    return showFieldError(cardEl.querySelector('.r-fw'),
+      `Fairways hit (${fw}) now exceeds available fairways (${availFW}) with ${par3s} par 3s.`);
+  }
+
+  if (cls.includes('r-gir')) {
+    if (scrambles > 0 && scrambles > missedGreens) {
+      showFieldError(cardEl.querySelector('.r-scrambles'),
+        `Scrambles (${scrambles}) exceeds missed greens (${missedGreens}) based on ${gir} GIR.`);
+    }
+    if (putts > 0 && putts > gir * 5) {
+      showFieldError(cardEl.querySelector('.r-putts'),
+        `Putts on GIR (${putts}) is very high for ${gir} greens hit.`);
+    }
+  }
+
+  // ── Sanity warnings (soft — yes/no) ──────────────
+  if (cls.includes('r-score') && par > 0 && score > 0) {
+    if (score > par + 50 || score < par - 10) {
+      return showFieldWarning(inputEl,
+        `Score of ${score} looks unusual for a par ${par} course. Double-check your score and par.`);
+    }
+  }
+
+  if (cls.includes('r-slope') && slope > 0) {
+    if (slope < 55 || slope > 155) {
+      return showFieldWarning(inputEl,
+        `Slope of ${slope} is outside the valid range (55–155). Check your scorecard.`);
+    }
+  }
+
+  if (cls.includes('r-rating') && rating > 0) {
+    if (rating < 60 || rating > 80) {
+      return showFieldWarning(inputEl,
+        `Course rating of ${rating} looks unusual — typical range is 67–77. Check your scorecard.`);
+    }
+  }
+
+  // Re-check score sanity when par changes
+  if (cls.includes('r-par') && par > 0 && score > 0) {
+    if (score > par + 50 || score < par - 10) {
+      showFieldWarning(cardEl.querySelector('.r-score'),
+        `Score of ${score} looks unusual for a par ${par} course.`);
+    }
+  }
+}
+
+// Show a hard error on a specific input (red — blocks calculate)
+function showFieldError(inputEl, msg) {
+  if (!inputEl) return;
+  clearFieldWarning(inputEl);
+  const el = document.createElement('div');
+  el.className = 'field-msg field-error';
+  el.style.cssText = 'margin:4px 0 6px;padding:6px 10px;background:#fdecea;border:1px solid #e57373;border-radius:4px;font-size:0.8rem;color:#c62828;line-height:1.4;';
+  el.textContent = '⛔ ' + msg;
+  inputEl.style.borderColor = '#e57373';
+  inputEl.insertAdjacentElement('afterend', el);
+}
+
+// Show a soft warning on a specific input (yellow — user can confirm)
+function showFieldWarning(inputEl, msg) {
+  if (!inputEl) return;
+  clearFieldWarning(inputEl);
+  const el = document.createElement('div');
+  el.className = 'field-msg field-warning';
+  el.style.cssText = 'margin:4px 0 6px;padding:6px 10px;background:#fff8e1;border:1px solid #f9a825;border-radius:4px;font-size:0.8rem;color:#6d4c00;line-height:1.4;';
+  el.textContent = '⚠️ ' + msg;
+  inputEl.style.borderColor = '#f9a825';
+  inputEl.insertAdjacentElement('afterend', el);
+}
+
+// Clear any existing field message for an input
+function clearFieldWarning(inputEl) {
+  if (!inputEl) return;
+  inputEl.style.borderColor = '';
+  const next = inputEl.nextElementSibling;
+  if (next && next.classList.contains('field-msg')) next.remove();
 }
 
 // Called onblur when user leaves the par3 field — instant feedback
