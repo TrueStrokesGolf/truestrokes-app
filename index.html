@@ -2469,37 +2469,37 @@
   <div id="rounds-page">
 
     <!-- ── SCOREBOARD — sticky summary card ── -->
-    <div id="mg-scoreboard" class="card" style="margin-bottom:10px;">
+    <div id="mg-scoreboard" style="background:var(--green-800);border-radius:var(--radius-lg);padding:1.25rem 1.5rem;margin-bottom:10px;">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;">
         <div>
-          <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:3px;">Your journey</div>
-          <div id="mg-tier" style="font-size:18px;font-weight:600;color:var(--text-primary);">—</div>
-          <div id="mg-target" style="font-size:11px;color:var(--green-700);margin-top:2px;">—</div>
+          <div style="font-size:10px;color:var(--green-300);text-transform:uppercase;letter-spacing:0.09em;margin-bottom:4px;">Your journey</div>
+          <div id="mg-tier" style="font-size:22px;font-weight:700;color:#fff;line-height:1.1;">—</div>
+          <div id="mg-target" style="font-size:12px;color:var(--green-300);margin-top:4px;">—</div>
         </div>
         <div style="text-align:right;">
-          <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:3px;">Baseline gap</div>
-          <div id="mg-gap" style="font-size:18px;font-weight:600;color:var(--text-primary);">—</div>
-          <div id="mg-locked" style="font-size:11px;color:var(--green-700);margin-top:2px;">—</div>
+          <div style="font-size:10px;color:var(--green-300);text-transform:uppercase;letter-spacing:0.09em;margin-bottom:4px;">Baseline gap</div>
+          <div id="mg-gap" style="font-size:22px;font-weight:700;color:#fff;line-height:1.1;">—</div>
+          <div id="mg-locked" style="font-size:12px;color:var(--green-300);margin-top:4px;">—</div>
         </div>
       </div>
 
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:12px;">
-        <div style="background:var(--green-50);border-radius:var(--radius-sm);padding:8px;text-align:center;">
-          <div id="mg-rounds-count" style="font-size:15px;font-weight:600;color:var(--text-primary);">0</div>
-          <div style="font-size:10px;color:var(--text-muted);">rounds</div>
+        <div style="background:rgba(255,255,255,0.1);border-radius:var(--radius-sm);padding:10px;text-align:center;">
+          <div id="mg-rounds-count" style="font-size:20px;font-weight:700;color:#fff;">0</div>
+          <div style="font-size:10px;color:var(--green-300);margin-top:2px;">rounds</div>
         </div>
-        <div id="mg-gap-closed-cell" style="background:var(--green-50);border-radius:var(--radius-sm);padding:8px;text-align:center;">
-          <div id="mg-gap-closed" style="font-size:15px;font-weight:600;color:var(--green-800);">—</div>
-          <div style="font-size:10px;color:var(--green-700);">gap closed</div>
+        <div id="mg-gap-closed-cell" style="background:rgba(255,255,255,0.1);border-radius:var(--radius-sm);padding:10px;text-align:center;">
+          <div id="mg-gap-closed" style="font-size:20px;font-weight:700;color:#fff;">—</div>
+          <div style="font-size:10px;color:var(--green-300);margin-top:2px;">gap closed</div>
         </div>
-        <div style="background:var(--green-50);border-radius:var(--radius-sm);padding:8px;text-align:center;">
-          <div id="mg-sessions-count" style="font-size:15px;font-weight:600;color:var(--text-primary);">0</div>
-          <div style="font-size:10px;color:var(--text-muted);">practice sessions</div>
+        <div style="background:rgba(255,255,255,0.1);border-radius:var(--radius-sm);padding:10px;text-align:center;">
+          <div id="mg-sessions-count" style="font-size:20px;font-weight:700;color:#fff;">0</div>
+          <div style="font-size:10px;color:var(--green-300);margin-top:2px;">practice sessions</div>
         </div>
       </div>
 
       <div id="mg-category-gaps" style="border-top:0.5px solid var(--border);padding-top:10px;display:none;">
-        <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:8px;">Gap closed by category</div>
+        <div style="font-size:10px;color:var(--green-300);text-transform:uppercase;letter-spacing:0.09em;margin-bottom:8px;">Gap closed by category</div>
         <div id="mg-category-gaps-grid" style="display:grid;grid-template-columns:repeat(2,1fr);gap:5px;"></div>
       </div>
     </div>
@@ -4121,8 +4121,8 @@ function renderMGScoreboard() {
       const closed  = activeBaseline.gap_to_target - Math.max(0, liveGap);
       const closedEl = document.getElementById('mg-gap-closed');
       closedEl.textContent = closed > 0 ? `+${closed.toFixed(1)}` : closed.toFixed(1);
-      document.getElementById('mg-gap-closed-cell').style.background = closed > 0 ? 'var(--green-50)' : '#fdecea';
-      closedEl.style.color = closed > 0 ? 'var(--green-800)' : '#c62828';
+      document.getElementById('mg-gap-closed-cell').style.background = closed > 0 ? 'rgba(144,238,144,0.2)' : 'rgba(255,100,100,0.2)';
+      closedEl.style.color = closed > 0 ? '#90EE90' : '#FF8080';
     } else {
       document.getElementById('mg-gap-closed').textContent = '—';
     }
@@ -4134,9 +4134,9 @@ function renderMGScoreboard() {
     const baselineBreakdown = d.breakdown;
     catGrid.innerHTML = baselineBreakdown.map(b => {
       const arrow = '↑';
-      return `<div style="font-size:11px;color:var(--text-muted);">
+      return `<div style="font-size:11px;color:var(--green-300);">
         ${b.category.replace(' Shots','').replace(' Game','')}
-        <span style="color:var(--green-700);font-weight:600;">${b.strokes.toFixed(1)} ↑</span>
+        <span style="color:#90EE90;font-weight:600;">${b.strokes.toFixed(1)} ↑</span>
       </div>`;
     }).join('');
   } else {
@@ -4304,6 +4304,7 @@ function renderMGProgress() {
           <div style="padding-right:16px;">
             <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;color:${labelColor};margin-bottom:6px;">Latest round</div>
             <div style="font-size:36px;font-weight:500;line-height:1;color:${valColor};">${s.fmt(curVal)}</div>
+          ${hitTarget ? `<div style="font-size:11px;color:${labelColor};margin-top:5px;font-weight:600;">Goal hit this round!</div>` : ''}
           </div>
           <div style="width:1px;height:60px;background:${divColor};"></div>
           <div style="padding-left:16px;">
@@ -4331,15 +4332,26 @@ function renderMGProgress() {
       </div>
     </div>` : '';
 
+  // Build momentum section for bottom placement
+  const momentumSection = momentumHTML ? `
+    <div class="card" style="margin-top:10px;">
+      <div style="font-size:13px;font-weight:600;color:var(--text-primary);margin-bottom:6px;">
+        Momentum
+        <span style="font-size:11px;font-weight:400;color:var(--text-muted);margin-left:4px;">last 3 rounds</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;">
+        ${momentumHTML.replace(/<div style="font-size:13px[^<]+<\/div>/, '').replace(/<div style="display:grid[^>]+>/, '').replace(/<\/div>\s*<div style="height[^>]+><\/div>/, '')}
+      </div>
+    </div>` : '';
+
   el.innerHTML = `
-    <div class="card">
-      ${momentumHTML}
-      <div style="font-size:13px;font-weight:600;color:var(--text-primary);margin-bottom:10px;">
-        Stats — last round vs baseline
-        ${subtitle ? `<span style="font-size:11px;font-weight:400;color:var(--text-muted);margin-left:4px;">${subtitle}</span>` : ''}
+    <div>
+      <div style="font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:8px;">
+        Latest round${subtitle ? ` <span style="font-weight:400;text-transform:none;letter-spacing:0;">· ${subtitle}</span>` : ''}
       </div>
       ${statCards}
       ${nudgeHTML}
+      ${momentumSection}
     </div>`;
 }
 
