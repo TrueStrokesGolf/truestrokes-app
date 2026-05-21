@@ -5811,13 +5811,31 @@ function validateRounds(rounds, roundEls) {
 
     // ── Cross-field checks ──────────────────────────
     // Par 3s: soft warning — unusual but not impossible.
-    // WHY confirm() not return: this is advisory, not a hard block.
-    // The user might genuinely have 2 or 5 par 3s on an unusual course.
-    // confirm() pauses and asks — if they say OK, calculation continues.
+    // WHY data attribute: we use a 'data-par3-warned' flag on the card itself.
+    // First time this fires → expand the card, show a warning, set the flag, stop.
+    // Second time (user already saw the warning and clicked Calculate again) → proceed.
+    // This never navigates away or clears data — it just pauses in place.
     if (r.par3s <= 2 || r.par3s >= 5) {
-      expandRoundCard(roundEls[i]);
-      const ok = window.confirm(`${label}: Par 3 holes is set to ${r.par3s}. Most courses have 4 par 3s.\n\nIs ${r.par3s} correct for this course?`);
-      if (!ok) return ''; // user wants to fix it — show no error, just stop
+      const cardEl = roundEls[i];
+      if (cardEl.dataset.par3Warned !== 'true') {
+        cardEl.dataset.par3Warned = 'true';
+        expandRoundCard(cardEl);
+        // Show warning inline on the card
+        let warnEl = cardEl.querySelector('.par3-warning');
+        if (!warnEl) {
+          warnEl = document.createElement('div');
+          warnEl.className = 'par3-warning';
+          warnEl.style.cssText = 'margin:8px 0;padding:10px 14px;background:#fff8e1;border:1.5px solid #f9a825;border-radius:6px;font-size:0.85rem;color:#6d4c00;line-height:1.5;';
+          cardEl.querySelector('.round-card-body').appendChild(warnEl);
+        }
+        warnEl.innerHTML = `⚠️ <strong>Par 3 holes is set to ${r.par3s}.</strong> Most courses have 4 par 3s. If that's correct, click <strong>Calculate</strong> again to continue.`;
+        return ''; // stop silently — card is already expanded with the warning
+      } else {
+        // User already saw the warning and clicked Calculate again — proceed
+        cardEl.dataset.par3Warned = 'false';
+        const warnEl = cardEl.querySelector('.par3-warning');
+        if (warnEl) warnEl.remove();
+      }
     }
 
     if (r.fw > availableFairways) {
