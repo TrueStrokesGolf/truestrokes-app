@@ -4314,11 +4314,15 @@ function renderMGProgress() {
             : 'Hit ' + girsNeeded + ' more greens and you’re playing like a ' + tierLabel;
         }
       } else if (s.key === 'putts') {
-        // toGoPct is putts per GIR gap — multiply by GIR to get total putts
+        // toGoPct = gap in putts/GIR (e.g. 0.17 means 0.17 putts/GIR above target)
+        // Multiply by actual GIR holes hit to get total putts to save
+        // WHY: user thinks in total putts, not averages. "2 fewer putts" is tangible.
         const gir = lastRound.gir || 9;
-        const puttsNeeded = Math.ceil(toGoPct * gir * 10) / 10;
-        if (puttsNeeded <= 3) {
-          actionNudge = 'Shave ' + puttsNeeded.toFixed(1) + ' putt' + (puttsNeeded !== 1 ? 's' : '') + ' and you’re playing like a ' + tierLabel;
+        const totalPuttsToSave = Math.round(toGoPct * gir);
+        if (totalPuttsToSave <= 5 && totalPuttsToSave > 0) {
+          actionNudge = totalPuttsToSave === 1
+            ? 'Sink 1 more putt on your GIRs and you’re playing like a ' + tierLabel
+            : 'Sink ' + totalPuttsToSave + ' more putts on your GIRs and you’re playing like a ' + tierLabel;
         }
       } else if (s.key === 'scram') {
         const missedGreens = 18 - (lastRound.gir || 9);
