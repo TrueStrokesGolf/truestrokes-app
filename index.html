@@ -4284,7 +4284,21 @@ function renderMGProgress() {
     const toGo = hb
       ? s.fmtDelta(Math.max(0, targetVal - curVal))
       : s.fmtDelta(Math.max(0, curVal - targetVal));
-    const goalSub = hitTarget ? '✓ achieved' : `${toGo} to go`;
+    const toGoPct = hb
+      ? Math.max(0, targetVal - curVal)
+      : Math.max(0, curVal - targetVal);
+
+    // Context-aware sub-text — reframes proximity as a nudge, not a finish line
+    let goalSub;
+    if (hitTarget) {
+      goalSub = 'Can you do it again next round?';
+    } else if (toGoPct <= 0.03) {
+      goalSub = toGo + ' to go — so close!';
+    } else if (toGoPct <= 0.10) {
+      goalSub = toGo + ' to go — keep pushing';
+    } else {
+      goalSub = toGo + ' to go';
+    }
     const goalColor = hitTarget ? '#3B6D11' : labelColor;
     const goalValOpacity = hitTarget ? '1' : '0.5';
 
@@ -4330,33 +4344,64 @@ function renderMGProgress() {
     const prev3b = rounds.length >= 4 ? rounds.slice(-6,-3) : rounds.slice(0,-3);
     const avg2 = (arr, fn) => arr.length ? arr.reduce((s,r) => s + fn(r), 0) / arr.length : 0;
 
-    const cells = Object.entries(statFns2).map(([label, fn]) => {
+    const statResults = Object.entries(statFns2).map(([label, fn]) => {
       const cur  = avg2(last3b, fn);
       const prv  = avg2(prev3b.length ? prev3b : last3b.slice(0,-1), fn);
       const diff = cur - prv;
       const good = hb2[label] ? diff > 0.005 : diff < -0.005;
       const bad  = hb2[label] ? diff < -0.005 : diff > 0.005;
-      // Progress delta: + = good, - = bad (same sign convention as stat cards)
       const progDiff = hb2[label] ? diff : -diff;
       const sign = progDiff >= 0 ? '+' : '-';
       const absDiff = Math.abs(diff);
       const sub = label === 'Putts' ? sign + absDiff.toFixed(2) : sign + (absDiff * 100).toFixed(0) + '%';
       const arrow = good ? '↑' : bad ? '↓' : '→';
       const color = good ? '#27500A' : bad ? '#A32D2D' : 'var(--text-muted)';
-      const bg    = good ? '#EAF3DE' : bad ? '#FCEBEB' : 'var(--color-background-secondary)';
-      return `<div style="text-align:center;padding:10px 4px;background:${bg};border-radius:8px;">
-        <div style="font-size:16px;color:${color};line-height:1;margin-bottom:2px;">${arrow}</div>
-        <div style="font-size:10px;color:var(--text-muted);">${label}</div>
-        <div style="font-size:10px;color:${color};margin-top:1px;font-weight:600;">${sub}</div>
-      </div>`;
-    }).join('');
+      const bg    = good ? '#EAF3DE' : bad ? '#FCEBEB' : 'var(--color-background-secondary,#f5f5f5)';
+      return { label, sub, arrow, color, bg, good, bad };
+    });
+
+    const trendingUp   = statResults.filter(s => s.good).length;
+    const trendingDown = statResults.filter(s => s.bad).length;
+    const total        = statResults.length;
+
+    // Headline — the hook
+    let headlineTxt, headlineColor, headlineBg;
+    if (trendingUp >= 3) {
+      headlineTxt   = trendingUp + ' of ' + total + ' stats trending up ↑';
+      headlineColor = '#173404';
+      headlineBg    = '#EAF3DE';
+    } else if (trendingDown >= 3) {
+      headlineTxt   = trendingDown + ' of ' + total + ' stats trending down ↓';
+      headlineColor = '#501313';
+      headlineBg    = '#FCEBEB';
+    } else if (trendingUp > trendingDown) {
+      headlineTxt   = 'More stats up than down — good direction';
+      headlineColor = '#173404';
+      headlineBg    = '#EAF3DE';
+    } else if (trendingDown > trendingUp) {
+      headlineTxt   = 'More stats down than up — time to refocus';
+      headlineColor = '#501313';
+      headlineBg    = '#FCEBEB';
+    } else {
+      headlineTxt   = 'Holding steady — keep the consistency';
+      headlineColor = 'var(--text-primary)';
+      headlineBg    = 'var(--color-background-secondary,#f5f5f5)';
+    }
+
+    const cells = statResults.map(s => `
+      <div style="text-align:center;padding:12px 4px;background:${s.bg};border-radius:10px;">
+        <div style="font-size:22px;color:${s.color};line-height:1;margin-bottom:4px;">${s.arrow}</div>
+        <div style="font-size:10px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;">${s.label}</div>
+        <div style="font-size:11px;color:${s.color};margin-top:3px;font-weight:600;">${s.sub}</div>
+      </div>`).join('');
 
     momentumSection = `
       <div class="card" style="margin-top:10px;">
-        <div style="font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:10px;">
-          Momentum <span style="font-weight:400;text-transform:none;letter-spacing:0;">last 3 rounds</span>
+        <div style="font-size:10px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:10px;">Momentum — last 3 rounds</div>
+        <div style="padding:14px 16px;background:${headlineBg};border-radius:10px;margin-bottom:12px;">
+          <div style="font-size:16px;font-weight:700;color:${headlineColor};">${headlineTxt}</div>
         </div>
-        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;">${cells}</div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;">${cells}</div>
       </div>`;
   }
 
