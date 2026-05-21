@@ -3481,6 +3481,12 @@ function calculate() {
   if (!targetKey) return showError('Please select a target tier.');
   const target = TIERS[targetKey];
 
+  // ── Validate before running any math ─────────────────────────────
+  // WHY validate here not earlier: we need the parsed numbers to do
+  // cross-field checks (fw vs par3s, scrambles vs gir, etc).
+  const validationError = validateRounds(rounds, Array.from(roundEls));
+  if (validationError) return showError(validationError);
+
   // ── Core math (unchanged — runs in all three modes) ───────────────
   // WHY run full math even post-baseline: we need estHcp to stay current
   // so the user can see their handicap improving. Only the GAP shown on
@@ -5786,6 +5792,88 @@ function resetForm() {
   document.getElementById('nav-addround').classList.add('active');
   window.scrollTo(0,0);
 }
+// ═══════════════════════════════════════════════════
+// ROUND VALIDATION
+// Runs before the calculation engine so bad data never
+// reaches the math. Returns an error string if invalid,
+// null if everything looks good.
+// WHY separate function: keeps calculate() readable and
+// lets us call validation independently in the future.
+// ═══════════════════════════════════════════════════
+function validateRounds(rounds, roundEls) {
+  for (let i = 0; i < rounds.length; i++) {
+    const r   = rounds[i];
+    const num = i + 1;
+    const label = r.course ? `Round ${num} (${r.course})` : `Round ${num}`;
+
+    // Available fairways = 18 minus par 3 holes
+    const availableFairways = 18 - r.par3s;
+
+    // ── Cross-field checks ──────────────────────────
+    // Par 3s: soft warning — unusual but not impossible.
+    // WHY confirm() not return: this is advisory, not a hard block.
+    // The user might genuinely have 2 or 5 par 3s on an unusual course.
+    // confirm() pauses and asks — if they say OK, calculation continues.
+    if (r.par3s <= 2 || r.par3s >= 5) {
+      expandRoundCard(roundEls[i]);
+      const ok = window.confirm(`${label}: Par 3 holes is set to ${r.par3s}. Most courses have 4 par 3s.\n\nIs ${r.par3s} correct for this course?`);
+      if (!ok) return ''; // user wants to fix it — show no error, just stop
+    }
+
+    if (r.fw > availableFairways) {
+      expandRoundCard(roundEls[i]);
+      return `${label}: Fairways hit (${r.fw}) can't be more than available fairways (${availableFairways}). With ${r.par3s} par 3 holes, you have ${availableFairways} fairway holes — check your par 3 count.`;
+    }
+
+    if (r.gir > 18) {
+      expandRoundCard(roundEls[i]);
+      return `${label}: Greens in regulation (${r.gir}) can't be more than 18.`;
+    }
+
+    const missedGreens = 18 - r.gir;
+    if (r.scrambles > missedGreens) {
+      expandRoundCard(roundEls[i]);
+      return `${label}: Scrambles made (${r.scrambles}) can't be more than greens missed (${missedGreens}). You hit ${r.gir} greens, so you had ${missedGreens} scramble opportunities.`;
+    }
+
+    if (r.gir > 0 && r.putts === 0) {
+      expandRoundCard(roundEls[i]);
+      return `${label}: Putts on GIR is 0 but you hit ${r.gir} greens. Enter the total putts on holes where you hit the green.`;
+    }
+
+    if (r.putts > r.gir * 5) {
+      expandRoundCard(roundEls[i]);
+      return `${label}: Putts on GIR (${r.putts}) seems very high for ${r.gir} greens hit. That's over 5 putts per green — double-check this number.`;
+    }
+
+    // ── Sanity checks ───────────────────────────────
+    const maxReasonableScore = r.par + 50;
+    const minReasonableScore = r.par - 10;
+    if (r.score > maxReasonableScore || r.score < minReasonableScore) {
+      expandRoundCard(roundEls[i]);
+      return `${label}: Score of ${r.score} looks unusual for a par ${r.par} course. Double-check your score and par.`;
+    }
+
+    if (r.slope < 55 || r.slope > 155) {
+      expandRoundCard(roundEls[i]);
+      return `${label}: Slope of ${r.slope} is outside the valid range (55–155). Check your scorecard.`;
+    }
+
+    if (r.rating < 60 || r.rating > 80) {
+      expandRoundCard(roundEls[i]);
+      return `${label}: Course rating of ${r.rating} looks off — typical range is 67–77. Check your scorecard.`;
+    }
+  }
+  return null; // all good
+}
+
+// Expands a round card and scrolls to it so the user can fix the problem
+function expandRoundCard(cardEl) {
+  if (!cardEl) return;
+  cardEl.classList.remove('collapsed');
+  setTimeout(() => cardEl.scrollIntoView({ behavior: 'smooth', block: 'center' }), 100);
+}
+
 function showError(msg) {
   const el=document.getElementById('error-msg'); el.textContent=msg; el.style.display='block';
   el.scrollIntoView({behavior:'smooth'});
