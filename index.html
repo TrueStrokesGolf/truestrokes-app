@@ -1008,6 +1008,78 @@
     .progress-pane { display: none; }
     .progress-pane.active { display: block; }
 
+    /* My Game redesign */
+    .mg-tab {
+      flex: 1; padding: 6px 2px; font-size: 11px; text-align: center;
+      border-radius: 6px; border: none; background: transparent;
+      color: var(--text-secondary); cursor: pointer;
+      font-family: var(--font-ui); transition: all 0.15s;
+    }
+    .mg-tab.active {
+      background: white; color: var(--text-primary); font-weight: 600;
+      border: 0.5px solid var(--border);
+    }
+    .mg-pane { display: none; }
+    .mg-pane.active { display: block; }
+
+    .mg-stat-row { margin-bottom: 16px; }
+    .mg-bar-track {
+      position: relative; height: 8px;
+      background: var(--green-50); border-radius: 4px; margin-bottom: 6px;
+    }
+    .mg-bar-fill { position: absolute; left: 0; top: 0; height: 100%; border-radius: 4px; }
+    .mg-baseline-pin {
+      position: absolute; top: -5px; width: 3px; height: 18px;
+      background: var(--text-secondary); border-radius: 2px; opacity: 0.4;
+    }
+    .mg-delta { font-size: 11px; padding: 2px 7px; border-radius: 4px; }
+    .mg-delta-up   { background: var(--green-50); color: var(--green-800); }
+    .mg-delta-down { background: #fdecea; color: #c62828; }
+    .mg-delta-flat { background: var(--green-50); color: var(--text-muted); }
+    .mg-delta-target { background: #fff8e1; color: #6d4c00; font-weight: 600; }
+
+    .mg-mom-cell {
+      text-align: center; padding: 10px 4px;
+      background: var(--green-50); border-radius: var(--radius-sm);
+    }
+    .mg-round-row {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 0; border-bottom: 0.5px solid var(--border);
+    }
+    .mg-round-row:last-child { border-bottom: none; }
+    .mg-chip { font-size: 10px; padding: 2px 6px; border-radius: 4px; }
+    .mg-chip-up   { background: var(--green-50); color: var(--green-800); }
+    .mg-chip-down { background: #fdecea; color: #c62828; }
+    .mg-chip-base { background: var(--green-50); color: var(--text-muted); }
+
+    .mg-trophy-bubble {
+      width: 48px; height: 48px; border-radius: 50%;
+      background: var(--green-50); border: 1.5px solid var(--green-300);
+      display: flex; align-items: center; justify-content: center; font-size: 22px;
+    }
+    .mg-challenge-card {
+      border: 1.5px solid var(--green-300); background: var(--green-50);
+      border-radius: var(--radius-lg); padding: 1.25rem; margin-bottom: 10px;
+    }
+    .mg-progress-track {
+      height: 10px; background: var(--green-200);
+      border-radius: 5px; margin-bottom: 6px; overflow: hidden;
+    }
+    .mg-progress-fill { height: 100%; border-radius: 5px; background: var(--green-700); }
+    .mg-mini-badge {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 12px; background: var(--green-50);
+      border-radius: var(--radius-sm); margin-bottom: 6px;
+      border: 0.5px solid var(--border);
+    }
+    .mg-mini-progress { height: 3px; background: var(--border); border-radius: 2px; margin-top: 5px; overflow: hidden; }
+    .mg-mini-progress-fill { height: 100%; border-radius: 2px; background: var(--green-700); }
+    .mg-earned-row {
+      display: flex; align-items: center; gap: 12px;
+      padding: 10px 0; border-bottom: 0.5px solid var(--border);
+    }
+    .mg-earned-row:last-child { border-bottom: none; }
+
     .mystats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
     @media (max-width: 480px) { .mystats-grid { grid-template-columns: 1fr; } }
 
@@ -2396,60 +2468,68 @@
   <!-- ─── MY GAME PAGE ─── -->
   <div id="rounds-page">
 
-    <!-- My Game header stats -->
-    <div class="rounds-summary-header">
-      <div class="rsh-stat">
-        <div class="rsh-number" id="rsh-count">0</div>
-        <div class="rsh-label">Rounds Played</div>
-      </div>
-      <div class="rsh-divider"></div>
-      <div class="rsh-stat">
-        <div class="rsh-number" id="rsh-avg-score">—</div>
-        <div class="rsh-label">Avg Score</div>
-      </div>
-      <div class="rsh-divider"></div>
-      <div class="rsh-stat">
-        <div class="rsh-number" id="rsh-avg-diff">—</div>
-        <div class="rsh-label">Avg Differential</div>
-      </div>
-      <div class="rsh-divider"></div>
-      <div class="rsh-stat">
-        <div class="rsh-number" id="rsh-best-diff">—</div>
-        <div class="rsh-label">Best Differential</div>
-      </div>
-    </div>
-
-    <!-- Tabs: Round History / Practice Stats / Badges -->
-    <div class="progress-tabs" style="background:white;border-radius:var(--radius-lg) var(--radius-lg) 0 0;padding:0 20px;margin-bottom:0;box-shadow:var(--shadow-sm);">
-      <button class="progress-tab active" onclick="switchGameTab('rounds')">⛳ Round History</button>
-      <button class="progress-tab"        onclick="switchGameTab('practice')">📋 Practice Stats</button>
-      <button class="progress-tab"        onclick="switchGameTab('badges')">🏅 Badges</button>
-    </div>
-
-    <!-- Round History pane -->
-    <div class="progress-pane active" id="game-pane-rounds">
-      <div class="card" style="border-radius:0 0 var(--radius-lg) var(--radius-lg);margin-top:0;">
-        <div id="rounds-table-wrap">
-          <div class="no-rounds-msg">No rounds entered yet.<br>Go to Add Round to get started.</div>
+    <!-- ── SCOREBOARD — sticky summary card ── -->
+    <div id="mg-scoreboard" class="card" style="margin-bottom:10px;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;">
+        <div>
+          <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:3px;">Your journey</div>
+          <div id="mg-tier" style="font-size:18px;font-weight:600;color:var(--text-primary);">—</div>
+          <div id="mg-target" style="font-size:11px;color:var(--green-700);margin-top:2px;">—</div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:3px;">Baseline gap</div>
+          <div id="mg-gap" style="font-size:18px;font-weight:600;color:var(--text-primary);">—</div>
+          <div id="mg-locked" style="font-size:11px;color:var(--green-700);margin-top:2px;">—</div>
         </div>
       </div>
-    </div>
 
-    <!-- Practice Stats pane -->
-    <div class="progress-pane" id="game-pane-practice">
-      <div class="card" style="border-radius:0 0 var(--radius-lg) var(--radius-lg);margin-top:0;">
-        <div id="game-practice-stats">
-          <div class="no-rounds-msg">Complete a practice session to see your stats here.</div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:12px;">
+        <div style="background:var(--green-50);border-radius:var(--radius-sm);padding:8px;text-align:center;">
+          <div id="mg-rounds-count" style="font-size:15px;font-weight:600;color:var(--text-primary);">0</div>
+          <div style="font-size:10px;color:var(--text-muted);">rounds</div>
+        </div>
+        <div id="mg-gap-closed-cell" style="background:var(--green-50);border-radius:var(--radius-sm);padding:8px;text-align:center;">
+          <div id="mg-gap-closed" style="font-size:15px;font-weight:600;color:var(--green-800);">—</div>
+          <div style="font-size:10px;color:var(--green-700);">gap closed</div>
+        </div>
+        <div style="background:var(--green-50);border-radius:var(--radius-sm);padding:8px;text-align:center;">
+          <div id="mg-sessions-count" style="font-size:15px;font-weight:600;color:var(--text-primary);">0</div>
+          <div style="font-size:10px;color:var(--text-muted);">practice sessions</div>
         </div>
       </div>
+
+      <div id="mg-category-gaps" style="border-top:0.5px solid var(--border);padding-top:10px;display:none;">
+        <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:8px;">Gap closed by category</div>
+        <div id="mg-category-gaps-grid" style="display:grid;grid-template-columns:repeat(2,1fr);gap:5px;"></div>
+      </div>
+    </div>
+
+    <!-- ── TABS ── -->
+    <div style="display:flex;gap:3px;background:var(--green-50);border-radius:var(--radius-sm);padding:3px;margin-bottom:10px;" id="mg-tabs">
+      <button class="mg-tab active" onclick="switchMyGameTab('progress')">Progress</button>
+      <button class="mg-tab" onclick="switchMyGameTab('rounds')">Rounds</button>
+      <button class="mg-tab" onclick="switchMyGameTab('practice')">Practice</button>
+      <button class="mg-tab" onclick="switchMyGameTab('badges')">Badges</button>
+    </div>
+
+    <!-- Progress pane -->
+    <div class="mg-pane active" id="mg-pane-progress">
+      <div id="mg-progress-content"></div>
+    </div>
+
+    <!-- Rounds pane -->
+    <div class="mg-pane" id="mg-pane-rounds">
+      <div id="mg-rounds-content"></div>
+    </div>
+
+    <!-- Practice pane -->
+    <div class="mg-pane" id="mg-pane-practice">
+      <div id="mg-practice-content"></div>
     </div>
 
     <!-- Badges pane -->
-    <div class="progress-pane" id="game-pane-badges">
-      <div class="card" style="border-radius:0 0 var(--radius-lg) var(--radius-lg);margin-top:0;">
-        <div class="section-title">🏅 Your Badges</div>
-        <div id="game-badge-shelf"></div>
-      </div>
+    <div class="mg-pane" id="mg-pane-badges">
+      <div id="mg-badges-content"></div>
     </div>
 
   </div>
@@ -3986,47 +4066,482 @@ function switchTab(tab) {
 // ═══════════════════════════════════════════════════
 // MY ROUNDS PAGE
 // ═══════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════
+// MY GAME — REDESIGNED
+// ═══════════════════════════════════════════════════
+
 function renderRoundsPage() {
+  renderMyGame();
+}
+
+function renderMyGame() {
+  renderMGScoreboard();
+  const activeTab = document.querySelector('.mg-tab.active');
+  const tab = activeTab ? activeTab.textContent.toLowerCase().trim() : 'progress';
+  renderMGTab(tab);
+}
+
+function switchMyGameTab(tab) {
+  document.querySelectorAll('.mg-tab').forEach(t =>
+    t.classList.toggle('active', t.textContent.toLowerCase().trim() === tab));
+  document.querySelectorAll('.mg-pane').forEach(p =>
+    p.classList.toggle('active', p.id === `mg-pane-${tab}`));
+  renderMGTab(tab);
+}
+
+function renderMGTab(tab) {
+  if (tab === 'progress') renderMGProgress();
+  if (tab === 'rounds')   renderMGRounds();
+  if (tab === 'practice') renderMGPractice();
+  if (tab === 'badges')   renderMGBadges();
+}
+
+// ── Scoreboard ───────────────────────────────────────────────────────
+function renderMGScoreboard() {
+  if (!lastResults) return;
+  const d = lastResults;
+
+  document.getElementById('mg-tier').textContent    = d.current.label;
+  document.getElementById('mg-target').textContent  = `target: ${d.target.label}`;
+  document.getElementById('mg-rounds-count').textContent = sessionRounds.length;
+  document.getElementById('mg-sessions-count').textContent = getCompletedSessions().length;
+
+  if (baselineLocked && activeBaseline) {
+    document.getElementById('mg-gap').textContent   = `${activeBaseline.gap_to_target.toFixed(1)} strokes`;
+    const lockedDate = activeBaseline.locked_at
+      ? new Date(activeBaseline.locked_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})
+      : '';
+    document.getElementById('mg-locked').textContent = `locked ${lockedDate}`;
+
+    // Gap closed = baseline gap minus current live gap estimate
+    const liveGap = d.estHcp - TIERS[d.targetKey].hcp;
+    const closed  = activeBaseline.gap_to_target - Math.max(0, liveGap);
+    const closedEl = document.getElementById('mg-gap-closed');
+    closedEl.textContent = closed > 0 ? `+${closed.toFixed(1)}` : closed.toFixed(1);
+    document.getElementById('mg-gap-closed-cell').style.background = closed > 0 ? 'var(--green-50)' : '#fdecea';
+    closedEl.style.color = closed > 0 ? 'var(--green-800)' : '#c62828';
+
+    // Category gaps
+    const catGapsEl = document.getElementById('mg-category-gaps');
+    const catGrid   = document.getElementById('mg-category-gaps-grid');
+    catGapsEl.style.display = 'block';
+    const baselineBreakdown = d.breakdown;
+    catGrid.innerHTML = baselineBreakdown.map(b => {
+      const arrow = '↑';
+      return `<div style="font-size:11px;color:var(--text-muted);">
+        ${b.category.replace(' Shots','').replace(' Game','')}
+        <span style="color:var(--green-700);font-weight:600;">${b.strokes.toFixed(1)} ↑</span>
+      </div>`;
+    }).join('');
+  } else {
+    document.getElementById('mg-gap').textContent  = `${d.totalGap.toFixed(1)} strokes`;
+    document.getElementById('mg-locked').textContent = 'baseline not set yet';
+    document.getElementById('mg-gap-closed').textContent = '—';
+  }
+}
+
+// ── Progress tab ─────────────────────────────────────────────────────
+function renderMGProgress() {
+  const el = document.getElementById('mg-progress-content');
+  if (!lastResults) {
+    el.innerHTML = `<div class="card"><div class="no-rounds-msg">Enter rounds to see your progress.</div></div>`;
+    return;
+  }
+
+  // Pre-baseline state
+  if (!baselineLocked) {
+    const remaining = Math.max(0, BASELINE_ROUNDS - sessionRounds.length);
+    const dots = Array.from({length: BASELINE_ROUNDS}, (_,i) =>
+      `<div style="width:10px;height:10px;border-radius:50%;background:${i < sessionRounds.length ? 'var(--green-700)' : 'var(--border)'}"></div>`
+    ).join('');
+    el.innerHTML = `
+      <div class="card" style="text-align:center;padding:28px 20px;">
+        <div style="font-size:2rem;margin-bottom:12px;">📍</div>
+        <div style="font-size:16px;font-weight:600;color:var(--text-primary);margin-bottom:6px;">Baseline not set yet</div>
+        <div style="font-size:13px;color:var(--text-secondary);margin-bottom:16px;line-height:1.6;">
+          ${remaining > 0
+            ? `Enter ${remaining} more round${remaining !== 1 ? 's' : ''} to lock your baseline. After that, every round tracks your progress.`
+            : 'Calculate to lock your baseline.'}
+        </div>
+        <div style="display:flex;justify-content:center;gap:6px;margin-bottom:8px;">${dots}</div>
+        <div style="font-size:11px;color:var(--text-muted);">${sessionRounds.length} of ${BASELINE_ROUNDS} rounds</div>
+      </div>`;
+    return;
+  }
+
+  const d  = lastResults;
+  const bl = activeBaseline;
+  const rounds = sessionRounds;
+
+  // Momentum — trend over last 3 rounds
+  let momentumHTML = '';
+  if (rounds.length >= 2) {
+    const last3 = rounds.slice(-3);
+    const prev3 = rounds.length >= 4 ? rounds.slice(-6, -3) : rounds.slice(0, -3);
+
+    const statFns = {
+      FW:    r => r.par3s > 0 ? r.fw / (18 - r.par3s) : 0,
+      GIR:   r => r.gir / 18,
+      Putts: r => r.gir > 0 ? r.putts / r.gir : 2.5,
+      Scram: r => (18 - r.gir) > 0 ? r.scrambles / (18 - r.gir) : 0,
+    };
+    const higherBetter = { FW: true, GIR: true, Putts: false, Scram: true };
+
+    momentumHTML = `
+      <div style="font-size:13px;font-weight:600;color:var(--text-primary);margin-bottom:6px;">
+        Momentum
+        <span style="font-size:11px;font-weight:400;color:var(--text-muted);margin-left:4px;">last 3 rounds</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:14px;">
+        ${Object.entries(statFns).map(([label, fn]) => {
+          const avg = arr => arr.length ? arr.reduce((s,r) => s + fn(r), 0) / arr.length : null;
+          const cur = avg(last3);
+          const prv = avg(prev3.length ? prev3 : last3.slice(0,-1));
+          const diff = cur - prv;
+          const hb = higherBetter[label];
+          const improving = hb ? diff > 0.005 : diff < -0.005;
+          const declining  = hb ? diff < -0.005 : diff > 0.005;
+          const arrow  = improving ? '↑' : declining ? '↓' : '→';
+          const color  = improving ? 'var(--green-800)' : declining ? '#c62828' : 'var(--text-muted)';
+          const subColor = improving ? 'var(--green-700)' : declining ? '#e57373' : 'var(--text-muted)';
+          const sub = label === 'Putts'
+            ? (diff > 0 ? '+' : '') + diff.toFixed(2)
+            : (diff > 0 ? '+' : '') + (diff * 100).toFixed(0) + '%';
+          return `<div class="mg-mom-cell">
+            <div style="font-size:18px;color:${color};line-height:1;margin-bottom:3px;">${arrow}</div>
+            <div style="font-size:10px;color:var(--text-muted);">${label}</div>
+            <div style="font-size:10px;color:${subColor};margin-top:1px;">${sub}</div>
+          </div>`;
+        }).join('')}
+      </div>
+      <div style="height:0.5px;background:var(--border);margin:0 0 14px;"></div>`;
+  }
+
+  // Last round stats vs baseline + vs previous round
+  const lastRound = rounds[rounds.length - 1];
+  const prevRound = rounds.length >= 2 ? rounds[rounds.length - 2] : null;
+
+  const statDefs = [
+    { label: 'Fairways hit',        key: 'fw',
+      cur:  r => r.par3s > 0 ? r.fw / (18 - r.par3s) : 0,
+      base: bl.fw_baseline, fmt: v => (v * 100).toFixed(0) + '%', higherBetter: true },
+    { label: 'Greens in regulation', key: 'gir',
+      cur:  r => r.gir / 18,
+      base: bl.gir_baseline, fmt: v => (v * 100).toFixed(0) + '%', higherBetter: true },
+    { label: 'Putts per GIR',        key: 'putts',
+      cur:  r => r.gir > 0 ? r.putts / r.gir : 2.5,
+      base: bl.putts_baseline, fmt: v => v.toFixed(2), higherBetter: false },
+    { label: 'Scrambling',           key: 'scram',
+      cur:  r => (18 - r.gir) > 0 ? r.scrambles / (18 - r.gir) : 0,
+      base: bl.scram_baseline, fmt: v => (v * 100).toFixed(0) + '%', higherBetter: true },
+  ];
+
+  const target = TIERS[d.targetKey];
+  const targetVals = { fw: target.fw, gir: target.gir, putts: target.putts, scram: target.scramble };
+
+  const statBars = statDefs.map(s => {
+    const curVal  = s.cur(lastRound);
+    const prevVal = prevRound ? s.cur(prevRound) : null;
+    const baseVal = s.base || 0;
+    const targetVal = targetVals[s.key];
+
+    const vsBase = curVal - baseVal;
+    const vsPrev = prevVal !== null ? curVal - prevVal : null;
+    const hb = s.higherBetter;
+
+    const improving = hb ? vsBase > 0.005 : vsBase < -0.005;
+    const hitTarget = hb ? curVal >= targetVal : curVal <= targetVal;
+
+    const barPct = Math.min(100, Math.max(0, (curVal / (targetVal || 1)) * 100));
+    const basePct = Math.min(98, Math.max(0, (baseVal / (targetVal || 1)) * 100));
+    const barColor = hitTarget ? '#EF9F27' : improving ? '#639922' : '#E24B4A';
+
+    const fmtDelta = (val, hb, isVal) => {
+      if (val === null) return '';
+      const sign = val > 0 ? '+' : '';
+      const str = isVal ? sign + val.toFixed(2) : sign + (val * 100).toFixed(0) + '%';
+      return str;
+    };
+
+    const vsBaseStr = s.key === 'putts'
+      ? fmtDelta(vsBase, hb, true)
+      : fmtDelta(vsBase, hb, false);
+    const vsPrevStr = vsPrev !== null
+      ? (s.key === 'putts' ? fmtDelta(vsPrev, hb, true) : fmtDelta(vsPrev, hb, false))
+      : null;
+
+    const baseGood = hb ? vsBase > 0.005 : vsBase < -0.005;
+    const baseBad  = hb ? vsBase < -0.005 : vsBase > 0.005;
+    const prevGood = vsPrev !== null ? (hb ? vsPrev > 0.005 : vsPrev < -0.005) : null;
+    const prevBad  = vsPrev !== null ? (hb ? vsPrev < -0.005 : vsPrev > 0.005) : null;
+
+    const baseDeltaClass = hitTarget ? 'mg-delta-target' : baseGood ? 'mg-delta-up' : baseBad ? 'mg-delta-down' : 'mg-delta-flat';
+    const prevDeltaClass = prevGood ? 'mg-delta-up' : prevBad ? 'mg-delta-down' : 'mg-delta-flat';
+
+    return `
+      <div class="mg-stat-row">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px;">
+          <span style="font-size:12px;color:var(--text-muted);">${s.label}</span>
+          <span style="font-size:15px;font-weight:600;color:${hitTarget ? '#633806' : 'var(--text-primary)'};">${s.fmt(curVal)}</span>
+        </div>
+        <div class="mg-bar-track">
+          <div class="mg-bar-fill" style="width:${barPct}%;background:${barColor};"></div>
+          <div class="mg-baseline-pin" style="left:${basePct}%;"></div>
+        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+          <span class="mg-delta ${baseDeltaClass}">${hitTarget ? '⭐ Target reached' : vsBaseStr + ' vs baseline'}</span>
+          ${vsPrevStr ? `<span class="mg-delta ${prevDeltaClass}">${vsPrevStr} vs last round</span>` : ''}
+        </div>
+      </div>`;
+  }).join('');
+
+  const lastDate = lastRound.date ? new Date(lastRound.date).toLocaleDateString('en-US',{month:'short',day:'numeric'}) : '';
+  const lastCourse = lastRound.course || '';
+  const subtitle = [lastDate, lastCourse].filter(Boolean).join(' · ');
+
+  // Next milestone nudge
+  const badgeProgress = getBadgeProgress();
+  const nudge = badgeProgress.find(b => !b.earned && b.pct < 1);
+  const nudgeHTML = nudge ? `
+    <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--green-50);border-radius:var(--radius-sm);border:0.5px solid var(--border);margin-top:4px;">
+      <div style="font-size:18px;">🎯</div>
+      <div>
+        <div style="font-size:12px;color:var(--text-primary);">${nudge.nudge}</div>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:2px;">${nudge.sub}</div>
+      </div>
+    </div>` : '';
+
+  el.innerHTML = `
+    <div class="card">
+      ${momentumHTML}
+      <div style="font-size:13px;font-weight:600;color:var(--text-primary);margin-bottom:10px;">
+        Stats — last round vs baseline
+        ${subtitle ? `<span style="font-size:11px;font-weight:400;color:var(--text-muted);margin-left:4px;">${subtitle}</span>` : ''}
+      </div>
+      ${statBars}
+      ${nudgeHTML}
+    </div>`;
+}
+
+// ── Rounds tab ────────────────────────────────────────────────────────
+function renderMGRounds() {
+  const el = document.getElementById('mg-rounds-content');
   if (!sessionRounds.length) {
-    document.getElementById('rounds-table-wrap').innerHTML =
-      '<div class="no-rounds-msg">No rounds entered yet.<br>Go to Add Round to enter your rounds.</div>';
-    ['rsh-count','rsh-avg-score','rsh-avg-diff','rsh-best-diff'].forEach(id =>
-      document.getElementById(id).textContent = id==='rsh-count' ? '0' : '—');
+    el.innerHTML = `<div class="card"><div class="no-rounds-msg">No rounds entered yet.</div></div>`;
     return;
   }
   const n = sessionRounds.length;
-  document.getElementById('rsh-count').textContent     = n;
-  document.getElementById('rsh-avg-score').textContent = (sessionRounds.reduce((s,r)=>s+r.score,0)/n).toFixed(1);
-  document.getElementById('rsh-avg-diff').textContent  = (sessionRounds.reduce((s,r)=>s+r.diff,0)/n).toFixed(1);
-  document.getElementById('rsh-best-diff').textContent = Math.min(...sessionRounds.map(r=>r.diff)).toFixed(1);
+  const avgScore = (sessionRounds.reduce((s,r) => s + r.score, 0) / n).toFixed(1);
+  const bestScore = Math.min(...sessionRounds.map(r => r.score));
+  const avgDiff   = (sessionRounds.reduce((s,r) => s + r.diff, 0) / n).toFixed(1);
 
-  const rows = sessionRounds.map(r => {
-    const fwAvail = 18-r.par3s;
-    const puPerGir = r.gir > 0 ? (r.putts/r.gir).toFixed(2) : '—';
-    const scPct = (18-r.gir) > 0 ? ((r.scrambles/(18-r.gir))*100).toFixed(0)+'%' : '—';
-    const dc = r.diff<15?'diff-good':r.diff<22?'diff-avg':'diff-high';
-    return `<tr>
-      <td>${r.date||'—'}</td><td>${r.course||'—'}</td>
-      <td><strong>${r.score}</strong></td><td>${r.par}</td>
-      <td>${r.rating}</td><td>${r.slope}</td>
-      <td>${((r.fw/fwAvail)*100).toFixed(0)}%</td>
-      <td>${((r.gir/18)*100).toFixed(0)}%</td>
-      <td>${puPerGir}</td><td>${scPct}</td>
-      <td><span class="diff-badge ${dc}">${r.diff.toFixed(1)}</span></td>
-    </tr>`;
+  // Find baseline round index (first 5 rounds)
+  const baselineIdx = baselineLocked ? Math.min(4, n - 1) : -1;
+
+  const rows = [...sessionRounds].reverse().map((r, revIdx) => {
+    const origIdx = n - 1 - revIdx;
+    const isBaseline = origIdx === baselineIdx;
+    const isBest = r.score === bestScore;
+    const prevRound = origIdx > 0 ? sessionRounds[origIdx - 1] : null;
+    const improving = prevRound && r.score < prevRound.score;
+    const declining = prevRound && r.score > prevRound.score + 2;
+    const chip = isBaseline
+      ? `<span class="mg-chip mg-chip-base">baseline</span>`
+      : isBest ? `<span class="mg-chip mg-chip-up">best</span>`
+      : improving ? `<span class="mg-chip mg-chip-up">↑ improving</span>`
+      : declining ? `<span class="mg-chip mg-chip-down">↓ off day</span>` : '';
+    const dateStr = r.date ? new Date(r.date + 'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'}) : '—';
+    return `
+      <div class="mg-round-row">
+        <div style="font-size:11px;color:var(--text-muted);width:48px;flex-shrink:0;">${dateStr}</div>
+        <div style="font-size:12px;color:var(--text-primary);flex:1;">${r.course || '—'}</div>
+        <div style="font-size:13px;font-weight:600;">${r.score}</div>
+        ${chip}
+      </div>`;
   }).join('');
 
-  document.getElementById('rounds-table-wrap').innerHTML = `
-    <div style="overflow-x:auto;">
-      <table class="rounds-table">
-        <thead><tr>
-          <th>Date</th><th>Course</th><th>Score</th><th>Par</th>
-          <th>Rating</th><th>Slope</th><th>FW%</th><th>GIR%</th>
-          <th>Putts/GIR</th><th>Scram%</th><th>Diff</th>
-        </tr></thead>
-        <tbody>${rows}</tbody>
-      </table>
+  el.innerHTML = `
+    <div class="card">
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:14px;">
+        <div style="background:var(--green-50);border-radius:var(--radius-sm);padding:8px;text-align:center;">
+          <div style="font-size:15px;font-weight:600;">${n}</div>
+          <div style="font-size:10px;color:var(--text-muted);">rounds</div>
+        </div>
+        <div style="background:var(--green-50);border-radius:var(--radius-sm);padding:8px;text-align:center;">
+          <div style="font-size:15px;font-weight:600;">${avgScore}</div>
+          <div style="font-size:10px;color:var(--text-muted);">avg score</div>
+        </div>
+        <div style="background:var(--green-50);border-radius:var(--radius-sm);padding:8px;text-align:center;">
+          <div style="font-size:15px;font-weight:600;">${bestScore}</div>
+          <div style="font-size:10px;color:var(--text-muted);">best score</div>
+        </div>
+      </div>
+      ${rows}
     </div>`;
+}
+
+// ── Practice tab ──────────────────────────────────────────────────────
+function renderMGPractice() {
+  const el       = document.getElementById('mg-practice-content');
+  const sessions = getCompletedSessions();
+  if (!sessions.length) {
+    el.innerHTML = `<div class="card"><div class="no-rounds-msg">Complete a practice session to see your stats here.</div></div>`;
+    return;
+  }
+
+  // Streak — consecutive days with a session
+  const dates  = sessions.map(s => s.date || s.savedAt?.slice(0,10)).filter(Boolean).sort().reverse();
+  let streak = 0;
+  const today = new Date().toISOString().slice(0,10);
+  let check   = today;
+  for (const d of dates) {
+    if (d === check) { streak++; check = new Date(new Date(check) - 86400000).toISOString().slice(0,10); }
+    else break;
+  }
+
+  const recentRows = sessions.slice(0,5).map(s => {
+    const dateStr = s.date ? new Date(s.date + 'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'}) : '—';
+    const drills = s.drills ? s.drills.length : s.drillCount || '—';
+    return `<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:0.5px solid var(--border);font-size:13px;">
+      <span style="color:var(--text-muted);font-size:12px;">${dateStr} · ${s.focus || '—'} focus</span>
+      <span style="font-weight:600;">${drills} drills</span>
+    </div>`;
+  }).join('');
+
+  el.innerHTML = `
+    <div class="card">
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:14px;">
+        <div style="background:var(--green-50);border-radius:var(--radius-sm);padding:8px;text-align:center;">
+          <div style="font-size:15px;font-weight:600;">${sessions.length}</div>
+          <div style="font-size:10px;color:var(--text-muted);">sessions</div>
+        </div>
+        <div style="background:var(--green-50);border-radius:var(--radius-sm);padding:8px;text-align:center;">
+          <div style="font-size:15px;font-weight:600;">${sessions.reduce((s,sess) => s + (sess.drills ? sess.drills.length : sess.drillCount || 0), 0)}</div>
+          <div style="font-size:10px;color:var(--text-muted);">drills done</div>
+        </div>
+        <div style="background:${streak > 2 ? 'var(--green-50)' : 'var(--green-50)'};border-radius:var(--radius-sm);padding:8px;text-align:center;">
+          <div style="font-size:15px;font-weight:600;color:${streak > 2 ? 'var(--green-800)' : 'var(--text-primary)'};">${streak}</div>
+          <div style="font-size:10px;color:${streak > 2 ? 'var(--green-700)' : 'var(--text-muted)'};">day streak</div>
+        </div>
+      </div>
+      <div style="font-size:13px;font-weight:600;margin-bottom:8px;">Recent sessions</div>
+      ${recentRows}
+    </div>`;
+}
+
+// ── Badges tab ────────────────────────────────────────────────────────
+function renderMGBadges() {
+  const el       = document.getElementById('mg-badges-content');
+  const settings = getSettings();
+  const earned   = new Map(settings.badges.map(b => [b.id, b.earnedAt]));
+  const progress = getBadgeProgress();
+
+  // Trophy shelf — earned badges
+  const earnedBadges = BADGE_DEFS.filter(b => earned.has(b.id));
+  const trophyShelf  = earnedBadges.length ? `
+    <div class="card" style="margin-bottom:10px;">
+      <div style="font-size:13px;font-weight:600;margin-bottom:12px;">
+        Your trophy case
+        <span style="font-size:11px;font-weight:400;color:var(--green-700);margin-left:6px;">${earnedBadges.length} earned</span>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;">
+        ${earnedBadges.map(b => {
+          const dateStr = earned.get(b.id)
+            ? new Date(earned.get(b.id)).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})
+            : '';
+          return `<div style="display:flex;flex-direction:column;align-items:center;gap:4px;width:60px;" title="${b.name}${dateStr ? ' · ' + dateStr : ''}">
+            <div class="mg-trophy-bubble">${b.icon}</div>
+            <div style="font-size:9px;color:var(--text-muted);text-align:center;line-height:1.3;">${b.name}</div>
+            ${dateStr ? `<div style="font-size:8px;color:var(--green-700);">${dateStr}</div>` : ''}
+          </div>`;
+        }).join('')}
+      </div>
+    </div>` : '';
+
+  // Next challenge — highest completion percentage unearned badge
+  const unearned = progress.filter(b => !b.earned).sort((a, b) => b.pct - a.pct);
+  const next     = unearned[0];
+  const alsoInReach = unearned.slice(1, 3);
+
+  const challengeCard = next ? `
+    <div class="mg-challenge-card">
+      <div style="font-size:10px;font-weight:600;color:var(--green-700);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px;">Next challenge</div>
+      <div style="font-size:36px;margin-bottom:8px;">${next.icon}</div>
+      <div style="font-size:18px;font-weight:600;color:var(--green-900);margin-bottom:4px;">${next.name}</div>
+      <div style="font-size:12px;color:var(--green-700);line-height:1.5;margin-bottom:14px;">${next.desc}</div>
+      <div class="mg-progress-track">
+        <div class="mg-progress-fill" style="width:${Math.round(next.pct * 100)}%;"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--green-700);">
+        <span>${next.progressLabel}</span>
+        <span style="font-weight:600;">${next.remaining}</span>
+      </div>
+    </div>` : '';
+
+  const alsoHTML = alsoInReach.length ? `
+    <div style="font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:8px;">Also in reach</div>
+    ${alsoInReach.map(b => `
+      <div class="mg-mini-badge">
+        <div style="font-size:20px;width:32px;text-align:center;flex-shrink:0;opacity:0.5;">${b.icon}</div>
+        <div style="flex:1;">
+          <div style="font-size:12px;font-weight:600;">${b.name}</div>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:1px;">${b.req}</div>
+          <div class="mg-mini-progress"><div class="mg-mini-progress-fill" style="width:${Math.round(b.pct * 100)}%;"></div></div>
+        </div>
+        <div style="font-size:11px;color:var(--text-muted);white-space:nowrap;margin-left:6px;">${b.remaining}</div>
+      </div>`).join('')}` : '';
+
+  el.innerHTML = trophyShelf + challengeCard + alsoHTML;
+}
+
+// ── Badge progress calculator ─────────────────────────────────────────
+function getBadgeProgress() {
+  const settings = getSettings();
+  const earned   = new Map(settings.badges.map(b => [b.id, b.earnedAt]));
+  const sessions = getCompletedSessions();
+  const n        = sessionRounds.length;
+
+  return BADGE_DEFS.map(b => {
+    const isEarned = earned.has(b.id);
+    let pct = isEarned ? 1 : 0;
+    let progressLabel = b.req;
+    let remaining = '';
+    let nudge = b.name;
+    let sub   = b.req;
+    let desc  = b.req;
+
+    if (b.type === 'session') {
+      const cur = sessions.length;
+      pct = Math.min(1, cur / b.threshold);
+      progressLabel = `${cur} of ${b.threshold} sessions`;
+      remaining = isEarned ? 'earned' : `${Math.max(0, b.threshold - cur)} to go`;
+      nudge = `${Math.max(0, b.threshold - cur)} more session${b.threshold - cur !== 1 ? 's' : ''} to unlock ${b.name}`;
+      sub = b.req;
+      desc = `Complete ${b.threshold} practice sessions to unlock this badge.`;
+    } else if (b.type === 'tier') {
+      pct = isEarned ? 1 : (lastResults ? Math.min(1, Math.max(0, 1 - (lastResults.estHcp - TIERS[b.tierKey].hcp) / 5)) : 0);
+      progressLabel = isEarned ? 'reached' : `working toward ${TIERS[b.tierKey]?.label || b.tierKey}`;
+      remaining = isEarned ? 'earned' : 'keep playing';
+      nudge = `Reach ${TIERS[b.tierKey]?.label || b.tierKey} to unlock ${b.name}`;
+      sub = b.req;
+      desc = `Reach the ${TIERS[b.tierKey]?.label || b.tierKey} level to unlock this badge.`;
+    } else if (b.type === 'catstreak') {
+      const focusArr = sessions.slice(0, 10).map(s => s.focus);
+      let maxStreak = 0, cur2 = 1;
+      for (let i = 1; i < focusArr.length; i++) {
+        if (focusArr[i] === focusArr[i-1]) cur2++; else cur2 = 1;
+        maxStreak = Math.max(maxStreak, cur2);
+      }
+      pct = Math.min(1, maxStreak / b.threshold);
+      progressLabel = `${maxStreak} of ${b.threshold} in a row`;
+      remaining = isEarned ? 'earned' : `${Math.max(0, b.threshold - maxStreak)} to go`;
+      nudge = `Practice the same category ${Math.max(0, b.threshold - maxStreak)} more time${b.threshold - maxStreak !== 1 ? 's' : ''} in a row`;
+      sub = b.req;
+      desc = `Complete 3 sessions focused on the same category in a row.`;
+    }
+
+    return { ...b, isEarned, earned: isEarned, pct, progressLabel, remaining, nudge, sub, desc };
+  });
 }
 
 // ═══════════════════════════════════════════════════
@@ -6347,34 +6862,12 @@ function renderMyGamePage() {
       <div style="margin-bottom:4px;">${catRows}</div>`;
   }
 
-  // Badges tab — reuse badge shelf logic
-  const gameBadgeShelf = document.getElementById('game-badge-shelf');
-  if (gameBadgeShelf) {
-    const settings = getSettings();
-    const earned   = new Map(settings.badges.map(b => [b.id, b.earnedAt]));
-    gameBadgeShelf.innerHTML = `<div class="badge-row">${BADGE_DEFS.map(b => {
-      const isEarned = earned.has(b.id);
-      const dateStr  = isEarned ? new Date(earned.get(b.id)).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : '';
-      return `<div class="badge-item ${isEarned?'earned':'unearned'}" title="${b.req}${isEarned?' · Earned '+dateStr:''}">
-        <div class="badge-icon">${b.icon}</div>
-        <div class="badge-name">${b.name}</div>
-        ${isEarned?`<div class="badge-earned-date">${dateStr}</div>`:`<div class="badge-req">${b.req}</div>`}
-      </div>`;
-    }).join('')}</div>`;
-  }
+  // Badges tab now rendered by renderMGBadges() — no-op here
 }
 
 function switchGameTab(tab) {
-  // Update tab buttons
-  const tabs = document.querySelectorAll('.progress-tabs .progress-tab');
-  const tabNames = ['rounds','practice','badges'];
-  tabs.forEach((btn, i) => btn.classList.toggle('active', tabNames[i] === tab));
-
-  // Show/hide panes
-  ['game-pane-rounds','game-pane-practice','game-pane-badges'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.classList.toggle('active', id === `game-pane-${tab}`);
-  });
+  // Legacy wrapper — new tab switching is handled by switchMyGameTab
+  switchMyGameTab(tab);
 }
 
 // ═══════════════════════════════════════════════════
