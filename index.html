@@ -2873,6 +2873,7 @@ async function loadSupabaseData() {
     if (sbRounds && sbRounds.length > 0) {
       // Has Supabase rounds — use them as source of truth
       const rounds = sbRounds.map(r => ({
+        roundId:   r.round_id || r.id,  // use round_id if set, fall back to Supabase row id
         date:      r.played_on    || '',
         course:    r.course_name  || '',
         score:     r.score        || '',
@@ -3166,11 +3167,22 @@ async function _saveRoundsToSupabase(rounds, name, targetKey) {
     };
 
     if (r.roundId) {
-      // Known round — upsert on round_id
-      await sb.from('rounds')
-        .upsert(row, { onConflict: 'round_id' });
+      // Check if roundId looks like a Supabase uuid (from the id fallback)
+      // vs a generated round_XXXX id. UUIDs have hyphens.
+      const isUUID = r.roundId.includes('-');
+      if (isUUID) {
+        // Update the existing row by its primary key id
+        await sb.from('rounds')
+          .update(row)
+          .eq('id', r.roundId)
+          .eq('user_id', currentUser.id);
+      } else {
+        // Generated round_id — upsert on round_id column
+        await sb.from('rounds')
+          .upsert(row, { onConflict: 'round_id' });
+      }
     } else {
-      // Legacy round (no ID) — insert only if not already present
+      // No ID at all — insert only if not already present by date+course
       const { data: existing } = await sb.from('rounds')
         .select('id')
         .eq('user_id', currentUser.id)
