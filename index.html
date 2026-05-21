@@ -6006,6 +6006,14 @@ function checkRoundField(inputEl) {
     }
   }
 
+  // Par sanity warning
+  if (cls.includes('r-par') && par > 0) {
+    if (par <= 69 || par >= 73) {
+      showFieldWarning(inputEl,
+        `Par of ${par} is unusual — most courses are par 70–72. Double-check your scorecard.`);
+    }
+  }
+
   // Re-check score sanity when par changes
   if (cls.includes('r-par') && par > 0 && score > 0) {
     if (score > par + 50 || score < par - 10) {
