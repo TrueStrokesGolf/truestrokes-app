@@ -3406,7 +3406,7 @@ function addRound() {
         <div class="sc-field">
           <label class="sc-label">Par 3 Holes</label>
           <span class="sc-hint">Usually 4</span>
-          <input type="number" class="r-par3" min="2" max="6" placeholder="4"/>
+          <input type="number" class="r-par3" min="2" max="6" placeholder="4" onblur="checkPar3s(this)"/>
         </div>
       </div>
       <div class="round-section-label">&#127948; Your Stats</div>
@@ -3497,6 +3497,7 @@ function calculate() {
   // WHY validate here not earlier: we need the parsed numbers to do
   // cross-field checks (fw vs par3s, scrambles vs gir, etc).
   const validationError = validateRounds(rounds, Array.from(roundEls));
+  if (validationError === '__par3_warning__') return; // silent pause for par3 prompt
   if (validationError) return showError(validationError);
 
   // ── Core math (unchanged — runs in all three modes) ───────────────
@@ -5829,9 +5830,9 @@ function validateRounds(rounds, roundEls) {
     // calculation. No collapses to the par3 field so they can fix it.
     if (r.par3s <= 2 || r.par3s >= 5) {
       const cardEl = roundEls[i];
-      // If already confirmed, clear flag and proceed
+      // If already confirmed by user clicking "Yes", clear flag and proceed
       if (cardEl.dataset.par3Confirmed === 'true') {
-        cardEl.dataset.par3Confirmed = 'false';
+        cardEl.dataset.par3Confirmed = '';
       } else {
         expandRoundCard(cardEl);
         // Remove any existing warning first
@@ -5855,7 +5856,7 @@ function validateRounds(rounds, roundEls) {
           </div>`;
         cardEl.querySelector('.round-card-body').appendChild(warnEl);
         cardEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        return ''; // pause calculation — user must respond
+        return '__par3_warning__'; // pause calculation — user must respond
       }
     }
 
@@ -5911,6 +5912,38 @@ function expandRoundCard(cardEl) {
   if (!cardEl) return;
   cardEl.classList.remove('collapsed');
   setTimeout(() => cardEl.scrollIntoView({ behavior: 'smooth', block: 'center' }), 100);
+}
+
+// Called onblur when user leaves the par3 field — instant feedback
+function checkPar3s(inputEl) {
+  const val = parseFloat(inputEl.value);
+  if (isNaN(val)) return;
+  const cardEl = inputEl.closest('.round-card');
+
+  // Remove any existing warning first
+  const existing = cardEl.querySelector('.par3-warning');
+  if (existing) existing.remove();
+  cardEl.dataset.par3Confirmed = '';
+
+  if (val <= 2 || val >= 5) {
+    const warnEl = document.createElement('div');
+    warnEl.className = 'par3-warning';
+    warnEl.style.cssText = 'margin:8px 0 4px;padding:10px 14px;background:#fff8e1;border:1.5px solid #f9a825;border-radius:6px;font-size:0.83rem;color:#6d4c00;line-height:1.6;';
+    warnEl.innerHTML = `
+      <div style="margin-bottom:8px;">⚠️ <strong>You entered ${val} par 3 holes.</strong> Most courses have 4. Is ${val} correct?</div>
+      <div style="display:flex;gap:8px;">
+        <button onclick="par3Confirm(this, true)"
+          style="padding:5px 14px;background:var(--green-800);color:#fff;border:none;border-radius:4px;font-size:0.82rem;font-weight:600;cursor:pointer;">
+          Yes, correct
+        </button>
+        <button onclick="par3Confirm(this, false)"
+          style="padding:5px 14px;background:transparent;color:#6d4c00;border:1.5px solid #f9a825;border-radius:4px;font-size:0.82rem;font-weight:600;cursor:pointer;">
+          No, fix it
+        </button>
+      </div>`;
+    // Insert right after the par3 field's parent sc-field div
+    inputEl.closest('.sc-field').insertAdjacentElement('afterend', warnEl);
+  }
 }
 
 // Called by the Yes/No buttons inside the par3 inline warning
