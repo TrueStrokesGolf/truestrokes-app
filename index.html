@@ -1008,78 +1008,6 @@
     .progress-pane { display: none; }
     .progress-pane.active { display: block; }
 
-    /* My Game redesign */
-    .mg-tab {
-      flex: 1; padding: 6px 2px; font-size: 11px; text-align: center;
-      border-radius: 6px; border: none; background: transparent;
-      color: var(--text-secondary); cursor: pointer;
-      font-family: var(--font-ui); transition: all 0.15s;
-    }
-    .mg-tab.active {
-      background: white; color: var(--text-primary); font-weight: 600;
-      border: 0.5px solid var(--border);
-    }
-    .mg-pane { display: none; }
-    .mg-pane.active { display: block; }
-
-    .mg-stat-row { margin-bottom: 16px; }
-    .mg-bar-track {
-      position: relative; height: 8px;
-      background: var(--green-50); border-radius: 4px; margin-bottom: 6px;
-    }
-    .mg-bar-fill { position: absolute; left: 0; top: 0; height: 100%; border-radius: 4px; }
-    .mg-baseline-pin {
-      position: absolute; top: -5px; width: 3px; height: 18px;
-      background: var(--text-secondary); border-radius: 2px; opacity: 0.4;
-    }
-    .mg-delta { font-size: 11px; padding: 2px 7px; border-radius: 4px; }
-    .mg-delta-up   { background: var(--green-50); color: var(--green-800); }
-    .mg-delta-down { background: #fdecea; color: #c62828; }
-    .mg-delta-flat { background: var(--green-50); color: var(--text-muted); }
-    .mg-delta-target { background: #fff8e1; color: #6d4c00; font-weight: 600; }
-
-    .mg-mom-cell {
-      text-align: center; padding: 10px 4px;
-      background: var(--green-50); border-radius: var(--radius-sm);
-    }
-    .mg-round-row {
-      display: flex; align-items: center; gap: 10px;
-      padding: 10px 0; border-bottom: 0.5px solid var(--border);
-    }
-    .mg-round-row:last-child { border-bottom: none; }
-    .mg-chip { font-size: 10px; padding: 2px 6px; border-radius: 4px; }
-    .mg-chip-up   { background: var(--green-50); color: var(--green-800); }
-    .mg-chip-down { background: #fdecea; color: #c62828; }
-    .mg-chip-base { background: var(--green-50); color: var(--text-muted); }
-
-    .mg-trophy-bubble {
-      width: 48px; height: 48px; border-radius: 50%;
-      background: var(--green-50); border: 1.5px solid var(--green-300);
-      display: flex; align-items: center; justify-content: center; font-size: 22px;
-    }
-    .mg-challenge-card {
-      border: 1.5px solid var(--green-300); background: var(--green-50);
-      border-radius: var(--radius-lg); padding: 1.25rem; margin-bottom: 10px;
-    }
-    .mg-progress-track {
-      height: 10px; background: var(--green-200);
-      border-radius: 5px; margin-bottom: 6px; overflow: hidden;
-    }
-    .mg-progress-fill { height: 100%; border-radius: 5px; background: var(--green-700); }
-    .mg-mini-badge {
-      display: flex; align-items: center; gap: 10px;
-      padding: 10px 12px; background: var(--green-50);
-      border-radius: var(--radius-sm); margin-bottom: 6px;
-      border: 0.5px solid var(--border);
-    }
-    .mg-mini-progress { height: 3px; background: var(--border); border-radius: 2px; margin-top: 5px; overflow: hidden; }
-    .mg-mini-progress-fill { height: 100%; border-radius: 2px; background: var(--green-700); }
-    .mg-earned-row {
-      display: flex; align-items: center; gap: 12px;
-      padding: 10px 0; border-bottom: 0.5px solid var(--border);
-    }
-    .mg-earned-row:last-child { border-bottom: none; }
-
     .mystats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
     @media (max-width: 480px) { .mystats-grid { grid-template-columns: 1fr; } }
 
@@ -2012,6 +1940,15 @@
     .btn-clear:hover { border-color: var(--red); color: var(--red); }
 
   </style>
+  <!-- PostHog Analytics — tracks usage, sessions, funnels, retention -->
+  <script>
+    !function(t,e){var o,n,p,r;e.__SV||(window.posthog && window.posthog.__loaded)||(window.posthog=e,e._i=[],e.init=function(i,s,a){function g(t,e){var o=e.split(".");2==o.length&&(t=t[o[0]],e=o[1]),t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}}(p=t.createElement("script")).type="text/javascript",p.crossOrigin="anonymous",p.async=!0,p.src=s.api_host.replace(".i.posthog.com","-assets.i.posthog.com")+"/static/array.js",(r=t.getElementsByTagName("script")[0]).parentNode.insertBefore(p,r);var u=e;for(void 0!==a?u=e[a]=[]:a="posthog",u.people=u.people||[],u.toString=function(t){var e="posthog";return"posthog"!==a&&(e+="."+a),t||(e+=" (stub)"),e},u.people.toString=function(){return u.toString(1)+".people (stub)"},o="Mi Ri init Vi Gi Rr Wi Ji Bi capture calculateEventProperties tn register register_once register_for_session unregister unregister_for_session an getFeatureFlag getFeatureFlagPayload getFeatureFlagResult isFeatureEnabled reloadFeatureFlags updateFlags updateEarlyAccessFeatureEnrollment getEarlyAccessFeatures on onFeatureFlags onSurveysLoaded onSessionId getSurveys getActiveMatchingSurveys renderSurvey displaySurvey cancelPendingSurvey canRenderSurvey canRenderSurveyAsync un identify setPersonProperties group resetGroups setPersonPropertiesForFlags resetPersonPropertiesForFlags setGroupPropertiesForFlags resetGroupPropertiesForFlags reset setIdentity clearIdentity get_distinct_id getGroups get_session_id get_session_replay_url alias set_config startSessionRecording stopSessionRecording sessionRecordingStarted captureException addExceptionStep captureLog startExceptionAutocapture stopExceptionAutocapture loadToolbar get_property getSessionProperty nn Xi createPersonProfile setInternalOrTestUser sn Hi cn opt_in_capturing opt_out_capturing has_opted_in_capturing has_opted_out_capturing get_explicit_consent_status is_capturing clear_opt_in_out_capturing Ki debug Lr rn getPageViewId captureTraceFeedback captureTraceMetric Di".split(" "),n=0;n<o.length;n++)g(u,o[n]);e._i.push([i,s,a])},e.__SV=1)}(document,window.posthog||[]);
+    posthog.init('phc_nDjWuDBDfFh2dV8USo6Xtc8isPLZSsYBToTNHEHgPcP2', {
+        api_host: 'https://us.i.posthog.com',
+        defaults: '2026-01-30',
+        person_profiles: 'identified_only',
+    })
+  </script>
 </head>
 <body>
 
@@ -2387,7 +2324,7 @@
       <div id="rounds-container"></div>
       <div class="actions" style="margin-top:14px;">
         <button class="btn btn-outline" onclick="addRound()">+ Add Another Round</button>
-        <span id="round-count-hint" style="font-size:0.82rem;color:var(--text-muted);">Rounds 1–4: early analysis · Round 5 locks your baseline</span>
+        <span style="font-size:0.82rem;color:var(--text-muted);">3–10 rounds recommended</span>
       </div>
     </div>
 
@@ -2468,68 +2405,60 @@
   <!-- ─── MY GAME PAGE ─── -->
   <div id="rounds-page">
 
-    <!-- ── SCOREBOARD — sticky summary card ── -->
-    <div id="mg-scoreboard" style="background:var(--green-800);border-radius:var(--radius-lg);padding:1.25rem 1.5rem;margin-bottom:10px;">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;">
-        <div>
-          <div style="font-size:10px;color:var(--green-300);text-transform:uppercase;letter-spacing:0.09em;margin-bottom:4px;">Your journey</div>
-          <div id="mg-tier" style="font-size:22px;font-weight:700;color:#fff;line-height:1.1;">—</div>
-          <div id="mg-target" style="font-size:12px;color:var(--green-300);margin-top:4px;">—</div>
-        </div>
-        <div style="text-align:right;">
-          <div style="font-size:10px;color:var(--green-300);text-transform:uppercase;letter-spacing:0.09em;margin-bottom:4px;">Baseline gap</div>
-          <div id="mg-gap" style="font-size:22px;font-weight:700;color:#fff;line-height:1.1;">—</div>
-          <div id="mg-locked" style="font-size:12px;color:var(--green-300);margin-top:4px;">—</div>
-        </div>
+    <!-- My Game header stats -->
+    <div class="rounds-summary-header">
+      <div class="rsh-stat">
+        <div class="rsh-number" id="rsh-count">0</div>
+        <div class="rsh-label">Rounds Played</div>
       </div>
-
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:12px;">
-        <div style="background:rgba(255,255,255,0.1);border-radius:var(--radius-sm);padding:10px;text-align:center;">
-          <div id="mg-rounds-count" style="font-size:20px;font-weight:700;color:#fff;">0</div>
-          <div style="font-size:10px;color:var(--green-300);margin-top:2px;">rounds</div>
-        </div>
-        <div id="mg-gap-closed-cell" style="background:rgba(255,255,255,0.1);border-radius:var(--radius-sm);padding:10px;text-align:center;">
-          <div id="mg-gap-closed" style="font-size:20px;font-weight:700;color:#fff;">—</div>
-          <div style="font-size:10px;color:var(--green-300);margin-top:2px;">gap closed</div>
-        </div>
-        <div style="background:rgba(255,255,255,0.1);border-radius:var(--radius-sm);padding:10px;text-align:center;">
-          <div id="mg-sessions-count" style="font-size:20px;font-weight:700;color:#fff;">0</div>
-          <div style="font-size:10px;color:var(--green-300);margin-top:2px;">practice sessions</div>
-        </div>
+      <div class="rsh-divider"></div>
+      <div class="rsh-stat">
+        <div class="rsh-number" id="rsh-avg-score">—</div>
+        <div class="rsh-label">Avg Score</div>
       </div>
-
-      <div id="mg-category-gaps" style="border-top:0.5px solid var(--border);padding-top:10px;display:none;">
-        <div style="font-size:10px;color:var(--green-300);text-transform:uppercase;letter-spacing:0.09em;margin-bottom:8px;">Gap closed by category</div>
-        <div id="mg-category-gaps-grid" style="display:grid;grid-template-columns:repeat(2,1fr);gap:5px;"></div>
+      <div class="rsh-divider"></div>
+      <div class="rsh-stat">
+        <div class="rsh-number" id="rsh-avg-diff">—</div>
+        <div class="rsh-label">Avg Differential</div>
+      </div>
+      <div class="rsh-divider"></div>
+      <div class="rsh-stat">
+        <div class="rsh-number" id="rsh-best-diff">—</div>
+        <div class="rsh-label">Best Differential</div>
       </div>
     </div>
 
-    <!-- ── TABS ── -->
-    <div style="display:flex;gap:3px;background:var(--green-50);border-radius:var(--radius-sm);padding:3px;margin-bottom:10px;" id="mg-tabs">
-      <button class="mg-tab active" onclick="switchMyGameTab('progress')">Progress</button>
-      <button class="mg-tab" onclick="switchMyGameTab('rounds')">Rounds</button>
-      <button class="mg-tab" onclick="switchMyGameTab('practice')">Practice</button>
-      <button class="mg-tab" onclick="switchMyGameTab('badges')">Badges</button>
+    <!-- Tabs: Round History / Practice Stats / Badges -->
+    <div class="progress-tabs" style="background:white;border-radius:var(--radius-lg) var(--radius-lg) 0 0;padding:0 20px;margin-bottom:0;box-shadow:var(--shadow-sm);">
+      <button class="progress-tab active" onclick="switchGameTab('rounds')">⛳ Round History</button>
+      <button class="progress-tab"        onclick="switchGameTab('practice')">📋 Practice Stats</button>
+      <button class="progress-tab"        onclick="switchGameTab('badges')">🏅 Badges</button>
     </div>
 
-    <!-- Progress pane -->
-    <div class="mg-pane active" id="mg-pane-progress">
-      <div id="mg-progress-content"></div>
+    <!-- Round History pane -->
+    <div class="progress-pane active" id="game-pane-rounds">
+      <div class="card" style="border-radius:0 0 var(--radius-lg) var(--radius-lg);margin-top:0;">
+        <div id="rounds-table-wrap">
+          <div class="no-rounds-msg">No rounds entered yet.<br>Go to Add Round to get started.</div>
+        </div>
+      </div>
     </div>
 
-    <!-- Rounds pane -->
-    <div class="mg-pane" id="mg-pane-rounds">
-      <div id="mg-rounds-content"></div>
-    </div>
-
-    <!-- Practice pane -->
-    <div class="mg-pane" id="mg-pane-practice">
-      <div id="mg-practice-content"></div>
+    <!-- Practice Stats pane -->
+    <div class="progress-pane" id="game-pane-practice">
+      <div class="card" style="border-radius:0 0 var(--radius-lg) var(--radius-lg);margin-top:0;">
+        <div id="game-practice-stats">
+          <div class="no-rounds-msg">Complete a practice session to see your stats here.</div>
+        </div>
+      </div>
     </div>
 
     <!-- Badges pane -->
-    <div class="mg-pane" id="mg-pane-badges">
-      <div id="mg-badges-content"></div>
+    <div class="progress-pane" id="game-pane-badges">
+      <div class="card" style="border-radius:0 0 var(--radius-lg) var(--radius-lg);margin-top:0;">
+        <div class="section-title">🏅 Your Badges</div>
+        <div id="game-badge-shelf"></div>
+      </div>
     </div>
 
   </div>
@@ -2784,6 +2713,9 @@ async function authSignIn() {
 
   // Success — store the user and enter the app
   currentUser = data.user;
+  // WHY identify: ties all PostHog events to this specific user.
+  // Without this, PostHog tracks anonymous sessions that can't be connected.
+  if (window.posthog) posthog.identify(data.user.id, { email: data.user.email });
   hideAuthPage();
   enterApp();
 }
@@ -2821,6 +2753,7 @@ async function authSignUp() {
   // If confirmations are ON, data.user exists but data.session is null.
   if (data.session) {
     currentUser = data.user;
+    if (window.posthog) posthog.identify(data.user.id, { email: data.user.email });
     hideAuthPage();
     enterApp();
   } else {
@@ -2835,6 +2768,8 @@ async function authSignUp() {
 async function authSignOut() {
   await sb.auth.signOut();
   currentUser = null;
+  // WHY reset: clears the identified user so the next session starts fresh
+  if (window.posthog) posthog.reset();
   window.location.reload();
 }
 
@@ -2953,7 +2888,6 @@ async function loadSupabaseData() {
     if (sbRounds && sbRounds.length > 0) {
       // Has Supabase rounds — use them as source of truth
       const rounds = sbRounds.map(r => ({
-        roundId:   r.round_id || r.id,  // use round_id if set, fall back to Supabase row id
         date:      r.played_on    || '',
         course:    r.course_name  || '',
         score:     r.score        || '',
@@ -3247,22 +3181,11 @@ async function _saveRoundsToSupabase(rounds, name, targetKey) {
     };
 
     if (r.roundId) {
-      // Check if roundId looks like a Supabase uuid (from the id fallback)
-      // vs a generated round_XXXX id. UUIDs have hyphens.
-      const isUUID = r.roundId.includes('-');
-      if (isUUID) {
-        // Update the existing row by its primary key id
-        await sb.from('rounds')
-          .update(row)
-          .eq('id', r.roundId)
-          .eq('user_id', currentUser.id);
-      } else {
-        // Generated round_id — upsert on round_id column
-        await sb.from('rounds')
-          .upsert(row, { onConflict: 'round_id' });
-      }
+      // Known round — upsert on round_id
+      await sb.from('rounds')
+        .upsert(row, { onConflict: 'round_id' });
     } else {
-      // No ID at all — insert only if not already present by date+course
+      // Legacy round (no ID) — insert only if not already present
       const { data: existing } = await sb.from('rounds')
         .select('id')
         .eq('user_id', currentUser.id)
@@ -3429,11 +3352,10 @@ function updateRoundSummary(inputEl) {
 function addRound() {
   roundCount++;
   const div = document.createElement('div');
-  // New cards always start open — user just clicked Add Round, they want
-  // to fill it in immediately. Previously entered cards stay collapsed.
-  div.className = 'round-card';
-  // Collapse all OTHER existing cards so the new one has focus
-  document.querySelectorAll('.round-card').forEach(c => c.classList.add('collapsed'));
+  // WHY conditional collapsed: if results already exist (user has calculated
+  // before), new round cards start collapsed so they don't obscure the form.
+  // On first use (no results yet) they open by default for better onboarding.
+  div.className = lastResults ? 'round-card collapsed' : 'round-card';
   div.id = `round-${roundCount}`;
   // WHY roundId: each card gets a stable ID generated at creation time.
   // When we upsert to Supabase we match on this ID — so existing rounds
@@ -3469,24 +3391,24 @@ function addRound() {
         <div class="sc-field">
           <label class="sc-label">Par</label>
           <span class="sc-hint">Usually 70–72</span>
-          <input type="number" class="r-par" min="65" max="73" placeholder="72" onblur="checkRoundField(this)"/>
+          <input type="number" class="r-par" min="65" max="73" placeholder="72"/>
         </div>
         <div class="sc-field">
           <label class="sc-label">Course Rating</label>
           <span class="sc-hint">On scorecard</span>
-          <input type="number" class="r-rating" step="0.1" min="60" max="80" placeholder="71.6" onblur="checkRoundField(this)"/>
+          <input type="number" class="r-rating" step="0.1" min="60" max="80" placeholder="71.6"/>
         </div>
       </div>
       <div class="sc-row-2">
         <div class="sc-field">
           <label class="sc-label">Slope</label>
           <span class="sc-hint">Range 55–155</span>
-          <input type="number" class="r-slope" min="55" max="155" placeholder="130" onblur="checkRoundField(this)"/>
+          <input type="number" class="r-slope" min="55" max="155" placeholder="130"/>
         </div>
         <div class="sc-field">
           <label class="sc-label">Par 3 Holes</label>
           <span class="sc-hint">Usually 4</span>
-          <input type="number" class="r-par3" min="2" max="6" placeholder="4" onblur="checkPar3s(this)"/>
+          <input type="number" class="r-par3" min="2" max="6" placeholder="4"/>
         </div>
       </div>
       <div class="round-section-label">&#127948; Your Stats</div>
@@ -3494,30 +3416,30 @@ function addRound() {
         <div class="sc-field">
           <label class="sc-label">Score</label>
           <span class="sc-hint">Total strokes</span>
-          <input type="number" class="r-score" min="50" max="150" placeholder="92" oninput="updateRoundSummary(this)" onblur="checkRoundField(this)"/>
+          <input type="number" class="r-score" min="50" max="150" placeholder="92" oninput="updateRoundSummary(this)"/>
         </div>
         <div class="sc-field">
           <label class="sc-label">Fairways Hit</label>
           <span class="sc-hint">Par 4s &amp; 5s only</span>
-          <input type="number" class="r-fw" min="0" max="18" placeholder="6" onblur="checkRoundField(this)"/>
+          <input type="number" class="r-fw" min="0" max="18" placeholder="6"/>
         </div>
       </div>
       <div class="sc-row-2">
         <div class="sc-field">
           <label class="sc-label">Greens in Reg</label>
           <span class="sc-hint">Par3=1, Par4=2, Par5=3</span>
-          <input type="number" class="r-gir" min="0" max="18" placeholder="4" onblur="checkRoundField(this)"/>
+          <input type="number" class="r-gir" min="0" max="18" placeholder="4"/>
         </div>
         <div class="sc-field">
           <label class="sc-label">Putts on GIR</label>
           <span class="sc-hint">Only on GIR holes</span>
-          <input type="number" class="r-putts" min="0" max="54" placeholder="9" onblur="checkRoundField(this)"/>
+          <input type="number" class="r-putts" min="0" max="54" placeholder="9"/>
         </div>
       </div>
       <div class="sc-field">
         <label class="sc-label">Scrambles Made</label>
         <span class="sc-hint">Par or better after missing the green</span>
-        <input type="number" class="r-scrambles" min="0" max="18" placeholder="2" onblur="checkRoundField(this)"/>
+        <input type="number" class="r-scrambles" min="0" max="18" placeholder="2"/>
       </div>
     </div>`;
   document.getElementById('rounds-container').appendChild(div);
@@ -3572,13 +3494,6 @@ function calculate() {
   const targetKey = document.getElementById('target-tier').value;
   if (!targetKey) return showError('Please select a target tier.');
   const target = TIERS[targetKey];
-
-  // ── Validate before running any math ─────────────────────────────
-  // WHY validate here not earlier: we need the parsed numbers to do
-  // cross-field checks (fw vs par3s, scrambles vs gir, etc).
-  const validationError = validateRounds(rounds, Array.from(roundEls));
-  if (validationError === '__par3_warning__') return; // silent pause for par3 prompt
-  if (validationError) return showError(validationError);
 
   // ── Core math (unchanged — runs in all three modes) ───────────────
   // WHY run full math even post-baseline: we need estHcp to stay current
@@ -3760,21 +3675,16 @@ function displayResults(d) {
       You are <strong>${d.totalGap.toFixed(1)} strokes</strong> away from ${d.target.label}.`;
   } else if (d.baselineMode === 'lock') {
     document.getElementById('res-goal-statement').innerHTML =
-      `<div style="background:var(--green-50);border:1.5px solid var(--green-300);border-radius:var(--radius-sm);padding:12px 16px;margin-bottom:8px;text-align:center;">
-        <div style="font-size:1.1rem;margin-bottom:4px;">🔒 Baseline Locked</div>
-        <div style="font-weight:700;font-size:1rem;color:var(--green-800);">Your starting point is officially set.</div>
-        <div style="font-size:0.82rem;color:var(--green-700);margin-top:4px;">Every round from here measures your progress against this moment.</div>
-      </div>
-      You are <strong>${d.totalGap.toFixed(1)} strokes</strong> from ${d.target.label} — this is your fixed baseline gap.`;
+      `<span style="color:var(--green-700);font-size:0.85rem;display:block;margin-bottom:4px;">
+        🔒 Baseline locked — your starting point is set
+      </span>
+      You are <strong>${d.totalGap.toFixed(1)} strokes</strong> away from ${d.target.label}. This gap is now your fixed reference point.`;
   } else {
-    const lockedDate = activeBaseline?.locked_at
-      ? new Date(activeBaseline.locked_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})
-      : '';
     document.getElementById('res-goal-statement').innerHTML =
-      `<div style="background:var(--green-50);border:1px solid var(--green-200);border-radius:var(--radius-sm);padding:8px 12px;margin-bottom:8px;font-size:0.82rem;color:var(--green-800);">
-        📍 <strong>Baseline locked${lockedDate ? ' ' + lockedDate : ''}</strong> — your gap is fixed at ${d.totalGap.toFixed(1)} strokes from ${d.target.label}
-      </div>
-      Add rounds to track your progress. Visit <strong>My Game</strong> to see how each round compares to your baseline.`;
+      `<span style="color:var(--green-700);font-size:0.85rem;display:block;margin-bottom:4px;">
+        📍 Baseline gap (locked ${new Date(activeBaseline?.locked_at||Date.now()).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})})
+      </span>
+      You started <strong>${d.totalGap.toFixed(1)} strokes</strong> from ${d.target.label}. Check My Game to see your progress.`;
   }
 
   // Percentile block
@@ -3810,26 +3720,15 @@ function displayResults(d) {
   document.getElementById('journey-fill').style.width = (ciIdx/(TIER_ORDER.length-1)*100)+'%';
   const tiersEl = document.getElementById('journey-tiers');
   tiersEl.innerHTML = '';
-
-  // WHY show baseline tier on journey: post-baseline, the user's current tier
-  // may have improved since they locked. Showing both "where you started" and
-  // "where you are now" makes progress tangible and sticky.
-  const baselineTierKey = (baselineLocked && activeBaseline) ? activeBaseline.tier_key : null;
-
   TIER_ORDER.forEach((key,i) => {
     const t = TIERS[key];
-    const isCurrent   = key === d.currentKey;
-    const isTarget    = key === d.targetKey;
-    const isPassed    = i < ciIdx;
-    const isBaseline  = key === baselineTierKey && baselineLocked;
+    const isCurrent=key===d.currentKey, isTarget=key===d.targetKey, isPassed=i<ciIdx;
     const el = document.createElement('div');
     el.className = 'journey-tier';
     el.innerHTML = `
       <div class="journey-dot ${isCurrent?'active':isTarget?'target':isPassed?'passed':''}"></div>
       <div class="journey-tier-label ${isCurrent?'active':isTarget?'target':''}">${isTarget?'🏁 ':''}${t.label}</div>
-      ${isCurrent ? '<div class="journey-you-label">▲ You</div>' : ''}
-      ${isBaseline && !isCurrent ? '<div class="journey-you-label" style="color:var(--green-600);font-size:0.65rem;font-weight:700;">📍 Baseline</div>' : ''}
-      ${isBaseline && isCurrent  ? '<div class="journey-you-label" style="color:var(--green-600);font-size:0.65rem;">📍 Baseline start</div>' : ''}`;
+      ${isCurrent?'<div class="journey-you-label">▲ You</div>':''}`;
     tiersEl.appendChild(el);
   });
 
@@ -4066,610 +3965,47 @@ function switchTab(tab) {
 // ═══════════════════════════════════════════════════
 // MY ROUNDS PAGE
 // ═══════════════════════════════════════════════════
-// ═══════════════════════════════════════════════════
-// MY GAME — REDESIGNED
-// ═══════════════════════════════════════════════════
-
 function renderRoundsPage() {
-  renderMyGame();
-}
-
-function renderMyGame() {
-  renderMGScoreboard();
-  const activeTab = document.querySelector('.mg-tab.active');
-  const tab = activeTab ? activeTab.textContent.toLowerCase().trim() : 'progress';
-  renderMGTab(tab);
-}
-
-function switchMyGameTab(tab) {
-  document.querySelectorAll('.mg-tab').forEach(t =>
-    t.classList.toggle('active', t.textContent.toLowerCase().trim() === tab));
-  document.querySelectorAll('.mg-pane').forEach(p =>
-    p.classList.toggle('active', p.id === `mg-pane-${tab}`));
-  renderMGTab(tab);
-}
-
-function renderMGTab(tab) {
-  if (tab === 'progress') renderMGProgress();
-  if (tab === 'rounds')   renderMGRounds();
-  if (tab === 'practice') renderMGPractice();
-  if (tab === 'badges')   renderMGBadges();
-}
-
-// ── Scoreboard ───────────────────────────────────────────────────────
-function renderMGScoreboard() {
-  if (!lastResults) return;
-  const d = lastResults;
-
-  document.getElementById('mg-tier').textContent    = d.current.label;
-  document.getElementById('mg-target').textContent  = `target: ${d.target.label}`;
-  document.getElementById('mg-rounds-count').textContent = sessionRounds.length;
-  document.getElementById('mg-sessions-count').textContent = getCompletedSessions().length;
-
-  if (baselineLocked && activeBaseline) {
-    document.getElementById('mg-gap').textContent   = `${activeBaseline.gap_to_target.toFixed(1)} strokes`;
-    const lockedDate = activeBaseline.locked_at
-      ? new Date(activeBaseline.locked_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})
-      : '';
-    document.getElementById('mg-locked').textContent = `locked ${lockedDate}`;
-
-    // Gap closed — only meaningful after baseline is set AND user has played post-baseline rounds
-    // WHY: with exactly 5 rounds (all baseline rounds), there's nothing to compare against yet.
-    const postBaselineRounds = sessionRounds.length - BASELINE_ROUNDS;
-    if (postBaselineRounds > 0) {
-      const liveGap = d.estHcp - TIERS[d.targetKey].hcp;
-      const closed  = activeBaseline.gap_to_target - Math.max(0, liveGap);
-      const closedEl = document.getElementById('mg-gap-closed');
-      closedEl.textContent = closed > 0 ? `+${closed.toFixed(1)}` : closed.toFixed(1);
-      document.getElementById('mg-gap-closed-cell').style.background = closed > 0 ? 'rgba(144,238,144,0.2)' : 'rgba(255,100,100,0.2)';
-      closedEl.style.color = closed > 0 ? '#90EE90' : '#FF8080';
-    } else {
-      document.getElementById('mg-gap-closed').textContent = '—';
-    }
-
-    // Category gaps
-    const catGapsEl = document.getElementById('mg-category-gaps');
-    const catGrid   = document.getElementById('mg-category-gaps-grid');
-    catGapsEl.style.display = 'block';
-    const baselineBreakdown = d.breakdown;
-    catGrid.innerHTML = baselineBreakdown.map(b => {
-      const arrow = '↑';
-      return `<div style="font-size:11px;color:var(--green-300);">
-        ${b.category.replace(' Shots','').replace(' Game','')}
-        <span style="color:#90EE90;font-weight:600;">${b.strokes.toFixed(1)} ↑</span>
-      </div>`;
-    }).join('');
-  } else {
-    document.getElementById('mg-gap').textContent  = `${d.totalGap.toFixed(1)} strokes`;
-    document.getElementById('mg-locked').textContent = 'baseline not set yet';
-    document.getElementById('mg-gap-closed').textContent = '—';
-  }
-}
-
-// ── Progress tab ─────────────────────────────────────────────────────
-function renderMGProgress() {
-  const el = document.getElementById('mg-progress-content');
-  if (!lastResults) {
-    el.innerHTML = `<div class="card"><div class="no-rounds-msg">Enter rounds to see your progress.</div></div>`;
-    return;
-  }
-
-  // Pre-baseline state
-  if (!baselineLocked) {
-    const remaining = Math.max(0, BASELINE_ROUNDS - sessionRounds.length);
-    const dots = Array.from({length: BASELINE_ROUNDS}, (_,i) =>
-      `<div style="width:10px;height:10px;border-radius:50%;background:${i < sessionRounds.length ? 'var(--green-700)' : 'var(--border)'}"></div>`
-    ).join('');
-    el.innerHTML = `
-      <div class="card" style="text-align:center;padding:28px 20px;">
-        <div style="font-size:2rem;margin-bottom:12px;">📍</div>
-        <div style="font-size:16px;font-weight:600;color:var(--text-primary);margin-bottom:6px;">Baseline not set yet</div>
-        <div style="font-size:13px;color:var(--text-secondary);margin-bottom:16px;line-height:1.6;">
-          ${remaining > 0
-            ? `Enter ${remaining} more round${remaining !== 1 ? 's' : ''} to lock your baseline. After that, every round tracks your progress.`
-            : 'Calculate to lock your baseline.'}
-        </div>
-        <div style="display:flex;justify-content:center;gap:6px;margin-bottom:8px;">${dots}</div>
-        <div style="font-size:11px;color:var(--text-muted);">${sessionRounds.length} of ${BASELINE_ROUNDS} rounds</div>
-      </div>`;
-    return;
-  }
-
-  const d  = lastResults;
-  const bl = activeBaseline;
-  const rounds = sessionRounds;
-
-  // Momentum — trend over last 3 rounds
-  let momentumHTML = '';
-  if (rounds.length >= 2) {
-    const last3 = rounds.slice(-3);
-    const prev3 = rounds.length >= 4 ? rounds.slice(-6, -3) : rounds.slice(0, -3);
-
-    const statFns = {
-      FW:    r => r.par3s > 0 ? r.fw / (18 - r.par3s) : 0,
-      GIR:   r => r.gir / 18,
-      Putts: r => r.gir > 0 ? r.putts / r.gir : 2.5,
-      Scram: r => (18 - r.gir) > 0 ? r.scrambles / (18 - r.gir) : 0,
-    };
-    const higherBetter = { FW: true, GIR: true, Putts: false, Scram: true };
-
-    momentumHTML = `
-      <div style="font-size:13px;font-weight:600;color:var(--text-primary);margin-bottom:6px;">
-        Momentum
-        <span style="font-size:11px;font-weight:400;color:var(--text-muted);margin-left:4px;">last 3 rounds</span>
-      </div>
-      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:14px;">
-        ${Object.entries(statFns).map(([label, fn]) => {
-          const avg = arr => arr.length ? arr.reduce((s,r) => s + fn(r), 0) / arr.length : null;
-          const cur = avg(last3);
-          const prv = avg(prev3.length ? prev3 : last3.slice(0,-1));
-          const diff = cur - prv;
-          const hb = higherBetter[label];
-          const improving = hb ? diff > 0.005 : diff < -0.005;
-          const declining  = hb ? diff < -0.005 : diff > 0.005;
-          const arrow  = improving ? '↑' : declining ? '↓' : '→';
-          const color  = improving ? 'var(--green-800)' : declining ? '#c62828' : 'var(--text-muted)';
-          const subColor = improving ? 'var(--green-700)' : declining ? '#e57373' : 'var(--text-muted)';
-          const sub = label === 'Putts'
-            ? (diff > 0 ? '+' : '') + diff.toFixed(2)
-            : (diff > 0 ? '+' : '') + (diff * 100).toFixed(0) + '%';
-          return `<div class="mg-mom-cell">
-            <div style="font-size:18px;color:${color};line-height:1;margin-bottom:3px;">${arrow}</div>
-            <div style="font-size:10px;color:var(--text-muted);">${label}</div>
-            <div style="font-size:10px;color:${subColor};margin-top:1px;">${sub}</div>
-          </div>`;
-        }).join('')}
-      </div>
-      <div style="height:0.5px;background:var(--border);margin:0 0 14px;"></div>`;
-  }
-
-  // Stat cards — last round vs baseline
-  const lastRound = rounds[rounds.length - 1];
-
-  const statDefs = [
-    { label: 'Fairways hit',         key: 'fw',
-      cur:  r => r.par3s > 0 ? r.fw / (18 - r.par3s) : 0,
-      base: bl.fw_baseline,    fmt: v => (v * 100).toFixed(0) + '%',
-      fmtDelta: v => (v * 100).toFixed(0) + '%', higherBetter: true },
-    { label: 'Greens in regulation', key: 'gir',
-      cur:  r => r.gir / 18,
-      base: bl.gir_baseline,   fmt: v => (v * 100).toFixed(0) + '%',
-      fmtDelta: v => (v * 100).toFixed(0) + '%', higherBetter: true },
-    { label: 'Putts per GIR',        key: 'putts',
-      cur:  r => r.gir > 0 ? r.putts / r.gir : 2.5,
-      base: bl.putts_baseline, fmt: v => v.toFixed(2),
-      fmtDelta: v => v.toFixed(2), higherBetter: false },
-    { label: 'Scrambling',           key: 'scram',
-      cur:  r => (18 - r.gir) > 0 ? r.scrambles / (18 - r.gir) : 0,
-      base: bl.scram_baseline, fmt: v => (v * 100).toFixed(0) + '%',
-      fmtDelta: v => (v * 100).toFixed(0) + '%', higherBetter: true },
-  ];
-
-  const target    = TIERS[d.targetKey];
-  const targetVals = { fw: target.fw, gir: target.gir, putts: target.putts, scram: target.scramble };
-
-  // WHY progressDelta: + always means moving toward goal, - always means moving away.
-  // For higher-is-better stats (FW, GIR, Scram): raw delta = curVal - baseVal.
-  // For lower-is-better stats (Putts): we invert — improvement is a decrease,
-  // so progressDelta = baseVal - curVal (positive when putts went DOWN = good).
-  const progressDelta = (curVal, baseVal, hb) => hb ? curVal - baseVal : baseVal - curVal;
-
-  const statCards = statDefs.map(s => {
-    const curVal   = s.cur(lastRound);
-    const baseVal  = s.base || 0;
-    const targetVal = targetVals[s.key];
-    const hb       = s.higherBetter;
-
-    const delta    = progressDelta(curVal, baseVal, hb);
-    const hitTarget = hb ? curVal >= targetVal : curVal <= targetVal;
-    const improving = delta > 0.005;
-    const declining = delta < -0.005;
-
-    const cardState = hitTarget ? 'achieved' : improving ? 'improved' : declining ? 'declined' : 'neutral';
-
-    const cardBg    = hitTarget ? '#FAEEDA' : improving ? '#EAF3DE' : declining ? '#FCEBEB' : 'var(--green-50)';
-    const nameColor = hitTarget ? '#412402'  : improving ? '#173404' : declining ? '#501313' : 'var(--text-primary)';
-    const valColor  = hitTarget ? '#633806'  : improving ? '#27500A' : declining ? '#A32D2D' : 'var(--text-primary)';
-    const labelColor= hitTarget ? '#633806'  : improving ? '#3B6D11' : declining ? '#791F1F' : 'var(--text-muted)';
-    const divColor  = hitTarget ? '#FAC775'  : improving ? '#C0DD97' : declining ? '#F7C1C1' : 'var(--border)';
-    const badgeBg   = hitTarget ? '#FAC775'  : improving ? '#C0DD97' : declining ? '#F7C1C1' : 'var(--border)';
-    const badgeColor= hitTarget ? '#412402'  : improving ? '#173404' : declining ? '#501313' : 'var(--text-muted)';
-
-    // Badge always shows raw delta — + means progress, - means regression
-    const sign     = delta >= 0 ? '+' : '-';
-    const absVal   = Math.abs(delta);
-    const badgeText = sign + s.fmtDelta(absVal) + ' vs baseline';
-
-    // "to go" label
-    const toGo = hb
-      ? s.fmtDelta(Math.max(0, targetVal - curVal))
-      : s.fmtDelta(Math.max(0, curVal - targetVal));
-    const toGoPct = hb
-      ? Math.max(0, targetVal - curVal)
-      : Math.max(0, curVal - targetVal);
-
-    // Golf-specific action language — calculates real strokes/actions needed
-    // WHY: abstract percentages don't motivate. "2 more fairways" does.
-    let goalSub;
-    const tierLabel = d.target.label;
-    if (hitTarget) {
-      goalSub = 'You played like a ' + tierLabel + ' today — can you do it again?';
-    } else {
-      // Translate gap into a concrete golf action
-      let actionNudge = '';
-      if (s.key === 'fw') {
-        // Available fairways this round (use last round's par3s)
-        const availFW = 18 - (lastRound.par3s || 4);
-        const fwNeeded = Math.ceil(toGoPct * availFW);
-        if (fwNeeded <= 3) {
-          actionNudge = fwNeeded === 1
-            ? 'Hit one more fairway and you’re playing like a ' + tierLabel
-            : 'Hit ' + fwNeeded + ' more fairways and you’re playing like a ' + tierLabel;
-        }
-      } else if (s.key === 'gir') {
-        const girsNeeded = Math.ceil(toGoPct * 18);
-        if (girsNeeded <= 3) {
-          actionNudge = girsNeeded === 1
-            ? 'Hit one more green and you’re playing like a ' + tierLabel
-            : 'Hit ' + girsNeeded + ' more greens and you’re playing like a ' + tierLabel;
-        }
-      } else if (s.key === 'putts') {
-        // toGoPct = gap in putts/GIR (e.g. 0.17 means 0.17 putts/GIR above target)
-        // Multiply by actual GIR holes hit to get total putts to save
-        // WHY: user thinks in total putts, not averages. "2 fewer putts" is tangible.
-        const gir = lastRound.gir || 9;
-        const totalPuttsToSave = Math.round(toGoPct * gir);
-        if (totalPuttsToSave <= 5 && totalPuttsToSave > 0) {
-          actionNudge = totalPuttsToSave === 1
-            ? 'Sink 1 more putt on your GIRs and you’re playing like a ' + tierLabel
-            : 'Sink ' + totalPuttsToSave + ' more putts on your GIRs and you’re playing like a ' + tierLabel;
-        }
-      } else if (s.key === 'scram') {
-        const missedGreens = 18 - (lastRound.gir || 9);
-        const scramNeeded = Math.ceil(toGoPct * missedGreens);
-        if (scramNeeded <= 3) {
-          actionNudge = scramNeeded === 1
-            ? 'Convert one more scramble and you’re playing like a ' + tierLabel
-            : 'Convert ' + scramNeeded + ' more scrambles and you’re playing like a ' + tierLabel;
-        }
-      }
-      goalSub = actionNudge || (toGo + ' to go');
-    }
-    const goalColor = hitTarget ? '#3B6D11' : labelColor;
-    const goalValOpacity = hitTarget ? '1' : '0.5';
-
-    return `
-      <div style="border-radius:16px;padding:1.25rem 1.5rem;margin-bottom:10px;background:${cardBg};">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-          <span style="font-size:13px;font-weight:600;color:${nameColor};">${s.label}</span>
-          <span style="font-size:11px;font-weight:600;padding:3px 10px;border-radius:20px;background:${badgeBg};color:${badgeColor};">${badgeText}</span>
-        </div>
-        <div style="display:grid;grid-template-columns:1fr 1px 1fr;align-items:center;">
-          <div style="padding-right:16px;">
-            <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;color:${labelColor};margin-bottom:6px;">Latest round</div>
-            <div style="font-size:36px;font-weight:500;line-height:1;color:${valColor};">${s.fmt(curVal)}</div>
-          ${hitTarget ? '<div style="font-size:11px;color:'+labelColor+';margin-top:5px;font-weight:600;">Goal hit this round!</div>' : ''}
-          </div>
-          <div style="width:1px;height:60px;background:${divColor};"></div>
-          <div style="padding-left:16px;">
-            <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;color:${labelColor};margin-bottom:6px;">Your goal</div>
-            <div style="font-size:24px;font-weight:500;line-height:1;color:${valColor};opacity:${goalValOpacity};margin-bottom:4px;">${s.fmt(targetVal)}</div>
-            <div style="font-size:11px;color:${goalColor};opacity:0.8;">${goalSub}</div>
-          </div>
-        </div>
-      </div>`;
-  }).join('');
-
-  const lastDate   = lastRound.date ? new Date(lastRound.date + 'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'}) : '';
-  const lastCourse = lastRound.course || '';
-  const subtitle   = [lastDate, lastCourse].filter(Boolean).join(' · ');
-
-  // Nudge card removed from Progress tab — lives on Badges tab only
-
-  // Rebuild momentum cells cleanly for bottom section
-  let momentumSection = '';
-  if (rounds.length >= 2) {
-    const statFns2 = {
-      FW:    r => r.par3s > 0 ? r.fw / (18 - r.par3s) : 0,
-      GIR:   r => r.gir / 18,
-      Putts: r => r.gir > 0 ? r.putts / r.gir : 2.5,
-      Scram: r => (18 - r.gir) > 0 ? r.scrambles / (18 - r.gir) : 0,
-    };
-    const hb2 = { FW: true, GIR: true, Putts: false, Scram: true };
-    const last3b = rounds.slice(-3);
-    const prev3b = rounds.length >= 4 ? rounds.slice(-6,-3) : rounds.slice(0,-3);
-    const avg2 = (arr, fn) => arr.length ? arr.reduce((s,r) => s + fn(r), 0) / arr.length : 0;
-
-    const statResults = Object.entries(statFns2).map(([label, fn]) => {
-      const cur  = avg2(last3b, fn);
-      const prv  = avg2(prev3b.length ? prev3b : last3b.slice(0,-1), fn);
-      const diff = cur - prv;
-      const good = hb2[label] ? diff > 0.005 : diff < -0.005;
-      const bad  = hb2[label] ? diff < -0.005 : diff > 0.005;
-      const progDiff = hb2[label] ? diff : -diff;
-      const sign = progDiff >= 0 ? '+' : '-';
-      const absDiff = Math.abs(diff);
-      const sub = label === 'Putts' ? sign + absDiff.toFixed(2) : sign + (absDiff * 100).toFixed(0) + '%';
-      const arrow = good ? '↑' : bad ? '↓' : '→';
-      const color = good ? '#27500A' : bad ? '#A32D2D' : 'var(--text-muted)';
-      const bg    = good ? '#EAF3DE' : bad ? '#FCEBEB' : 'var(--color-background-secondary,#f5f5f5)';
-      return { label, sub, arrow, color, bg, good, bad };
-    });
-
-    const trendingUp   = statResults.filter(s => s.good).length;
-    const trendingDown = statResults.filter(s => s.bad).length;
-    const total        = statResults.length;
-
-    // Headline — the hook
-    let headlineTxt, headlineColor, headlineBg;
-    if (trendingUp >= 3) {
-      headlineTxt   = trendingUp + ' of ' + total + ' stats trending up ↑';
-      headlineColor = '#173404';
-      headlineBg    = '#EAF3DE';
-    } else if (trendingDown >= 3) {
-      headlineTxt   = trendingDown + ' of ' + total + ' stats trending down ↓';
-      headlineColor = '#501313';
-      headlineBg    = '#FCEBEB';
-    } else if (trendingUp > trendingDown) {
-      headlineTxt   = 'More stats up than down — good direction';
-      headlineColor = '#173404';
-      headlineBg    = '#EAF3DE';
-    } else if (trendingDown > trendingUp) {
-      headlineTxt   = 'More stats down than up — time to refocus';
-      headlineColor = '#501313';
-      headlineBg    = '#FCEBEB';
-    } else {
-      headlineTxt   = 'Holding steady — keep the consistency';
-      headlineColor = 'var(--text-primary)';
-      headlineBg    = 'var(--color-background-secondary,#f5f5f5)';
-    }
-
-    const cells = statResults.map(s => `
-      <div style="text-align:center;padding:12px 4px;background:${s.bg};border-radius:10px;">
-        <div style="font-size:22px;color:${s.color};line-height:1;margin-bottom:4px;">${s.arrow}</div>
-        <div style="font-size:10px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;">${s.label}</div>
-        <div style="font-size:11px;color:${s.color};margin-top:3px;font-weight:600;">${s.sub}</div>
-      </div>`).join('');
-
-    momentumSection = `
-      <div class="card" style="margin-top:10px;">
-        <div style="font-size:10px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:10px;">Momentum — last 3 rounds</div>
-        <div style="padding:14px 16px;background:${headlineBg};border-radius:10px;margin-bottom:12px;">
-          <div style="font-size:16px;font-weight:700;color:${headlineColor};">${headlineTxt}</div>
-        </div>
-        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;">${cells}</div>
-      </div>`;
-  }
-
-  el.innerHTML = `
-    <div>
-      <div style="font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:8px;">
-        Latest round${subtitle ? ` <span style="font-weight:400;text-transform:none;letter-spacing:0;">· ${subtitle}</span>` : ''}
-      </div>
-      ${statCards}
-      ${momentumSection}
-    </div>`;
-}
-
-// ── Rounds tab ────────────────────────────────────────────────────────
-function renderMGRounds() {
-  const el = document.getElementById('mg-rounds-content');
   if (!sessionRounds.length) {
-    el.innerHTML = `<div class="card"><div class="no-rounds-msg">No rounds entered yet.</div></div>`;
+    document.getElementById('rounds-table-wrap').innerHTML =
+      '<div class="no-rounds-msg">No rounds entered yet.<br>Go to Add Round to enter your rounds.</div>';
+    ['rsh-count','rsh-avg-score','rsh-avg-diff','rsh-best-diff'].forEach(id =>
+      document.getElementById(id).textContent = id==='rsh-count' ? '0' : '—');
     return;
   }
   const n = sessionRounds.length;
-  const avgScore = (sessionRounds.reduce((s,r) => s + r.score, 0) / n).toFixed(1);
-  const bestScore = Math.min(...sessionRounds.map(r => r.score));
-  const avgDiff   = (sessionRounds.reduce((s,r) => s + r.diff, 0) / n).toFixed(1);
+  document.getElementById('rsh-count').textContent     = n;
+  document.getElementById('rsh-avg-score').textContent = (sessionRounds.reduce((s,r)=>s+r.score,0)/n).toFixed(1);
+  document.getElementById('rsh-avg-diff').textContent  = (sessionRounds.reduce((s,r)=>s+r.diff,0)/n).toFixed(1);
+  document.getElementById('rsh-best-diff').textContent = Math.min(...sessionRounds.map(r=>r.diff)).toFixed(1);
 
-  // Find baseline round index (first 5 rounds)
-  const baselineIdx = baselineLocked ? Math.min(4, n - 1) : -1;
-
-  const rows = [...sessionRounds].reverse().map((r, revIdx) => {
-    const origIdx = n - 1 - revIdx;
-    const isBaseline = origIdx === baselineIdx;
-    const isBest = r.score === bestScore;
-    const prevRound = origIdx > 0 ? sessionRounds[origIdx - 1] : null;
-    const improving = prevRound && r.score < prevRound.score;
-    const declining = prevRound && r.score > prevRound.score + 2;
-    const chip = isBaseline
-      ? `<span class="mg-chip mg-chip-base">baseline</span>`
-      : isBest ? `<span class="mg-chip mg-chip-up">best</span>`
-      : improving ? `<span class="mg-chip mg-chip-up">↑ improving</span>`
-      : declining ? `<span class="mg-chip mg-chip-down">↓ off day</span>` : '';
-    const dateStr = r.date ? new Date(r.date + 'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'}) : '—';
-    return `
-      <div class="mg-round-row">
-        <div style="font-size:11px;color:var(--text-muted);width:48px;flex-shrink:0;">${dateStr}</div>
-        <div style="font-size:12px;color:var(--text-primary);flex:1;">${r.course || '—'}</div>
-        <div style="font-size:13px;font-weight:600;">${r.score}</div>
-        ${chip}
-      </div>`;
+  const rows = sessionRounds.map(r => {
+    const fwAvail = 18-r.par3s;
+    const puPerGir = r.gir > 0 ? (r.putts/r.gir).toFixed(2) : '—';
+    const scPct = (18-r.gir) > 0 ? ((r.scrambles/(18-r.gir))*100).toFixed(0)+'%' : '—';
+    const dc = r.diff<15?'diff-good':r.diff<22?'diff-avg':'diff-high';
+    return `<tr>
+      <td>${r.date||'—'}</td><td>${r.course||'—'}</td>
+      <td><strong>${r.score}</strong></td><td>${r.par}</td>
+      <td>${r.rating}</td><td>${r.slope}</td>
+      <td>${((r.fw/fwAvail)*100).toFixed(0)}%</td>
+      <td>${((r.gir/18)*100).toFixed(0)}%</td>
+      <td>${puPerGir}</td><td>${scPct}</td>
+      <td><span class="diff-badge ${dc}">${r.diff.toFixed(1)}</span></td>
+    </tr>`;
   }).join('');
 
-  el.innerHTML = `
-    <div class="card">
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:14px;">
-        <div style="background:var(--green-50);border-radius:var(--radius-sm);padding:8px;text-align:center;">
-          <div style="font-size:15px;font-weight:600;">${n}</div>
-          <div style="font-size:10px;color:var(--text-muted);">rounds</div>
-        </div>
-        <div style="background:var(--green-50);border-radius:var(--radius-sm);padding:8px;text-align:center;">
-          <div style="font-size:15px;font-weight:600;">${avgScore}</div>
-          <div style="font-size:10px;color:var(--text-muted);">avg score</div>
-        </div>
-        <div style="background:var(--green-50);border-radius:var(--radius-sm);padding:8px;text-align:center;">
-          <div style="font-size:15px;font-weight:600;">${bestScore}</div>
-          <div style="font-size:10px;color:var(--text-muted);">best score</div>
-        </div>
-      </div>
-      ${rows}
+  document.getElementById('rounds-table-wrap').innerHTML = `
+    <div style="overflow-x:auto;">
+      <table class="rounds-table">
+        <thead><tr>
+          <th>Date</th><th>Course</th><th>Score</th><th>Par</th>
+          <th>Rating</th><th>Slope</th><th>FW%</th><th>GIR%</th>
+          <th>Putts/GIR</th><th>Scram%</th><th>Diff</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
     </div>`;
-}
-
-// ── Practice tab ──────────────────────────────────────────────────────
-function renderMGPractice() {
-  const el       = document.getElementById('mg-practice-content');
-  const sessions = getCompletedSessions();
-  if (!sessions.length) {
-    el.innerHTML = `<div class="card"><div class="no-rounds-msg">Complete a practice session to see your stats here.</div></div>`;
-    return;
-  }
-
-  // Streak — consecutive days with a session
-  const dates  = sessions.map(s => s.date || s.savedAt?.slice(0,10)).filter(Boolean).sort().reverse();
-  let streak = 0;
-  const today = new Date().toISOString().slice(0,10);
-  let check   = today;
-  for (const d of dates) {
-    if (d === check) { streak++; check = new Date(new Date(check) - 86400000).toISOString().slice(0,10); }
-    else break;
-  }
-
-  const recentRows = sessions.slice(0,5).map(s => {
-    const dateStr = s.date ? new Date(s.date + 'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'}) : '—';
-    const drills = s.drills ? s.drills.length : s.drillCount || '—';
-    return `<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:0.5px solid var(--border);font-size:13px;">
-      <span style="color:var(--text-muted);font-size:12px;">${dateStr} · ${s.focus || '—'} focus</span>
-      <span style="font-weight:600;">${drills} drills</span>
-    </div>`;
-  }).join('');
-
-  el.innerHTML = `
-    <div class="card">
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:14px;">
-        <div style="background:var(--green-50);border-radius:var(--radius-sm);padding:8px;text-align:center;">
-          <div style="font-size:15px;font-weight:600;">${sessions.length}</div>
-          <div style="font-size:10px;color:var(--text-muted);">sessions</div>
-        </div>
-        <div style="background:var(--green-50);border-radius:var(--radius-sm);padding:8px;text-align:center;">
-          <div style="font-size:15px;font-weight:600;">${sessions.reduce((s,sess) => s + (sess.drills ? sess.drills.length : sess.drillCount || 0), 0)}</div>
-          <div style="font-size:10px;color:var(--text-muted);">drills done</div>
-        </div>
-        <div style="background:${streak > 2 ? 'var(--green-50)' : 'var(--green-50)'};border-radius:var(--radius-sm);padding:8px;text-align:center;">
-          <div style="font-size:15px;font-weight:600;color:${streak > 2 ? 'var(--green-800)' : 'var(--text-primary)'};">${streak}</div>
-          <div style="font-size:10px;color:${streak > 2 ? 'var(--green-700)' : 'var(--text-muted)'};">day streak</div>
-        </div>
-      </div>
-      <div style="font-size:13px;font-weight:600;margin-bottom:8px;">Recent sessions</div>
-      ${recentRows}
-    </div>`;
-}
-
-// ── Badges tab ────────────────────────────────────────────────────────
-function renderMGBadges() {
-  const el       = document.getElementById('mg-badges-content');
-  const settings = getSettings();
-  const earned   = new Map(settings.badges.map(b => [b.id, b.earnedAt]));
-  const progress = getBadgeProgress();
-
-  // Trophy shelf — earned badges
-  const earnedBadges = BADGE_DEFS.filter(b => earned.has(b.id));
-  const trophyShelf  = earnedBadges.length ? `
-    <div class="card" style="margin-bottom:10px;">
-      <div style="font-size:13px;font-weight:600;margin-bottom:12px;">
-        Your trophy case
-        <span style="font-size:11px;font-weight:400;color:var(--green-700);margin-left:6px;">${earnedBadges.length} earned</span>
-      </div>
-      <div style="display:flex;flex-wrap:wrap;gap:8px;">
-        ${earnedBadges.map(b => {
-          const dateStr = earned.get(b.id)
-            ? new Date(earned.get(b.id)).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})
-            : '';
-          return `<div style="display:flex;flex-direction:column;align-items:center;gap:4px;width:60px;" title="${b.name}${dateStr ? ' · ' + dateStr : ''}">
-            <div class="mg-trophy-bubble">${b.icon}</div>
-            <div style="font-size:9px;color:var(--text-muted);text-align:center;line-height:1.3;">${b.name}</div>
-            ${dateStr ? `<div style="font-size:8px;color:var(--green-700);">${dateStr}</div>` : ''}
-          </div>`;
-        }).join('')}
-      </div>
-    </div>` : '';
-
-  // Next challenge — highest completion percentage unearned badge
-  const unearned = progress.filter(b => !b.earned).sort((a, b) => b.pct - a.pct);
-  const next     = unearned[0];
-  const alsoInReach = unearned.slice(1, 3);
-
-  const challengeCard = next ? `
-    <div class="mg-challenge-card">
-      <div style="font-size:10px;font-weight:600;color:var(--green-700);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px;">Next challenge</div>
-      <div style="font-size:36px;margin-bottom:8px;">${next.icon}</div>
-      <div style="font-size:18px;font-weight:600;color:var(--green-900);margin-bottom:4px;">${next.name}</div>
-      <div style="font-size:12px;color:var(--green-700);line-height:1.5;margin-bottom:14px;">${next.desc}</div>
-      <div class="mg-progress-track">
-        <div class="mg-progress-fill" style="width:${Math.round(next.pct * 100)}%;"></div>
-      </div>
-      <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--green-700);">
-        <span>${next.progressLabel}</span>
-        <span style="font-weight:600;">${next.remaining}</span>
-      </div>
-    </div>` : '';
-
-  const alsoHTML = alsoInReach.length ? `
-    <div style="font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:8px;">Also in reach</div>
-    ${alsoInReach.map(b => `
-      <div class="mg-mini-badge">
-        <div style="font-size:20px;width:32px;text-align:center;flex-shrink:0;opacity:0.5;">${b.icon}</div>
-        <div style="flex:1;">
-          <div style="font-size:12px;font-weight:600;">${b.name}</div>
-          <div style="font-size:11px;color:var(--text-muted);margin-top:1px;">${b.req}</div>
-          <div class="mg-mini-progress"><div class="mg-mini-progress-fill" style="width:${Math.round(b.pct * 100)}%;"></div></div>
-        </div>
-        <div style="font-size:11px;color:var(--text-muted);white-space:nowrap;margin-left:6px;">${b.remaining}</div>
-      </div>`).join('')}` : '';
-
-  el.innerHTML = trophyShelf + challengeCard + alsoHTML;
-}
-
-// ── Badge progress calculator ─────────────────────────────────────────
-function getBadgeProgress() {
-  const settings = getSettings();
-  const earned   = new Map(settings.badges.map(b => [b.id, b.earnedAt]));
-  const sessions = getCompletedSessions();
-  const n        = sessionRounds.length;
-
-  return BADGE_DEFS.map(b => {
-    const isEarned = earned.has(b.id);
-    let pct = isEarned ? 1 : 0;
-    let progressLabel = b.req;
-    let remaining = '';
-    let nudge = b.name;
-    let sub   = b.req;
-    let desc  = b.req;
-
-    if (b.type === 'session') {
-      const cur = sessions.length;
-      pct = Math.min(1, cur / b.threshold);
-      progressLabel = `${cur} of ${b.threshold} sessions`;
-      remaining = isEarned ? 'earned' : `${Math.max(0, b.threshold - cur)} to go`;
-      nudge = `${Math.max(0, b.threshold - cur)} more session${b.threshold - cur !== 1 ? 's' : ''} to unlock ${b.name}`;
-      sub = b.req;
-      desc = `Complete ${b.threshold} practice sessions to unlock this badge.`;
-    } else if (b.type === 'tier') {
-      pct = isEarned ? 1 : (lastResults ? Math.min(1, Math.max(0, 1 - (lastResults.estHcp - TIERS[b.tierKey].hcp) / 5)) : 0);
-      progressLabel = isEarned ? 'reached' : `working toward ${TIERS[b.tierKey]?.label || b.tierKey}`;
-      remaining = isEarned ? 'earned' : 'keep playing';
-      nudge = `Reach ${TIERS[b.tierKey]?.label || b.tierKey} to unlock ${b.name}`;
-      sub = b.req;
-      desc = `Reach the ${TIERS[b.tierKey]?.label || b.tierKey} level to unlock this badge.`;
-    } else if (b.type === 'catstreak') {
-      const focusArr = sessions.slice(0, 10).map(s => s.focus);
-      let maxStreak = 0, cur2 = 1;
-      for (let i = 1; i < focusArr.length; i++) {
-        if (focusArr[i] === focusArr[i-1]) cur2++; else cur2 = 1;
-        maxStreak = Math.max(maxStreak, cur2);
-      }
-      pct = Math.min(1, maxStreak / b.threshold);
-      progressLabel = `${maxStreak} of ${b.threshold} in a row`;
-      remaining = isEarned ? 'earned' : `${Math.max(0, b.threshold - maxStreak)} to go`;
-      nudge = `Practice the same category ${Math.max(0, b.threshold - maxStreak)} more time${b.threshold - maxStreak !== 1 ? 's' : ''} in a row`;
-      sub = b.req;
-      desc = `Complete 3 sessions focused on the same category in a row.`;
-    }
-
-    return { ...b, isEarned, earned: isEarned, pct, progressLabel, remaining, nudge, sub, desc };
-  });
 }
 
 // ═══════════════════════════════════════════════════
@@ -6448,311 +5784,6 @@ function resetForm() {
   document.getElementById('nav-addround').classList.add('active');
   window.scrollTo(0,0);
 }
-// ═══════════════════════════════════════════════════
-// ROUND VALIDATION
-// Runs before the calculation engine so bad data never
-// reaches the math. Returns an error string if invalid,
-// null if everything looks good.
-// WHY separate function: keeps calculate() readable and
-// lets us call validation independently in the future.
-// ═══════════════════════════════════════════════════
-function validateRounds(rounds, roundEls) {
-  for (let i = 0; i < rounds.length; i++) {
-    const r   = rounds[i];
-    const num = i + 1;
-    const label = r.course ? `Round ${num} (${r.course})` : `Round ${num}`;
-
-    // Available fairways = 18 minus par 3 holes
-    const availableFairways = 18 - r.par3s;
-
-    // ── Cross-field checks ──────────────────────────
-    // Par 3s: soft warning — unusual but not impossible.
-    // Par 3s soft warning — show YES/NO prompt inline on the card.
-    // WHY not a second Calculate click: that was confusing. Instead we show
-    // a proper Yes/No prompt right on the card. Yes clears it and resumes
-    // calculation. No collapses to the par3 field so they can fix it.
-    if (r.par3s <= 2 || r.par3s >= 5) {
-      const cardEl = roundEls[i];
-      // If already confirmed by user clicking "Yes", clear flag and proceed
-      if (cardEl.dataset.par3Confirmed === 'true') {
-        cardEl.dataset.par3Confirmed = '';
-      } else {
-        expandRoundCard(cardEl);
-        // Remove any existing warning first
-        const existing = cardEl.querySelector('.par3-warning');
-        if (existing) existing.remove();
-        // Build inline yes/no prompt
-        const warnEl = document.createElement('div');
-        warnEl.className = 'par3-warning';
-        warnEl.style.cssText = 'margin:10px 0 4px;padding:12px 14px;background:#fff8e1;border:1.5px solid #f9a825;border-radius:6px;font-size:0.85rem;color:#6d4c00;line-height:1.6;';
-        warnEl.innerHTML = `
-          <div style="margin-bottom:8px;">⚠️ <strong>You entered ${r.par3s} par 3 holes.</strong> Most courses have 4. Is ${r.par3s} correct for this course?</div>
-          <div style="display:flex;gap:8px;">
-            <button onclick="par3Confirm(this, true)"
-              style="padding:6px 16px;background:var(--green-800);color:#fff;border:none;border-radius:4px;font-size:0.82rem;font-weight:600;cursor:pointer;">
-              Yes, that's correct
-            </button>
-            <button onclick="par3Confirm(this, false)"
-              style="padding:6px 16px;background:transparent;color:#6d4c00;border:1.5px solid #f9a825;border-radius:4px;font-size:0.82rem;font-weight:600;cursor:pointer;">
-              No, let me fix it
-            </button>
-          </div>`;
-        cardEl.querySelector('.round-card-body').appendChild(warnEl);
-        cardEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        return '__par3_warning__'; // pause calculation — user must respond
-      }
-    }
-
-    if (r.fw > availableFairways) {
-      expandRoundCard(roundEls[i]);
-      return `${label}: Fairways hit (${r.fw}) can't be more than available fairways (${availableFairways}). With ${r.par3s} par 3 holes, you have ${availableFairways} fairway holes — check your par 3 count.`;
-    }
-
-    if (r.gir > 18) {
-      expandRoundCard(roundEls[i]);
-      return `${label}: Greens in regulation (${r.gir}) can't be more than 18.`;
-    }
-
-    const missedGreens = 18 - r.gir;
-    if (r.scrambles > missedGreens) {
-      expandRoundCard(roundEls[i]);
-      return `${label}: Scrambles made (${r.scrambles}) can't be more than greens missed (${missedGreens}). You hit ${r.gir} greens, so you had ${missedGreens} scramble opportunities.`;
-    }
-
-    if (r.gir > 0 && r.putts === 0) {
-      expandRoundCard(roundEls[i]);
-      return `${label}: Putts on GIR is 0 but you hit ${r.gir} greens. Enter the total putts on holes where you hit the green.`;
-    }
-
-    if (r.putts > r.gir * 5) {
-      expandRoundCard(roundEls[i]);
-      return `${label}: Putts on GIR (${r.putts}) seems very high for ${r.gir} greens hit. That's over 5 putts per green — double-check this number.`;
-    }
-
-    // ── Sanity checks ───────────────────────────────
-    const maxReasonableScore = r.par + 50;
-    const minReasonableScore = r.par - 10;
-    if (r.score > maxReasonableScore || r.score < minReasonableScore) {
-      expandRoundCard(roundEls[i]);
-      return `${label}: Score of ${r.score} looks unusual for a par ${r.par} course. Double-check your score and par.`;
-    }
-
-    if (r.slope < 55 || r.slope > 155) {
-      expandRoundCard(roundEls[i]);
-      return `${label}: Slope of ${r.slope} is outside the valid range (55–155). Check your scorecard.`;
-    }
-
-    if (r.rating < 60 || r.rating > 80) {
-      expandRoundCard(roundEls[i]);
-      return `${label}: Course rating of ${r.rating} looks off — typical range is 67–77. Check your scorecard.`;
-    }
-  }
-  return null; // all good
-}
-
-// Expands a round card and scrolls to it so the user can fix the problem
-function expandRoundCard(cardEl) {
-  if (!cardEl) return;
-  cardEl.classList.remove('collapsed');
-  setTimeout(() => cardEl.scrollIntoView({ behavior: 'smooth', block: 'center' }), 100);
-}
-
-// ═══════════════════════════════════════════════════
-// FIELD-LEVEL BLUR VALIDATION
-// Called onblur for every round input. Reads sibling field values
-// from the same card to do cross-field checks. Shows inline warnings
-// or errors immediately — before the user hits Calculate.
-// ═══════════════════════════════════════════════════
-
-function checkRoundField(inputEl) {
-  const cardEl  = inputEl.closest('.round-card');
-  const get     = cls => parseFloat(cardEl.querySelector(cls)?.value) || 0;
-
-  const score   = get('.r-score');
-  const par     = get('.r-par');
-  const rating  = get('.r-rating');
-  const slope   = get('.r-slope');
-  const par3s   = get('.r-par3');
-  const fw      = get('.r-fw');
-  const gir     = get('.r-gir');
-  const putts   = get('.r-putts');
-  const scrambles = get('.r-scrambles');
-
-  const availFW     = 18 - par3s;
-  const missedGreens = 18 - gir;
-  const cls         = inputEl.className;
-
-  // Clear any existing field-level warning on THIS input
-  clearFieldWarning(inputEl);
-
-  // ── Hard errors (always wrong) ────────────────────
-  if (cls.includes('r-fw') && par3s > 0 && fw > availFW) {
-    return showFieldError(inputEl,
-      `Can't hit more fairways (${fw}) than available (${availFW}). You have ${par3s} par 3 holes — check that number.`);
-  }
-
-  if (cls.includes('r-gir') && gir > 18) {
-    return showFieldError(inputEl, `Greens in regulation can't exceed 18.`);
-  }
-
-  if (cls.includes('r-scrambles') && gir > 0 && scrambles > missedGreens) {
-    return showFieldError(inputEl,
-      `Scrambles (${scrambles}) can't exceed missed greens (${missedGreens}). You hit ${gir} greens, missing ${missedGreens}.`);
-  }
-
-  if (cls.includes('r-putts') && gir > 0 && putts > gir * 5) {
-    return showFieldError(inputEl,
-      `Putts on GIR (${putts}) seems very high for ${gir} greens hit — that's over 5 per green.`);
-  }
-
-  if (cls.includes('r-putts') && gir > 0 && putts === 0) {
-    return showFieldError(inputEl,
-      `You hit ${gir} greens but entered 0 putts on GIR. Enter total putts on holes where you hit the green.`);
-  }
-
-  // Also re-check fw when par3 changes, and scrambles/putts when gir changes
-  if (cls.includes('r-par3') && par3s > 0 && fw > 0 && fw > availFW) {
-    return showFieldError(cardEl.querySelector('.r-fw'),
-      `Fairways hit (${fw}) now exceeds available fairways (${availFW}) with ${par3s} par 3s.`);
-  }
-
-  if (cls.includes('r-gir')) {
-    if (scrambles > 0 && scrambles > missedGreens) {
-      showFieldError(cardEl.querySelector('.r-scrambles'),
-        `Scrambles (${scrambles}) exceeds missed greens (${missedGreens}) based on ${gir} GIR.`);
-    }
-    if (putts > 0 && putts > gir * 5) {
-      showFieldError(cardEl.querySelector('.r-putts'),
-        `Putts on GIR (${putts}) is very high for ${gir} greens hit.`);
-    }
-  }
-
-  // ── Sanity warnings (soft — yes/no) ──────────────
-  if (cls.includes('r-score') && par > 0 && score > 0) {
-    if (score > par + 50 || score < par - 10) {
-      return showFieldWarning(inputEl,
-        `Score of ${score} looks unusual for a par ${par} course. Double-check your score and par.`);
-    }
-  }
-
-  if (cls.includes('r-slope') && slope > 0) {
-    if (slope < 55 || slope > 155) {
-      return showFieldWarning(inputEl,
-        `Slope of ${slope} is outside the valid range (55–155). Check your scorecard.`);
-    }
-  }
-
-  if (cls.includes('r-rating') && rating > 0) {
-    if (rating < 60 || rating > 80) {
-      return showFieldWarning(inputEl,
-        `Course rating of ${rating} looks unusual — typical range is 67–77. Check your scorecard.`);
-    }
-  }
-
-  // Par sanity warning
-  if (cls.includes('r-par') && par > 0) {
-    if (par <= 69 || par >= 73) {
-      showFieldWarning(inputEl,
-        `Par of ${par} is unusual — most courses are par 70–72. Double-check your scorecard.`);
-    }
-  }
-
-  // Re-check score sanity when par changes
-  if (cls.includes('r-par') && par > 0 && score > 0) {
-    if (score > par + 50 || score < par - 10) {
-      showFieldWarning(cardEl.querySelector('.r-score'),
-        `Score of ${score} looks unusual for a par ${par} course.`);
-    }
-  }
-}
-
-// Show a hard error on a specific input (red — blocks calculate)
-function showFieldError(inputEl, msg) {
-  if (!inputEl) return;
-  clearFieldWarning(inputEl);
-  const el = document.createElement('div');
-  el.className = 'field-msg field-error';
-  el.style.cssText = 'margin:4px 0 6px;padding:6px 10px;background:#fdecea;border:1px solid #e57373;border-radius:4px;font-size:0.8rem;color:#c62828;line-height:1.4;';
-  el.textContent = '⛔ ' + msg;
-  inputEl.style.borderColor = '#e57373';
-  inputEl.insertAdjacentElement('afterend', el);
-}
-
-// Show a soft warning on a specific input (yellow — user can confirm)
-function showFieldWarning(inputEl, msg) {
-  if (!inputEl) return;
-  clearFieldWarning(inputEl);
-  const el = document.createElement('div');
-  el.className = 'field-msg field-warning';
-  el.style.cssText = 'margin:4px 0 6px;padding:6px 10px;background:#fff8e1;border:1px solid #f9a825;border-radius:4px;font-size:0.8rem;color:#6d4c00;line-height:1.4;';
-  el.textContent = '⚠️ ' + msg;
-  inputEl.style.borderColor = '#f9a825';
-  inputEl.insertAdjacentElement('afterend', el);
-}
-
-// Clear any existing field message for an input
-function clearFieldWarning(inputEl) {
-  if (!inputEl) return;
-  inputEl.style.borderColor = '';
-  const next = inputEl.nextElementSibling;
-  if (next && next.classList.contains('field-msg')) next.remove();
-}
-
-// Called onblur when user leaves the par3 field — instant feedback
-function checkPar3s(inputEl) {
-  const val = parseFloat(inputEl.value);
-  if (isNaN(val)) return;
-  const cardEl = inputEl.closest('.round-card');
-
-  // Remove any existing warning first
-  const existing = cardEl.querySelector('.par3-warning');
-  if (existing) existing.remove();
-  cardEl.dataset.par3Confirmed = '';
-
-  if (val <= 2 || val >= 5) {
-    const warnEl = document.createElement('div');
-    warnEl.className = 'par3-warning';
-    warnEl.style.cssText = 'margin:8px 0 4px;padding:10px 14px;background:#fff8e1;border:1.5px solid #f9a825;border-radius:6px;font-size:0.83rem;color:#6d4c00;line-height:1.6;';
-    warnEl.innerHTML = `
-      <div style="margin-bottom:8px;">⚠️ <strong>You entered ${val} par 3 holes.</strong> Most courses have 4. Is ${val} correct?</div>
-      <div style="display:flex;gap:8px;">
-        <button onclick="par3Confirm(this, true)"
-          style="padding:5px 14px;background:var(--green-800);color:#fff;border:none;border-radius:4px;font-size:0.82rem;font-weight:600;cursor:pointer;">
-          Yes, correct
-        </button>
-        <button onclick="par3Confirm(this, false)"
-          style="padding:5px 14px;background:transparent;color:#6d4c00;border:1.5px solid #f9a825;border-radius:4px;font-size:0.82rem;font-weight:600;cursor:pointer;">
-          No, fix it
-        </button>
-      </div>`;
-    // Insert right after the par3 field's parent sc-field div
-    inputEl.closest('.sc-field').insertAdjacentElement('afterend', warnEl);
-  }
-}
-
-// Called by the Yes/No buttons inside the par3 inline warning
-function par3Confirm(btnEl, confirmed) {
-  const cardEl = btnEl.closest('.round-card');
-  const warnEl = cardEl.querySelector('.par3-warning');
-  if (confirmed) {
-    // User says it's correct — set flag and re-trigger Calculate
-    cardEl.dataset.par3Confirmed = 'true';
-    if (warnEl) warnEl.remove();
-    calculate(); // resume
-  } else {
-    // User wants to fix it — remove warning, keep card open, focus par3 field
-    if (warnEl) warnEl.remove();
-    cardEl.dataset.par3Confirmed = 'false';
-    const par3Input = cardEl.querySelector('.r-par3');
-    if (par3Input) {
-      par3Input.focus();
-      par3Input.select();
-      par3Input.style.border = '2px solid #f9a825';
-      setTimeout(() => par3Input.style.border = '', 2000);
-    }
-  }
-}
-
 function showError(msg) {
   const el=document.getElementById('error-msg'); el.textContent=msg; el.style.display='block';
   el.scrollIntoView({behavior:'smooth'});
@@ -6990,12 +6021,34 @@ function renderMyGamePage() {
       <div style="margin-bottom:4px;">${catRows}</div>`;
   }
 
-  // Badges tab now rendered by renderMGBadges() — no-op here
+  // Badges tab — reuse badge shelf logic
+  const gameBadgeShelf = document.getElementById('game-badge-shelf');
+  if (gameBadgeShelf) {
+    const settings = getSettings();
+    const earned   = new Map(settings.badges.map(b => [b.id, b.earnedAt]));
+    gameBadgeShelf.innerHTML = `<div class="badge-row">${BADGE_DEFS.map(b => {
+      const isEarned = earned.has(b.id);
+      const dateStr  = isEarned ? new Date(earned.get(b.id)).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : '';
+      return `<div class="badge-item ${isEarned?'earned':'unearned'}" title="${b.req}${isEarned?' · Earned '+dateStr:''}">
+        <div class="badge-icon">${b.icon}</div>
+        <div class="badge-name">${b.name}</div>
+        ${isEarned?`<div class="badge-earned-date">${dateStr}</div>`:`<div class="badge-req">${b.req}</div>`}
+      </div>`;
+    }).join('')}</div>`;
+  }
 }
 
 function switchGameTab(tab) {
-  // Legacy wrapper — new tab switching is handled by switchMyGameTab
-  switchMyGameTab(tab);
+  // Update tab buttons
+  const tabs = document.querySelectorAll('.progress-tabs .progress-tab');
+  const tabNames = ['rounds','practice','badges'];
+  tabs.forEach((btn, i) => btn.classList.toggle('active', tabNames[i] === tab));
+
+  // Show/hide panes
+  ['game-pane-rounds','game-pane-practice','game-pane-badges'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.classList.toggle('active', id === `game-pane-${tab}`);
+  });
 }
 
 // ═══════════════════════════════════════════════════
