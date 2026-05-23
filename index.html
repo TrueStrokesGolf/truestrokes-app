@@ -4627,111 +4627,160 @@ function renderMGBadges() {
   const earned   = new Map(settings.badges.map(b => [b.id, b.earnedAt]));
   const progress = getBadgeProgress();
 
-  // Trophy shelf — earned badges
-  const earnedBadges = BADGE_DEFS.filter(b => earned.has(b.id));
-  const trophyShelf  = earnedBadges.length ? `
-    <div class="card" style="margin-bottom:10px;">
-      <div style="font-size:13px;font-weight:600;margin-bottom:12px;">
-        Your trophy case
-        <span style="font-size:11px;font-weight:400;color:var(--green-700);margin-left:6px;">${earnedBadges.length} earned</span>
-      </div>
-      <div style="display:flex;flex-wrap:wrap;gap:8px;">
-        ${earnedBadges.map(b => {
-          const dateStr = earned.get(b.id)
-            ? new Date(earned.get(b.id)).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})
-            : '';
-          return `<div style="display:flex;flex-direction:column;align-items:center;gap:4px;width:60px;" title="${b.name}${dateStr ? ' · ' + dateStr : ''}">
-            <div class="mg-trophy-bubble">${b.icon}</div>
-            <div style="font-size:9px;color:var(--text-muted);text-align:center;line-height:1.3;">${b.name}</div>
-            ${dateStr ? `<div style="font-size:8px;color:var(--green-700);">${dateStr}</div>` : ''}
-          </div>`;
-        }).join('')}
-      </div>
-    </div>` : '';
+  const earnedCount = earned.size;
+  const total       = BADGE_DEFS.length;
 
-  // Next challenge — highest completion percentage unearned badge
-  const unearned = progress.filter(b => !b.earned).sort((a, b) => b.pct - a.pct);
-  const next     = unearned[0];
-  const alsoInReach = unearned.slice(1, 3);
+  // Group badges by category
+  const categories = [
+    { key:'consistency',  label:'Consistency',       desc:'Showing up' },
+    { key:'streaks',      label:'Weekly Streaks',     desc:'Hitting your practice goal week after week' },
+    { key:'improvement',  label:'Drill Improvement',  desc:'Getting sharper with every session' },
+    { key:'mastery',      label:'Stat Mastery',       desc:'Hitting goal-tier stats in real rounds' },
+    { key:'milestones',   label:'Tier Milestones',    desc:'Reaching new levels of play' },
+  ];
 
-  const challengeCard = next ? `
-    <div class="mg-challenge-card">
-      <div style="font-size:10px;font-weight:600;color:var(--green-700);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px;">Next challenge</div>
-      <div style="font-size:36px;margin-bottom:8px;">${next.icon}</div>
-      <div style="font-size:18px;font-weight:600;color:var(--green-900);margin-bottom:4px;">${next.name}</div>
-      <div style="font-size:12px;color:var(--green-700);line-height:1.5;margin-bottom:14px;">${next.desc}</div>
-      <div class="mg-progress-track">
-        <div class="mg-progress-fill" style="width:${Math.round(next.pct * 100)}%;"></div>
-      </div>
-      <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--green-700);">
-        <span>${next.progressLabel}</span>
-        <span style="font-weight:600;">${next.remaining}</span>
-      </div>
-    </div>` : '';
+  // Header summary card
+  const headerHTML = (
+    '<div class="mg-challenge-card" style="margin-bottom:14px;">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">' +
+        '<div style="font-size:15px;font-weight:700;color:var(--green-900);">Your Badge Collection</div>' +
+        '<div style="font-size:13px;color:var(--green-700);font-weight:600;">' + earnedCount + ' / ' + total + '</div>' +
+      '</div>' +
+      '<div class="mg-progress-track">' +
+        '<div class="mg-progress-fill" style="width:' + Math.round((earnedCount/total)*100) + '%;"></div>' +
+      '</div>' +
+      '<div style="font-size:11px;color:var(--green-700);margin-top:4px;">' + Math.round((earnedCount/total)*100) + '% complete</div>' +
+    '</div>'
+  );
 
-  const alsoHTML = alsoInReach.length ? `
-    <div style="font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:8px;">Also in reach</div>
-    ${alsoInReach.map(b => `
-      <div class="mg-mini-badge">
-        <div style="font-size:20px;width:32px;text-align:center;flex-shrink:0;opacity:0.5;">${b.icon}</div>
-        <div style="flex:1;">
-          <div style="font-size:12px;font-weight:600;">${b.name}</div>
-          <div style="font-size:11px;color:var(--text-muted);margin-top:1px;">${b.req}</div>
-          <div class="mg-mini-progress"><div class="mg-mini-progress-fill" style="width:${Math.round(b.pct * 100)}%;"></div></div>
-        </div>
-        <div style="font-size:11px;color:var(--text-muted);white-space:nowrap;margin-left:6px;">${b.remaining}</div>
-      </div>`).join('')}` : '';
+  // Build each category section
+  const categorySections = categories.map(cat => {
+    const catBadges  = progress.filter(b => b.category === cat.key);
+    const catEarned  = catBadges.filter(b => b.isEarned).length;
+    const catTotal   = catBadges.length;
 
-  el.innerHTML = trophyShelf + challengeCard + alsoHTML;
+    const badgeItems = catBadges.map(b => {
+      const dateStr = b.isEarned && earned.get(b.id)
+        ? new Date(earned.get(b.id)).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})
+        : '';
+
+      if (b.isEarned) {
+        // Earned: full color bubble + name + date
+        return (
+          '<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:0.5px solid var(--border-light);">' +
+            '<div class="mg-trophy-bubble" style="flex-shrink:0;">' + b.icon + '</div>' +
+            '<div style="flex:1;">' +
+              '<div style="font-size:13px;font-weight:600;color:var(--green-900);">' + b.name + '</div>' +
+              (b.unlockDetail ? '<div style="font-size:11px;color:var(--green-700);font-style:italic;">' + b.unlockDetail + '</div>' : '') +
+              '<div style="font-size:11px;color:var(--text-muted);">' + b.req + '</div>' +
+            '</div>' +
+            '<div style="font-size:10px;color:var(--green-700);text-align:right;white-space:nowrap;">' +
+              '<div style="font-weight:600;">Earned</div>' +
+              '<div>' + dateStr + '</div>' +
+            '</div>' +
+          '</div>'
+        );
+      } else {
+        // Unearned: greyed out, progress bar, remaining count
+        const pctW = Math.round(b.pct * 100);
+        return (
+          '<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:0.5px solid var(--border-light);opacity:0.7;">' +
+            '<div style="width:48px;height:48px;border-radius:50%;background:var(--border-light);border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;filter:grayscale(0.6);">' + b.icon + '</div>' +
+            '<div style="flex:1;">' +
+              '<div style="font-size:13px;font-weight:600;color:var(--text-primary);">' + b.name + '</div>' +
+              '<div style="font-size:11px;color:var(--text-muted);margin-bottom:5px;">' + b.req + '</div>' +
+              '<div class="mg-mini-progress"><div class="mg-mini-progress-fill" style="width:' + pctW + '%;"></div></div>' +
+            '</div>' +
+            '<div style="font-size:11px;color:var(--text-muted);white-space:nowrap;text-align:right;">' + b.remaining + '</div>' +
+          '</div>'
+        );
+      }
+    }).join('');
+
+    return (
+      '<div class="card" style="margin-bottom:10px;">' +
+        '<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px;">' +
+          '<div style="font-size:14px;font-weight:700;color:var(--green-900);">' + cat.label + '</div>' +
+          '<div style="font-size:11px;color:var(--green-700);">' + catEarned + ' / ' + catTotal + '</div>' +
+        '</div>' +
+        '<div style="font-size:12px;color:var(--text-muted);margin-bottom:12px;">' + cat.desc + '</div>' +
+        badgeItems +
+      '</div>'
+    );
+  }).join('');
+
+  el.innerHTML = headerHTML + categorySections;
 }
 
 // ── Badge progress calculator ─────────────────────────────────────────
+// Returns enriched badge objects with pct, progressLabel, remaining for
+// use in renderMGBadges and the "next challenge" card.
 function getBadgeProgress() {
-  const settings = getSettings();
-  const earned   = new Map(settings.badges.map(b => [b.id, b.earnedAt]));
-  const sessions = getCompletedSessions();
-  const n        = sessionRounds.length;
+  const settings   = getSettings();
+  const earned     = new Map(settings.badges.map(b => [b.id, b.earnedAt]));
+  const sessions   = getCompletedSessions();
+  const weekStreak = calcWeekStreak(sessions, settings.practiceFreq);
 
   return BADGE_DEFS.map(b => {
-    const isEarned = earned.has(b.id);
+    const isEarned     = earned.has(b.id);
+    // Retrieve stored unlockDetail if available
+    const storedBadge  = settings.badges.find(sb => sb.id === b.id);
+    const unlockDetail = storedBadge?.unlockDetail || '';
     let pct = isEarned ? 1 : 0;
     let progressLabel = b.req;
     let remaining = '';
-    let nudge = b.name;
-    let sub   = b.req;
-    let desc  = b.req;
 
     if (b.type === 'session') {
       const cur = sessions.length;
       pct = Math.min(1, cur / b.threshold);
-      progressLabel = `${cur} of ${b.threshold} sessions`;
-      remaining = isEarned ? 'earned' : `${Math.max(0, b.threshold - cur)} to go`;
-      nudge = `${Math.max(0, b.threshold - cur)} more session${b.threshold - cur !== 1 ? 's' : ''} to unlock ${b.name}`;
-      sub = b.req;
-      desc = `Complete ${b.threshold} practice sessions to unlock this badge.`;
+      progressLabel = cur + ' of ' + b.threshold + ' sessions';
+      remaining = isEarned ? 'earned' : (b.threshold - cur) + ' to go';
+
+    } else if (b.type === 'weekstreak') {
+      pct = Math.min(1, weekStreak / b.threshold);
+      progressLabel = weekStreak + ' of ' + b.threshold + ' weeks';
+      remaining = isEarned ? 'earned' : (b.threshold - weekStreak) + ' to go';
+
     } else if (b.type === 'tier') {
-      pct = isEarned ? 1 : (lastResults ? Math.min(1, Math.max(0, 1 - (lastResults.estHcp - TIERS[b.tierKey].hcp) / 5)) : 0);
-      progressLabel = isEarned ? 'reached' : `working toward ${TIERS[b.tierKey]?.label || b.tierKey}`;
+      pct = isEarned ? 1 : (lastResults ? Math.min(1, Math.max(0, 1 - (lastResults.estHcp - (TIERS[b.tierKey]?.hcp || 0)) / 5)) : 0);
+      progressLabel = isEarned ? 'reached' : 'working toward ' + (TIERS[b.tierKey]?.label || b.tierKey);
       remaining = isEarned ? 'earned' : 'keep playing';
-      nudge = `Reach ${TIERS[b.tierKey]?.label || b.tierKey} to unlock ${b.name}`;
-      sub = b.req;
-      desc = `Reach the ${TIERS[b.tierKey]?.label || b.tierKey} level to unlock this badge.`;
+
+    } else if (b.type === 'allTiers') {
+      const tierIds = ['tier-90s','tier-mid80s','tier-highsd','tier-single','tier-low','tier-scratch','tier-plus'];
+      const doneCount = tierIds.filter(id => earned.has(id)).length;
+      pct = doneCount / tierIds.length;
+      progressLabel = doneCount + ' of 7 tier badges';
+      remaining = isEarned ? 'earned' : (7 - doneCount) + ' to go';
+
+    } else if (b.type === 'statstreak') {
+      const streak = isEarned ? b.threshold : calcStatStreak(b.stat, b.higherBetter);
+      pct = Math.min(1, streak / b.threshold);
+      progressLabel = streak + ' of ' + b.threshold + ' rounds';
+      remaining = isEarned ? 'earned' : (b.threshold - streak) + ' to go';
+
     } else if (b.type === 'catstreak') {
-      const focusArr = sessions.slice(0, 10).map(s => s.focus);
-      let maxStreak = 0, cur2 = 1;
+      // specialist badge — 5 sessions same category
+      const focusArr = sessions.slice(0, 20).map(s => s.focus);
+      let maxRun = 0, curRun = 1;
       for (let i = 1; i < focusArr.length; i++) {
-        if (focusArr[i] === focusArr[i-1]) cur2++; else cur2 = 1;
-        maxStreak = Math.max(maxStreak, cur2);
+        if (focusArr[i] && focusArr[i] === focusArr[i-1]) curRun++;
+        else curRun = 1;
+        maxRun = Math.max(maxRun, curRun);
       }
-      pct = Math.min(1, maxStreak / b.threshold);
-      progressLabel = `${maxStreak} of ${b.threshold} in a row`;
-      remaining = isEarned ? 'earned' : `${Math.max(0, b.threshold - maxStreak)} to go`;
-      nudge = `Practice the same category ${Math.max(0, b.threshold - maxStreak)} more time${b.threshold - maxStreak !== 1 ? 's' : ''} in a row`;
-      sub = b.req;
-      desc = `Complete 3 sessions focused on the same category in a row.`;
+      pct = Math.min(1, maxRun / (b.threshold || 5));
+      progressLabel = maxRun + ' of ' + (b.threshold || 5) + ' in a row';
+      remaining = isEarned ? 'earned' : ((b.threshold || 5) - maxRun) + ' to go';
+
+    } else if (b.type === 'drill-improve' || b.type === 'drill-80x2' ||
+               b.type === 'drill-streak3' || b.type === 'drill-perfect') {
+      // Progress for drill badges is binary — either you have enough data or not
+      pct = isEarned ? 1 : 0.1; // show a tiny sliver so it doesn't look dead
+      progressLabel = isEarned ? 'earned' : 'log drill scores to unlock';
+      remaining = isEarned ? 'earned' : 'keep logging';
     }
 
-    return { ...b, isEarned, earned: isEarned, pct, progressLabel, remaining, nudge, sub, desc };
+    return { ...b, isEarned, earned: isEarned, pct, progressLabel, remaining, unlockDetail };
   });
 }
 
@@ -6500,49 +6549,331 @@ function saveLog(entries) { localStorage.setItem(LOG_KEY, JSON.stringify(entries
 // ═══════════════════════════════════════════════════
 // BADGES
 // ═══════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════
+// BADGE DEFINITIONS — 44 badges across 5 categories
+// Each badge: { id, icon, name, req, type, category, ...type-specific fields }
+// category: used to group badges in the UI
+// ═══════════════════════════════════════════════════
 const BADGE_DEFS = [
-  { id:'first-rep',    icon:'🥉', name:'First Rep',           req:'Complete 1 session',        type:'session', threshold:1  },
-  { id:'on-a-roll',    icon:'🥈', name:'On A Roll',           req:'Complete 5 sessions',       type:'session', threshold:5  },
-  { id:'committed',    icon:'🥇', name:'Committed',           req:'Complete 20 sessions',      type:'session', threshold:20 },
-  { id:'get-sharper',  icon:'📈', name:'Getting Sharper',     req:'Complete 3 sessions of same category', type:'catstreak', threshold:3 },
-  { id:'tier-90s',     icon:'🏌️', name:'Welcome to 90s',     req:'Reach 90s tier',   type:'tier', tierKey:'90s'    },
-  { id:'tier-mid80s',  icon:'⛳', name:'Welcome to 80s',      req:'Reach 80s tier',   type:'tier', tierKey:'Mid80s' },
-  { id:'tier-highsd',  icon:'🏅', name:'Welcome to Low 80s',  req:'Reach Low 80s',    type:'tier', tierKey:'HighSD' },
-  { id:'tier-single',  icon:'🌟', name:'Single Digit',        req:'Reach Single Digit',type:'tier', tierKey:'Single' },
-  { id:'tier-low',     icon:'💎', name:'Low Single Digit',    req:'Reach Low Single', type:'tier', tierKey:'Low'    },
-  { id:'tier-scratch', icon:'🏆', name:'Welcome to Scratch',  req:'Reach Scratch',    type:'tier', tierKey:'Scratch'},
-  { id:'tier-plus',    icon:'👑', name:'Plus Handicap',       req:'Reach Plus',       type:'tier', tierKey:'Plus'   },
+
+  // ── CONSISTENCY (7) ──────────────────────────────
+  // type:'session' — unlocks when sessions.length >= threshold
+  { id:'first-rep',    icon:'🥉', name:'First Rep',      category:'consistency', req:'Complete 1 session',   type:'session', threshold:1   },
+  { id:'coming-back',  icon:'✌️',  name:'Coming Back',    category:'consistency', req:'Complete 2 sessions',  type:'session', threshold:2   },
+  { id:'on-a-roll',    icon:'🥈', name:'On A Roll',      category:'consistency', req:'Complete 5 sessions',  type:'session', threshold:5   },
+  { id:'dedicated',    icon:'🎽', name:'Dedicated',      category:'consistency', req:'Complete 10 sessions', type:'session', threshold:10  },
+  { id:'committed',    icon:'🥇', name:'Committed',      category:'consistency', req:'Complete 25 sessions', type:'session', threshold:25  },
+  { id:'true-grinder', icon:'💪', name:'True Grinder',   category:'consistency', req:'Complete 50 sessions', type:'session', threshold:50  },
+  { id:'iron-routine', icon:'🔩', name:'Iron Routine',   category:'consistency', req:'Complete 100 sessions',type:'session', threshold:100 },
+
+  // ── WEEKLY STREAKS (4) ───────────────────────────
+  // type:'weekstreak' — rolling 7-day windows, each must have >= (freq-1) sessions
+  { id:'back-to-back', icon:'📅', name:'Back to Back', category:'streaks', req:'Hit weekly practice goal 2 weeks in a row',  type:'weekstreak', threshold:2  },
+  { id:'locked-in',    icon:'🔒', name:'Locked In',    category:'streaks', req:'Hit weekly practice goal 4 weeks in a row',  type:'weekstreak', threshold:4  },
+  { id:'habit-built',  icon:'🧱', name:'Habit Built',  category:'streaks', req:'Hit weekly practice goal 8 weeks in a row',  type:'weekstreak', threshold:8  },
+  { id:'lifestyle',    icon:'🌿', name:'Lifestyle',    category:'streaks', req:'Hit weekly practice goal 16 weeks in a row', type:'weekstreak', threshold:16 },
+
+  // ── DRILL IMPROVEMENT (5) ────────────────────────
+  // type:'drill-*' — checked against getDrillResults()
+  // badge.unlockDetail is set at earn-time to name the specific drill
+  { id:'first-win',      icon:'🎯', name:'First Win',        category:'improvement', req:'Improve any drill score vs your first attempt',         type:'drill-improve'  },
+  { id:'dialed-in',      icon:'🔬', name:'Dialed In',        category:'improvement', req:'Score 80%+ on the same drill twice in a row',            type:'drill-80x2'     },
+  { id:'sharpshooter',   icon:'🏹', name:'Sharpshooter',     category:'improvement', req:'Improve the same drill 3 sessions running',              type:'drill-streak3'  },
+  { id:'perfectionist',  icon:'✨', name:'Perfectionist',    category:'improvement', req:'Score 100% on any drill',                                type:'drill-perfect'  },
+  { id:'specialist',     icon:'💡', name:'Specialist',       category:'improvement', req:'Complete 5 sessions focused on the same category',       type:'catstreak', threshold:5 },
+
+  // ── STAT MASTERY (20) ────────────────────────────
+  // type:'statstreak' — N consecutive rounds hitting goal-tier target for a stat
+  // stat: 'fw'|'gir'|'putts'|'scram'   higherBetter: true except putts
+  { id:'fw-finder',    icon:'🌿', name:'Fairway Finder',    category:'mastery', req:'Hit goal-tier fairways in 1 round',             type:'statstreak', stat:'fw',    threshold:1,  higherBetter:true  },
+  { id:'fw-hunter',    icon:'🌿', name:'Fairway Hunter',    category:'mastery', req:'Hit goal-tier fairways 3 rounds in a row',      type:'statstreak', stat:'fw',    threshold:3,  higherBetter:true  },
+  { id:'fw-keeper',    icon:'🌿', name:'Fairway Keeper',    category:'mastery', req:'Hit goal-tier fairways 5 rounds in a row',      type:'statstreak', stat:'fw',    threshold:5,  higherBetter:true  },
+  { id:'fw-owner',     icon:'🌿', name:'Fairway Owner',     category:'mastery', req:'Hit goal-tier fairways 7 rounds in a row',      type:'statstreak', stat:'fw',    threshold:7,  higherBetter:true  },
+  { id:'fw-master',    icon:'🌿', name:'Fairway Master',    category:'mastery', req:'Hit goal-tier fairways 10 rounds in a row',     type:'statstreak', stat:'fw',    threshold:10, higherBetter:true  },
+
+  { id:'gir-finder',   icon:'🟢', name:'Green Finder',      category:'mastery', req:'Hit goal-tier GIR in 1 round',                  type:'statstreak', stat:'gir',   threshold:1,  higherBetter:true  },
+  { id:'gir-hunter',   icon:'🟢', name:'Green Hunter',      category:'mastery', req:'Hit goal-tier GIR 3 rounds in a row',           type:'statstreak', stat:'gir',   threshold:3,  higherBetter:true  },
+  { id:'gir-keeper',   icon:'🟢', name:'Green Keeper',      category:'mastery', req:'Hit goal-tier GIR 5 rounds in a row',           type:'statstreak', stat:'gir',   threshold:5,  higherBetter:true  },
+  { id:'gir-owner',    icon:'🟢', name:'Green Owner',       category:'mastery', req:'Hit goal-tier GIR 7 rounds in a row',           type:'statstreak', stat:'gir',   threshold:7,  higherBetter:true  },
+  { id:'gir-master',   icon:'🟢', name:'Green Master',      category:'mastery', req:'Hit goal-tier GIR 10 rounds in a row',          type:'statstreak', stat:'gir',   threshold:10, higherBetter:true  },
+
+  { id:'putt-finder',  icon:'🕳️', name:'Putting Finder',    category:'mastery', req:'Hit goal-tier putts/GIR in 1 round',            type:'statstreak', stat:'putts', threshold:1,  higherBetter:false },
+  { id:'putt-hunter',  icon:'🕳️', name:'Putting Hunter',    category:'mastery', req:'Hit goal-tier putts/GIR 3 rounds in a row',     type:'statstreak', stat:'putts', threshold:3,  higherBetter:false },
+  { id:'putt-keeper',  icon:'🕳️', name:'Putting Keeper',    category:'mastery', req:'Hit goal-tier putts/GIR 5 rounds in a row',     type:'statstreak', stat:'putts', threshold:5,  higherBetter:false },
+  { id:'putt-owner',   icon:'🕳️', name:'Putting Owner',     category:'mastery', req:'Hit goal-tier putts/GIR 7 rounds in a row',     type:'statstreak', stat:'putts', threshold:7,  higherBetter:false },
+  { id:'putt-master',  icon:'🕳️', name:'Putting Master',    category:'mastery', req:'Hit goal-tier putts/GIR 10 rounds in a row',    type:'statstreak', stat:'putts', threshold:10, higherBetter:false },
+
+  { id:'scram-finder', icon:'🦺', name:'Scramble Finder',   category:'mastery', req:'Hit goal-tier scrambling in 1 round',           type:'statstreak', stat:'scram', threshold:1,  higherBetter:true  },
+  { id:'scram-hunter', icon:'🦺', name:'Scramble Hunter',   category:'mastery', req:'Hit goal-tier scrambling 3 rounds in a row',    type:'statstreak', stat:'scram', threshold:3,  higherBetter:true  },
+  { id:'scram-keeper', icon:'🦺', name:'Scramble Keeper',   category:'mastery', req:'Hit goal-tier scrambling 5 rounds in a row',    type:'statstreak', stat:'scram', threshold:5,  higherBetter:true  },
+  { id:'scram-owner',  icon:'🦺', name:'Scramble Owner',    category:'mastery', req:'Hit goal-tier scrambling 7 rounds in a row',    type:'statstreak', stat:'scram', threshold:7,  higherBetter:true  },
+  { id:'scram-master', icon:'🦺', name:'Scramble Master',   category:'mastery', req:'Hit goal-tier scrambling 10 rounds in a row',   type:'statstreak', stat:'scram', threshold:10, higherBetter:true  },
+
+  // ── TIER MILESTONES (8) ──────────────────────────
+  // type:'tier' — unlocks when currentKey === tierKey
+  { id:'tier-90s',     icon:'🏌️', name:'Welcome to the 90s', category:'milestones', req:'Reach 90s tier',           type:'tier', tierKey:'90s'     },
+  { id:'tier-mid80s',  icon:'⛳',  name:'Breaking 90',        category:'milestones', req:'Reach 80s tier',           type:'tier', tierKey:'Mid80s'  },
+  { id:'tier-highsd',  icon:'🏅', name:'Low 80s Club',        category:'milestones', req:'Reach Low 80s tier',       type:'tier', tierKey:'HighSD'  },
+  { id:'tier-single',  icon:'🌟', name:'Single Digit',        category:'milestones', req:'Reach Single Digit',       type:'tier', tierKey:'Single'  },
+  { id:'tier-low',     icon:'💎', name:'Low Single Digit',    category:'milestones', req:'Reach Low Single Digit',   type:'tier', tierKey:'Low'     },
+  { id:'tier-scratch', icon:'🏆', name:'Scratch Golfer',      category:'milestones', req:'Reach Scratch',            type:'tier', tierKey:'Scratch' },
+  { id:'tier-plus',    icon:'👑', name:'Plus Handicap',       category:'milestones', req:'Reach Plus handicap',      type:'tier', tierKey:'Plus'    },
+  { id:'full-circle',  icon:'🎖️', name:'Full Circle',         category:'milestones', req:'Earn all 7 tier badges',   type:'allTiers' },
 ];
 
-function checkBadges(currentKey) {
-  const settings = getSettings();
-  const earned   = new Set(settings.badges.map(b => b.id));
-  const sessions = getCompletedSessions();
-  const newBadges = [];
+// ═══════════════════════════════════════════════════
+// BADGE HELPERS
+// ═══════════════════════════════════════════════════
 
-  [['first-rep',1],['on-a-roll',5],['committed',20]].forEach(([id, t]) => {
-    if (!earned.has(id) && sessions.length >= t) newBadges.push({ id, earnedAt: new Date().toISOString() });
+// How many rolling 7-day windows (going back from today) meet the practice goal.
+// A window "passes" if sessions in it >= (freq - 1) — one miss is forgiven.
+// WHY rolling not calendar-week: avoids Mon/Sun edge cases and feels fairer.
+function calcWeekStreak(sessions, freqSetting) {
+  const freqMap = { '1x':1, '2x':2, '3x':3, '4x':4, '5x':5 };
+  const target  = Math.max(1, (freqMap[freqSetting] || 3) - 1); // one-miss tolerance
+  const now     = Date.now();
+  let streak    = 0;
+
+  for (let w = 0; w < 52; w++) {
+    // Each window: from (now - (w+1)*7 days) to (now - w*7 days)
+    const windowEnd   = now - w * 7 * 86400000;
+    const windowStart = windowEnd - 7 * 86400000;
+    const count = sessions.filter(s => {
+      const d = new Date(s.date || s.savedAt || 0).getTime();
+      return d >= windowStart && d < windowEnd;
+    }).length;
+    if (count >= target) streak++;
+    else break; // streak broken — stop counting
+  }
+  return streak;
+}
+
+// Get consecutive rounds (newest-first from sessionRounds) where a stat
+// meets the goal-tier target. Returns the streak count.
+// WHY newest-first: we want current form, not historical best.
+function calcStatStreak(stat, higherBetter) {
+  if (!lastResults || !sessionRounds.length) return 0;
+  const targetTierKey = lastResults.targetKey;
+  const targetTier    = TIERS[targetTierKey];
+  if (!targetTier) return 0;
+
+  const targetVal = targetTier[stat === 'scram' ? 'scramble' : stat];
+  let streak = 0;
+
+  // sessionRounds is stored in form-entry order (oldest first after Calculate).
+  // Reverse to get newest first.
+  const rounds = [...sessionRounds].reverse();
+
+  for (const r of rounds) {
+    // Compute this round's stat value — same formula as the engine
+    const par3s   = parseInt(r.par3s)     || 4;
+    const par     = parseInt(r.par)       || 72;
+    const fwAvail = par - par3s;           // non-par-3 holes
+    const holes   = 18;
+    const fw      = parseInt(r.fw)        || 0;
+    const gir     = parseInt(r.gir)       || 0;
+    const putts   = parseInt(r.putts)     || 0;
+    const scram   = parseInt(r.scrambles) || 0;
+    const missed  = holes - gir;
+
+    let val;
+    if (stat === 'fw')    val = fwAvail > 0 ? fw / fwAvail : 0;
+    if (stat === 'gir')   val = holes  > 0 ? gir / holes  : 0;
+    if (stat === 'putts') val = gir    > 0 ? putts / gir  : 2.5;
+    if (stat === 'scram') val = missed > 0 ? scram / missed : 0;
+
+    // "Passes" if >= target (higher-is-better) or <= target (putts)
+    const passes = higherBetter ? val >= targetVal : val <= targetVal;
+    if (passes) streak++;
+    else break;
+  }
+  return streak;
+}
+
+// Show the badge earn modal — big moment for the user
+function showBadgeEarnModal(badge) {
+  // Remove any existing modal first
+  const existing = document.getElementById('badge-earn-modal');
+  if (existing) existing.remove();
+
+  const detail = badge.unlockDetail ? badge.unlockDetail : '';
+  const modal  = document.createElement('div');
+  modal.id = 'badge-earn-modal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.65);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;';
+  modal.innerHTML = (
+    '<div style="background:#fff;border-radius:20px;padding:36px 28px;max-width:320px;width:100%;text-align:center;position:relative;">' +
+      '<div style="font-size:64px;margin-bottom:12px;line-height:1;">' + badge.icon + '</div>' +
+      '<div style="font-size:11px;font-weight:700;color:var(--green-700);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:6px;">Badge Unlocked</div>' +
+      '<div style="font-size:22px;font-weight:700;color:var(--green-900);margin-bottom:8px;">' + badge.name + '</div>' +
+      (detail ? '<div style="font-size:13px;color:var(--green-700);margin-bottom:6px;font-style:italic;">' + detail + '</div>' : '') +
+      '<div style="font-size:13px;color:var(--text-muted);margin-bottom:24px;line-height:1.5;">' + badge.req + '</div>' +
+      '<div style="display:flex;gap:10px;justify-content:center;">' +
+        '<button onclick="shareOrCopyBadge(\'' + badge.id + '\')" style="padding:10px 20px;background:var(--green-700);color:#fff;border:none;border-radius:var(--radius-sm);font-family:var(--font-ui);font-size:0.9rem;font-weight:600;cursor:pointer;">Share</button>' +
+        '<button onclick="document.getElementById(\'badge-earn-modal\').remove()" style="padding:10px 20px;background:transparent;color:var(--text-secondary);border:1.5px solid var(--border);border-radius:var(--radius-sm);font-family:var(--font-ui);font-size:0.9rem;cursor:pointer;">Nice!</button>' +
+      '</div>' +
+    '</div>'
+  );
+  // Tap backdrop to dismiss
+  modal.addEventListener('click', function(e) {
+    if (e.target === modal) modal.remove();
+  });
+  document.body.appendChild(modal);
+}
+
+// Share the badge via Web Share API (iOS native sheet) or copy to clipboard
+function shareOrCopyBadge(badgeId) {
+  const badge = BADGE_DEFS.find(b => b.id === badgeId);
+  if (!badge) return;
+  const text = 'I just earned the ' + badge.icon + ' ' + badge.name + ' badge on TrueStrokes! ' + badge.req + ' — truestrokes-app.vercel.app';
+  if (navigator.share) {
+    // WHY navigator.share: this triggers the native iOS/Android share sheet —
+    // iMessage, WhatsApp, Twitter, copy link, etc. One API call, every platform.
+    // Falls back to clipboard on desktop where share API isn't available.
+    navigator.share({ text }).catch(() => {});
+  } else {
+    navigator.clipboard.writeText(text).then(() => {
+      alert('Copied to clipboard!');
+    }).catch(() => {
+      alert('Share: ' + text);
+    });
+  }
+}
+
+// ═══════════════════════════════════════════════════
+// checkBadges — called after every Calculate + session complete
+// Evaluates all badge conditions and saves newly earned ones.
+// Shows earn modal for each new badge (in sequence if multiple).
+// ═══════════════════════════════════════════════════
+function checkBadges(currentKey) {
+  const settings  = getSettings();
+  const earned    = new Set(settings.badges.map(b => b.id));
+  const sessions  = getCompletedSessions();
+  const drResults = getDrillResults();
+  const newBadges = [];
+  const now       = new Date().toISOString();
+
+  // ── CONSISTENCY ──────────────────────────────────
+  [['first-rep',1],['coming-back',2],['on-a-roll',5],['dedicated',10],
+   ['committed',25],['true-grinder',50],['iron-routine',100]].forEach(([id,t]) => {
+    if (!earned.has(id) && sessions.length >= t)
+      newBadges.push({ id, earnedAt: now });
   });
 
-  // Cat streak badge — 3 sessions in same category
-  if (!earned.has('get-sharper') && sessions.length >= 3) {
-    const focusArr = sessions.slice(0,10).map(s => s.focus);
-    for (let i = 0; i <= focusArr.length-3; i++) {
-      if (focusArr[i] === focusArr[i+1] && focusArr[i+1] === focusArr[i+2]) {
-        newBadges.push({ id:'get-sharper', earnedAt: new Date().toISOString() }); break;
-      }
+  // ── WEEKLY STREAKS ───────────────────────────────
+  const weekStreak = calcWeekStreak(sessions, settings.practiceFreq);
+  [['back-to-back',2],['locked-in',4],['habit-built',8],['lifestyle',16]].forEach(([id,t]) => {
+    if (!earned.has(id) && weekStreak >= t)
+      newBadges.push({ id, earnedAt: now });
+  });
+
+  // ── DRILL IMPROVEMENT ────────────────────────────
+  // Group results by drillId, oldest first
+  const byDrill = {};
+  [...drResults].reverse().forEach(r => {
+    if (!r.drillId || r.score === '—' || r.score === null) return;
+    if (!byDrill[r.drillId]) byDrill[r.drillId] = { name: r.drillName || r.drillId, scores: [] };
+    byDrill[r.drillId].scores.push({ score: parseFloat(r.score), max: parseFloat(r.scoreMax) || 10 });
+  });
+
+  Object.entries(byDrill).forEach(([drillId, data]) => {
+    const scores  = data.scores; // oldest first
+    const drillName = data.name;
+    if (scores.length < 1) return;
+
+    // first-win: latest score > first score
+    if (!earned.has('first-win') && scores.length >= 2) {
+      if (scores[scores.length-1].score > scores[0].score)
+        newBadges.push({ id:'first-win', earnedAt: now, unlockDetail: 'Drill: ' + drillName });
     }
+
+    // perfectionist: any score === scoreMax (100%)
+    if (!earned.has('perfectionist')) {
+      const perfect = scores.find(s => s.max > 0 && s.score >= s.max);
+      if (perfect)
+        newBadges.push({ id:'perfectionist', earnedAt: now, unlockDetail: 'Drill: ' + drillName });
+    }
+
+    // dialed-in: last 2 scores both >= 80% of max
+    if (!earned.has('dialed-in') && scores.length >= 2) {
+      const last2 = scores.slice(-2);
+      if (last2.every(s => s.max > 0 && (s.score / s.max) >= 0.8))
+        newBadges.push({ id:'dialed-in', earnedAt: now, unlockDetail: 'Drill: ' + drillName });
+    }
+
+    // sharpshooter: last 3 scores strictly increasing
+    if (!earned.has('sharpshooter') && scores.length >= 3) {
+      const last3 = scores.slice(-3);
+      if (last3[0].score < last3[1].score && last3[1].score < last3[2].score)
+        newBadges.push({ id:'sharpshooter', earnedAt: now, unlockDetail: 'Drill: ' + drillName });
+    }
+  });
+
+  // specialist: 5 sessions in same category in a row
+  if (!earned.has('specialist') && sessions.length >= 5) {
+    const focusArr = sessions.slice(0, 20).map(s => s.focus);
+    let maxRun = 0, curRun = 1, bestCat = '';
+    for (let i = 1; i < focusArr.length; i++) {
+      if (focusArr[i] && focusArr[i] === focusArr[i-1]) { curRun++; }
+      else { curRun = 1; }
+      if (curRun > maxRun) { maxRun = curRun; bestCat = focusArr[i]; }
+    }
+    if (maxRun >= 5)
+      newBadges.push({ id:'specialist', earnedAt: now, unlockDetail: 'Category: ' + bestCat });
   }
 
-  BADGE_DEFS.filter(b => b.type === 'tier').forEach(b => {
-    if (!earned.has(b.id) && currentKey === b.tierKey)
-      newBadges.push({ id: b.id, earnedAt: new Date().toISOString() });
+  // ── STAT MASTERY ─────────────────────────────────
+  // For each stat, compute the current consecutive-round streak and award
+  // all thresholds that have been crossed (Finder through Master in order).
+  // WHY award all crossed: if someone earns Master they deserve Finder too.
+  const statBadges = [
+    { stat:'fw',    higherBetter:true,  ladder:['fw-finder','fw-hunter','fw-keeper','fw-owner','fw-master'],       thresholds:[1,3,5,7,10] },
+    { stat:'gir',   higherBetter:true,  ladder:['gir-finder','gir-hunter','gir-keeper','gir-owner','gir-master'],   thresholds:[1,3,5,7,10] },
+    { stat:'putts', higherBetter:false, ladder:['putt-finder','putt-hunter','putt-keeper','putt-owner','putt-master'], thresholds:[1,3,5,7,10] },
+    { stat:'scram', higherBetter:true,  ladder:['scram-finder','scram-hunter','scram-keeper','scram-owner','scram-master'], thresholds:[1,3,5,7,10] },
+  ];
+
+  statBadges.forEach(({ stat, higherBetter, ladder, thresholds }) => {
+    const streak = calcStatStreak(stat, higherBetter);
+    thresholds.forEach((t, i) => {
+      if (!earned.has(ladder[i]) && streak >= t)
+        newBadges.push({ id: ladder[i], earnedAt: now });
+    });
   });
 
+  // ── TIER MILESTONES ──────────────────────────────
+  BADGE_DEFS.filter(b => b.type === 'tier').forEach(b => {
+    if (!earned.has(b.id) && currentKey === b.tierKey)
+      newBadges.push({ id: b.id, earnedAt: now });
+  });
+
+  // full-circle: all 7 tier badges earned (including newly earned ones)
+  if (!earned.has('full-circle')) {
+    const allTierIds  = ['tier-90s','tier-mid80s','tier-highsd','tier-single','tier-low','tier-scratch','tier-plus'];
+    const allEarnedNow = new Set([...earned, ...newBadges.map(b => b.id)]);
+    if (allTierIds.every(id => allEarnedNow.has(id)))
+      newBadges.push({ id:'full-circle', earnedAt: now });
+  }
+
+  // ── SAVE + SHOW MODALS ───────────────────────────
   if (newBadges.length) {
-    settings.badges = [...settings.badges, ...newBadges];
-    settings.lastTier = currentKey;
-    localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+    // Deduplicate — don't award same badge twice in one check
+    const deduped = newBadges.filter((b, idx, arr) =>
+      !earned.has(b.id) && arr.findIndex(x => x.id === b.id) === idx
+    );
+    if (deduped.length) {
+      settings.badges = [...settings.badges, ...deduped];
+      settings.lastTier = currentKey;
+      localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+
+      // Show modal for each new badge in sequence, 400ms apart
+      // WHY setTimeout chain: we want one modal at a time, not a stack
+      deduped.forEach((b, i) => {
+        const def = BADGE_DEFS.find(d => d.id === b.id);
+        if (!def) return;
+        const badgeWithDetail = { ...def, unlockDetail: b.unlockDetail || '' };
+        setTimeout(() => showBadgeEarnModal(badgeWithDetail), i * 400);
+      });
+    }
   }
 }
 
