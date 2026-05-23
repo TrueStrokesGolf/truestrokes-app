@@ -2973,7 +2973,7 @@ async function loadSupabaseData() {
     // ── Load settings from profiles ──────────────────
     const { data: profile } = await sb
       .from('profiles')
-      .select('target_tier, practice_frequency, session_length, warmup_time, practice_location')
+      .select('target_tier, practice_frequency, session_length, warmup_time, practice_location, baseline_locked')
       .eq('id', currentUser.id)
       .single();
 
