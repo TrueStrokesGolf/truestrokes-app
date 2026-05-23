@@ -2705,6 +2705,58 @@
         Sign Out
       </button>
     </div>
+
+    <!-- Danger Zone card -->
+    <div class="card" style="margin-top:20px; border:1.5px solid #ffd0d0;">
+      <h2 style="color:#c62828;">⚠ Danger Zone</h2>
+      <p style="font-size:0.88rem;color:var(--text-muted);margin-bottom:20px;line-height:1.65;">
+        These actions cannot be undone. Your rounds are never deleted.
+      </p>
+
+      <!-- Default state: show the Reset button -->
+      <div id="baseline-reset-default">
+        <div style="display:flex;align-items:flex-start;gap:16px;flex-wrap:wrap;">
+          <div style="flex:1;min-width:200px;">
+            <div style="font-size:0.9rem;font-weight:600;color:var(--text-primary);margin-bottom:4px;">Reset Baseline</div>
+            <div style="font-size:0.82rem;color:var(--text-muted);line-height:1.6;">
+              Clears your locked baseline so progress tracking starts fresh. Your round history stays intact. A new baseline will lock after your next 5 rounds.
+            </div>
+          </div>
+          <button onclick="showBaselineResetConfirm()"
+            id="baseline-reset-btn"
+            style="padding:9px 20px;background:transparent;color:#c62828;border:1.5px solid #c62828;border-radius:var(--radius-sm);font-family:var(--font-ui);font-size:0.88rem;font-weight:600;cursor:pointer;white-space:nowrap;flex-shrink:0;">
+            Reset Baseline
+          </button>
+        </div>
+      </div>
+
+      <!-- Confirmation state: hidden until button clicked -->
+      <div id="baseline-reset-confirm" style="display:none;">
+        <div style="background:#fff5f5;border:1px solid #ffd0d0;border-radius:var(--radius-sm);padding:16px;margin-bottom:16px;">
+          <div style="font-size:0.9rem;font-weight:600;color:#c62828;margin-bottom:6px;">Are you sure?</div>
+          <div style="font-size:0.83rem;color:var(--text-secondary);line-height:1.6;">
+            Your baseline gap will be cleared. My Game will return to pre-baseline mode until you add 5 more rounds. Your round history is safe.
+          </div>
+        </div>
+        <div style="display:flex;gap:10px;">
+          <button onclick="confirmBaselineReset()"
+            style="padding:9px 20px;background:#c62828;color:white;border:none;border-radius:var(--radius-sm);font-family:var(--font-ui);font-size:0.88rem;font-weight:600;cursor:pointer;">
+            Yes, reset it
+          </button>
+          <button onclick="cancelBaselineReset()"
+            style="padding:9px 20px;background:transparent;color:var(--text-secondary);border:1.5px solid var(--border);border-radius:var(--radius-sm);font-family:var(--font-ui);font-size:0.88rem;cursor:pointer;">
+            Cancel
+          </button>
+        </div>
+      </div>
+
+      <!-- Done state: shown after successful reset -->
+      <div id="baseline-reset-done" style="display:none;">
+        <div style="background:var(--green-50);border:1px solid var(--green-100);border-radius:var(--radius-sm);padding:14px;font-size:0.88rem;color:var(--green-700);line-height:1.6;">
+          ✓ Baseline cleared. Add 5 rounds and a new baseline will lock automatically.
+        </div>
+      </div>
+    </div>
   </div>
 
 </div><!-- /container -->
@@ -4744,6 +4796,73 @@ function loadSettingsUI() {
   if (wtEl)  wtEl.value  = s.warmupTime;
   const radioEl = document.querySelector(`input[name="drill-type"][value="${s.drillType}"]`);
   if (radioEl) radioEl.checked = true;
+}
+
+// ═══════════════════════════════════════════════════
+// BASELINE RESET
+// Three-state flow: default → confirm → done
+// WHY three states: we never want a destructive action to fire on a single click.
+// The confirm step forces the user to read what they're doing and choose again.
+// The done state replaces the button so they can't accidentally double-reset.
+// ═══════════════════════════════════════════════════
+
+function showBaselineResetConfirm() {
+  // Step 1 → Step 2: hide the button row, show the confirmation prompt
+  document.getElementById('baseline-reset-default').style.display = 'none';
+  document.getElementById('baseline-reset-confirm').style.display = 'block';
+}
+
+function cancelBaselineReset() {
+  // Back to Step 1: user changed their mind
+  document.getElementById('baseline-reset-confirm').style.display = 'none';
+  document.getElementById('baseline-reset-default').style.display = 'block';
+}
+
+async function confirmBaselineReset() {
+  // Step 2 → Step 3: do the actual reset then show the done state
+
+  // Disable the confirm button immediately so double-clicks can't fire twice
+  // WHY: async functions take time. Without this, a fast double-click could
+  // call the reset logic twice before the first one finishes.
+  const confirmBtn = document.querySelector('#baseline-reset-confirm button');
+  if (confirmBtn) confirmBtn.disabled = true;
+
+  try {
+    if (currentUser) {
+      // 1. Soft-delete the active baseline row — set is_active = false so we
+      //    keep the history but the app no longer treats it as the anchor.
+      //    WHY soft delete: never destroy data you might want later.
+      await sb.from('baselines')
+        .update({ is_active: false })
+        .eq('user_id', currentUser.id)
+        .eq('is_active', true);
+
+      // 2. Clear baseline_locked on the user's profile row.
+      //    This is what loadSupabaseData() reads on next login to decide mode.
+      await sb.from('profiles')
+        .update({ baseline_locked: false })
+        .eq('id', currentUser.id);
+    }
+
+    // 3. Clear the in-memory globals so the current session reflects the reset
+    //    immediately — no page reload needed for the globals to take effect.
+    baselineLocked = false;
+    activeBaseline = null;
+
+    // 4. Show the done state
+    document.getElementById('baseline-reset-confirm').style.display = 'none';
+    document.getElementById('baseline-reset-done').style.display   = 'block';
+
+    // 5. Re-render My Game so the scoreboard + Progress tab switch to pre-baseline
+    //    mode right away, without the user having to navigate away and back.
+    if (typeof renderMyGame === 'function') renderMyGame();
+
+  } catch(err) {
+    console.error('Baseline reset failed:', err);
+    // Re-enable the button so they can try again
+    if (confirmBtn) confirmBtn.disabled = false;
+    alert('Reset failed — please try again. If the problem persists, sign out and back in.');
+  }
 }
 
 // ═══════════════════════════════════════════════════
