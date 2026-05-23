@@ -6968,9 +6968,20 @@ function checkBadges(currentKey) {
     }
   });
 
-  // ── TIER MILESTONES ──────────────────────────────
+  // ── TIER MILESTONES — with backfill ─────────────────────────────
+  // WHY backfill: a user who starts TrueStrokes already shooting 75s
+  // was never a 90s golfer while the app was running. Without backfill
+  // they'd never earn "Welcome to the 90s" even though they've clearly
+  // surpassed it. We award every tier at or below the current tier rank.
+  //
+  // TIER_ORDER is lowest→highest: ['100+','90s','Mid80s','HighSD','Single','Low','Scratch','Plus']
+  // currentRank = index of currentKey. Any tier badge whose tierKey index
+  // is <= currentRank gets awarded if not already earned.
+  const currentRank = TIER_ORDER.indexOf(currentKey);
   BADGE_DEFS.filter(b => b.type === 'tier').forEach(b => {
-    if (!earned.has(b.id) && currentKey === b.tierKey)
+    const tierRank = TIER_ORDER.indexOf(b.tierKey);
+    // tierRank >= 1 so we never award the '100+' placeholder (it has no badge)
+    if (!earned.has(b.id) && tierRank >= 1 && tierRank <= currentRank)
       newBadges.push({ id: b.id, earnedAt: now });
   });
 
