@@ -2518,7 +2518,7 @@
       <button class="mg-tab active" onclick="switchMyGameTab('progress')">Progress</button>
       <button class="mg-tab" onclick="switchMyGameTab('rounds')">Rounds</button>
       <button class="mg-tab" onclick="switchMyGameTab('practice')">Practice</button>
-      <button class="mg-tab" onclick="switchMyGameTab('badges')">Badges</button>
+      <button class="mg-tab" onclick="switchMyGameTab('badges')">Trophies</button>
     </div>
 
     <!-- Progress pane -->
@@ -2594,7 +2594,7 @@
         <button class="progress-tab active" onclick="switchPlanPageTab('today')">Today's Session</button>
         <button class="progress-tab"        onclick="switchPlanPageTab('warmup')">🔥 Warm Up</button>
         <button class="progress-tab"        onclick="switchPlanPageTab('history')">History</button>
-        <button class="progress-tab"        onclick="switchPlanPageTab('badges')">🏅 Badges</button>
+        <button class="progress-tab"        onclick="switchPlanPageTab('badges')">🏆 Trophies</button>
       </div>
 
       <div class="progress-pane active" id="pane-today">
@@ -2612,7 +2612,7 @@
       </div>
       <div class="progress-pane" id="pane-badges">
         <div class="card" style="border-radius:0 0 var(--radius-md) var(--radius-md);margin-top:0;">
-          <div class="section-title">🏅 Your Badges</div>
+          <div class="section-title">🏆 Your Trophies</div>
           <div id="badge-shelf"></div>
         </div>
       </div>
@@ -4630,86 +4630,184 @@ function renderMGBadges() {
   const earnedCount = earned.size;
   const total       = BADGE_DEFS.length;
 
-  // Group badges by category
+  // ── TROPHY CASE — earned trophies as bubbles ──────────────────────
+  const earnedBadges = BADGE_DEFS.filter(b => earned.has(b.id));
+
+  let trophyHTML;
+  if (earnedBadges.length) {
+    // Build bubble grid — each bubble shows icon + name + date earned
+    const bubbles = earnedBadges.map(b => {
+      const storedBadge  = settings.badges.find(sb => sb.id === b.id);
+      const detail       = storedBadge?.unlockDetail || '';
+      const dateStr      = earned.get(b.id)
+        ? new Date(earned.get(b.id)).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})
+        : '';
+      // Score counter for score trophies
+      const countLabel = b.type === 'score'
+        ? (() => {
+            const scores = sessionRounds.map(r => parseInt(r.score)).filter(s => !isNaN(s));
+            const count  = scores.filter(s => s < b.threshold).length;
+            return count > 1 ? (' <span style="font-size:9px;background:var(--green-700);color:#fff;border-radius:8px;padding:1px 5px;">' + count + 'x</span>') : '';
+          })()
+        : '';
+
+      return (
+        '<div style="display:flex;flex-direction:column;align-items:center;gap:4px;width:68px;cursor:default;" title="' + b.name + (detail ? ' · ' + detail : '') + (dateStr ? ' · ' + dateStr : '') + '">' +
+          '<div class="mg-trophy-bubble">' + b.icon + '</div>' +
+          '<div style="font-size:9px;color:var(--text-primary);text-align:center;line-height:1.3;font-weight:600;">' + b.name + countLabel + '</div>' +
+          '<div style="font-size:8px;color:var(--green-700);text-align:center;">' + dateStr + '</div>' +
+        '</div>'
+      );
+    }).join('');
+
+    trophyHTML = (
+      '<div class="card" style="margin-bottom:10px;">' +
+        '<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:14px;">' +
+          '<div style="font-size:14px;font-weight:700;color:var(--green-900);">🏆 Trophy Case</div>' +
+          '<div style="font-size:11px;color:var(--green-700);">' + earnedCount + ' / ' + total + ' earned</div>' +
+        '</div>' +
+        '<div style="display:flex;flex-wrap:wrap;gap:12px;">' + bubbles + '</div>' +
+        '<div style="margin-top:14px;">' +
+          '<div class="mg-progress-track">' +
+            '<div class="mg-progress-fill" style="width:' + Math.round((earnedCount/total)*100) + '%;"></div>' +
+          '</div>' +
+          '<div style="font-size:10px;color:var(--text-muted);margin-top:4px;">' + Math.round((earnedCount/total)*100) + '% of all trophies unlocked</div>' +
+        '</div>' +
+      '</div>'
+    );
+  } else {
+    trophyHTML = (
+      '<div class="card" style="margin-bottom:10px;text-align:center;padding:28px 20px;">' +
+        '<div style="font-size:2.5rem;margin-bottom:10px;">🏆</div>' +
+        '<div style="font-size:15px;font-weight:600;color:var(--text-primary);margin-bottom:6px;">Your Trophy Case is Empty</div>' +
+        '<div style="font-size:13px;color:var(--text-muted);line-height:1.6;">Complete a practice session or add rounds to earn your first trophy.</div>' +
+      '</div>'
+    );
+  }
+
+  // ── NEXT UP — 3 closest unearned trophies ────────────────────────
+  const unearned = progress
+    .filter(b => !b.isEarned)
+    .sort((a, b) => b.pct - a.pct)
+    .slice(0, 3);
+
+  const nextUpHTML = unearned.length ? (
+    '<div class="card" style="margin-bottom:10px;">' +
+      '<div style="font-size:14px;font-weight:700;color:var(--green-900);margin-bottom:12px;">Next Up</div>' +
+      unearned.map((b, idx) => {
+        const pctW = Math.round(b.pct * 100);
+        const isFirst = idx === 0;
+        return (
+          '<div style="' + (isFirst ? 'background:var(--green-50);border:1px solid var(--green-100);border-radius:var(--radius-sm);padding:14px;margin-bottom:8px;' : 'padding:10px 0;border-bottom:0.5px solid var(--border-light);') + '">' +
+            '<div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;">' +
+              '<div style="font-size:' + (isFirst ? '32' : '24') + 'px;flex-shrink:0;">' + b.icon + '</div>' +
+              '<div style="flex:1;">' +
+                '<div style="font-size:' + (isFirst ? '14' : '13') + 'px;font-weight:600;color:var(--green-900);">' + b.name + '</div>' +
+                '<div style="font-size:11px;color:var(--text-muted);margin-top:2px;">' + b.req + '</div>' +
+              '</div>' +
+              '<div style="font-size:11px;color:var(--green-700);white-space:nowrap;font-weight:600;">' + b.remaining + '</div>' +
+            '</div>' +
+            '<div class="mg-' + (isFirst ? '' : 'mini-') + 'progress-track' + (isFirst ? '' : '') + '" style="' + (isFirst ? 'height:8px;background:var(--green-200);border-radius:4px;overflow:hidden;' : 'height:3px;background:var(--border);border-radius:2px;overflow:hidden;') + '">' +
+              '<div style="height:100%;border-radius:4px;background:var(--green-700);width:' + pctW + '%;"></div>' +
+            '</div>' +
+            '<div style="font-size:10px;color:var(--green-700);margin-top:4px;">' + b.progressLabel + '</div>' +
+          '</div>'
+        );
+      }).join('') +
+    '</div>'
+  ) : '';
+
+  // ── ALL TROPHIES — collapsible full list by category ──────────────
   const categories = [
-    { key:'consistency',  label:'Consistency',       desc:'Showing up' },
-    { key:'streaks',      label:'Weekly Streaks',     desc:'Hitting your practice goal week after week' },
-    { key:'improvement',  label:'Drill Improvement',  desc:'Getting sharper with every session' },
-    { key:'mastery',      label:'Stat Mastery',       desc:'Hitting goal-tier stats in real rounds' },
-    { key:'milestones',   label:'Tier Milestones',    desc:'Reaching new levels of play' },
+    { key:'consistency',  label:'Consistency',       emoji:'🏌️' },
+    { key:'streaks',      label:'Weekly Streaks',     emoji:'📅' },
+    { key:'improvement',  label:'Drill Improvement',  emoji:'📈' },
+    { key:'mastery',      label:'Stat Mastery',       emoji:'⛳' },
+    { key:'scores',       label:'Score Milestones',   emoji:'🎱' },
+    { key:'milestones',   label:'Tier Milestones',    emoji:'🏆' },
   ];
 
-  // Header summary card
-  const headerHTML = (
-    '<div class="mg-challenge-card" style="margin-bottom:14px;">' +
-      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">' +
-        '<div style="font-size:15px;font-weight:700;color:var(--green-900);">Your Badge Collection</div>' +
-        '<div style="font-size:13px;color:var(--green-700);font-weight:600;">' + earnedCount + ' / ' + total + '</div>' +
-      '</div>' +
-      '<div class="mg-progress-track">' +
-        '<div class="mg-progress-fill" style="width:' + Math.round((earnedCount/total)*100) + '%;"></div>' +
-      '</div>' +
-      '<div style="font-size:11px;color:var(--green-700);margin-top:4px;">' + Math.round((earnedCount/total)*100) + '% complete</div>' +
-    '</div>'
-  );
+  const allRows = categories.map(cat => {
+    const catBadges = progress.filter(b => b.category === cat.key);
+    const catEarned = catBadges.filter(b => b.isEarned).length;
 
-  // Build each category section
-  const categorySections = categories.map(cat => {
-    const catBadges  = progress.filter(b => b.category === cat.key);
-    const catEarned  = catBadges.filter(b => b.isEarned).length;
-    const catTotal   = catBadges.length;
-
-    const badgeItems = catBadges.map(b => {
-      const dateStr = b.isEarned && earned.get(b.id)
-        ? new Date(earned.get(b.id)).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})
+    const rows = catBadges.map(b => {
+      const pctW    = Math.round(b.pct * 100);
+      // Score trophies: show count badge if earned
+      const countLabel = (b.type === 'score' && b.isEarned)
+        ? (() => {
+            const scores = sessionRounds.map(r => parseInt(r.score)).filter(s => !isNaN(s));
+            const count  = scores.filter(s => s < b.threshold).length;
+            return ' <span style="font-size:10px;background:var(--green-700);color:#fff;border-radius:8px;padding:1px 6px;margin-left:4px;">' + count + 'x</span>';
+          })()
         : '';
 
       if (b.isEarned) {
-        // Earned: full color bubble + name + date
+        const dateStr = earned.get(b.id)
+          ? new Date(earned.get(b.id)).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})
+          : '';
         return (
-          '<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:0.5px solid var(--border-light);">' +
-            '<div class="mg-trophy-bubble" style="flex-shrink:0;">' + b.icon + '</div>' +
-            '<div style="flex:1;">' +
-              '<div style="font-size:13px;font-weight:600;color:var(--green-900);">' + b.name + '</div>' +
-              (b.unlockDetail ? '<div style="font-size:11px;color:var(--green-700);font-style:italic;">' + b.unlockDetail + '</div>' : '') +
-              '<div style="font-size:11px;color:var(--text-muted);">' + b.req + '</div>' +
+          '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:0.5px solid var(--border-light);">' +
+            '<div style="font-size:20px;width:28px;text-align:center;flex-shrink:0;">' + b.icon + '</div>' +
+            '<div style="flex:1;font-size:12px;">' +
+              '<span style="font-weight:600;color:var(--green-900);">' + b.name + '</span>' + countLabel +
+              (b.unlockDetail ? '<span style="color:var(--green-700);font-style:italic;margin-left:6px;font-size:11px;">' + b.unlockDetail + '</span>' : '') +
             '</div>' +
-            '<div style="font-size:10px;color:var(--green-700);text-align:right;white-space:nowrap;">' +
-              '<div style="font-weight:600;">Earned</div>' +
-              '<div>' + dateStr + '</div>' +
-            '</div>' +
+            '<div style="font-size:10px;color:var(--green-700);white-space:nowrap;">✓ ' + dateStr + '</div>' +
           '</div>'
         );
       } else {
-        // Unearned: greyed out, progress bar, remaining count
-        const pctW = Math.round(b.pct * 100);
         return (
-          '<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:0.5px solid var(--border-light);opacity:0.7;">' +
-            '<div style="width:48px;height:48px;border-radius:50%;background:var(--border-light);border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;filter:grayscale(0.6);">' + b.icon + '</div>' +
+          '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:0.5px solid var(--border-light);opacity:0.6;">' +
+            '<div style="font-size:20px;width:28px;text-align:center;flex-shrink:0;filter:grayscale(1);">' + b.icon + '</div>' +
             '<div style="flex:1;">' +
-              '<div style="font-size:13px;font-weight:600;color:var(--text-primary);">' + b.name + '</div>' +
-              '<div style="font-size:11px;color:var(--text-muted);margin-bottom:5px;">' + b.req + '</div>' +
-              '<div class="mg-mini-progress"><div class="mg-mini-progress-fill" style="width:' + pctW + '%;"></div></div>' +
+              '<div style="font-size:12px;font-weight:600;color:var(--text-primary);">' + b.name + '</div>' +
+              '<div style="font-size:10px;color:var(--text-muted);margin-bottom:4px;">' + b.req + '</div>' +
+              '<div style="height:3px;background:var(--border);border-radius:2px;overflow:hidden;">' +
+                '<div style="height:100%;background:var(--green-500);width:' + pctW + '%;border-radius:2px;"></div>' +
+              '</div>' +
             '</div>' +
-            '<div style="font-size:11px;color:var(--text-muted);white-space:nowrap;text-align:right;">' + b.remaining + '</div>' +
+            '<div style="font-size:10px;color:var(--text-muted);white-space:nowrap;margin-left:8px;">' + b.remaining + '</div>' +
           '</div>'
         );
       }
     }).join('');
 
     return (
-      '<div class="card" style="margin-bottom:10px;">' +
-        '<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px;">' +
-          '<div style="font-size:14px;font-weight:700;color:var(--green-900);">' + cat.label + '</div>' +
-          '<div style="font-size:11px;color:var(--green-700);">' + catEarned + ' / ' + catTotal + '</div>' +
+      '<div style="margin-bottom:2px;">' +
+        '<div onclick="toggleTrophyCategory(\'' + cat.key + '\')" ' +
+             'style="display:flex;justify-content:space-between;align-items:center;padding:12px 14px;background:var(--cream);border-radius:var(--radius-sm);cursor:pointer;user-select:none;">' +
+          '<div style="font-size:13px;font-weight:600;">' + cat.emoji + ' ' + cat.label + '</div>' +
+          '<div style="display:flex;align-items:center;gap:8px;">' +
+            '<div style="font-size:11px;color:var(--green-700);">' + catEarned + ' / ' + catBadges.length + '</div>' +
+            '<div id="trophy-cat-arrow-' + cat.key + '" style="font-size:11px;color:var(--text-muted);transition:transform 0.2s;">▼</div>' +
+          '</div>' +
         '</div>' +
-        '<div style="font-size:12px;color:var(--text-muted);margin-bottom:12px;">' + cat.desc + '</div>' +
-        badgeItems +
+        '<div id="trophy-cat-' + cat.key + '" style="display:none;padding:0 4px;">' + rows + '</div>' +
       '</div>'
     );
   }).join('');
 
-  el.innerHTML = headerHTML + categorySections;
+  const allTrophiesHTML = (
+    '<div class="card" style="margin-top:4px;">' +
+      '<div style="font-size:14px;font-weight:700;color:var(--green-900);margin-bottom:10px;">All Trophies</div>' +
+      allRows +
+    '</div>'
+  );
+
+  el.innerHTML = trophyHTML + nextUpHTML + allTrophiesHTML;
+}
+
+// Toggle a category section in the "All Trophies" collapsible list
+// WHY separate function not inline onclick: inline onclick can't reference
+// variables in closure scope cleanly. Named function is easier to debug.
+function toggleTrophyCategory(key) {
+  const panel = document.getElementById('trophy-cat-' + key);
+  const arrow = document.getElementById('trophy-cat-arrow-' + key);
+  if (!panel) return;
+  const isOpen = panel.style.display !== 'none';
+  panel.style.display = isOpen ? 'none' : 'block';
+  if (arrow) arrow.style.transform = isOpen ? '' : 'rotate(180deg)';
 }
 
 // ── Badge progress calculator ─────────────────────────────────────────
@@ -4771,6 +4869,18 @@ function getBadgeProgress() {
       pct = Math.min(1, maxRun / (b.threshold || 5));
       progressLabel = maxRun + ' of ' + (b.threshold || 5) + ' in a row';
       remaining = isEarned ? 'earned' : ((b.threshold || 5) - maxRun) + ' to go';
+
+    } else if (b.type === 'score') {
+      // pct: how close is best score to breaking this threshold?
+      // Formula: (120 - bestScore) / (120 - threshold)
+      // 120 is a soft "worst case" — gives meaningful progress even for high handicaps
+      // WHY 120 not infinity: we want the bar to show something, not be empty forever
+      const scores  = sessionRounds.map(r => parseInt(r.score)).filter(s => !isNaN(s));
+      const best    = scores.length ? Math.min(...scores) : 120;
+      const count   = scores.filter(s => s < b.threshold).length;
+      pct           = isEarned ? 1 : Math.min(0.99, Math.max(0, (120 - best) / (120 - b.threshold)));
+      progressLabel = isEarned ? ('Achieved ' + count + ' time' + (count !== 1 ? 's' : '')) : ('Best score: ' + (scores.length ? best : '—'));
+      remaining     = isEarned ? (count + 'x') : ('Need ' + (best - b.threshold + 1 > 0 ? (best - b.threshold + 1) + ' fewer strokes' : 'one more round!'));
 
     } else if (b.type === 'drill-improve' || b.type === 'drill-80x2' ||
                b.type === 'drill-streak3' || b.type === 'drill-perfect') {
@@ -5461,7 +5571,7 @@ function buildBadgesMini() {
 
   const defs = new Map(BADGE_DEFS.map(b => [b.id, b]));
   el.innerHTML = `
-    <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:1px;color:#aaa;margin-bottom:8px;">Badges Earned</div>
+    <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:1px;color:#aaa;margin-bottom:8px;">Trophies Earned</div>
     <div style="display:flex;flex-wrap:wrap;gap:8px;">
       ${earned.map(b => {
         const def = defs.get(b.id);
@@ -6619,6 +6729,14 @@ const BADGE_DEFS = [
   { id:'tier-scratch', icon:'🏆', name:'Scratch Golfer',      category:'milestones', req:'Reach Scratch',            type:'tier', tierKey:'Scratch' },
   { id:'tier-plus',    icon:'👑', name:'Plus Handicap',       category:'milestones', req:'Reach Plus handicap',      type:'tier', tierKey:'Plus'    },
   { id:'full-circle',  icon:'🎖️', name:'Full Circle',         category:'milestones', req:'Earn all 7 tier badges',   type:'allTiers' },
+
+  // ── SCORE MILESTONES (4) ─────────────────────────
+  // type:'score' — earned first time score < threshold, counter tracks total times
+  // pct computed from best score relative to threshold
+  { id:'break-100', icon:'💯', name:'Break 100', category:'scores', req:'Shoot under 100',  type:'score', threshold:100 },
+  { id:'break-90',  icon:'🔟', name:'Break 90',  category:'scores', req:'Shoot under 90',   type:'score', threshold:90  },
+  { id:'break-80',  icon:'🎱', name:'Break 80',  category:'scores', req:'Shoot under 80',   type:'score', threshold:80  },
+  { id:'break-70',  icon:'⚡', name:'Break 70',  category:'scores', req:'Shoot under 70',   type:'score', threshold:70  },
 ];
 
 // ═══════════════════════════════════════════════════
@@ -6703,7 +6821,7 @@ function showBadgeEarnModal(badge) {
   modal.innerHTML = (
     '<div style="background:#fff;border-radius:20px;padding:36px 28px;max-width:320px;width:100%;text-align:center;position:relative;">' +
       '<div style="font-size:64px;margin-bottom:12px;line-height:1;">' + badge.icon + '</div>' +
-      '<div style="font-size:11px;font-weight:700;color:var(--green-700);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:6px;">Badge Unlocked</div>' +
+      '<div style="font-size:11px;font-weight:700;color:var(--green-700);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:6px;">Trophy Unlocked</div>' +
       '<div style="font-size:22px;font-weight:700;color:var(--green-900);margin-bottom:8px;">' + badge.name + '</div>' +
       (detail ? '<div style="font-size:13px;color:var(--green-700);margin-bottom:6px;font-style:italic;">' + detail + '</div>' : '') +
       '<div style="font-size:13px;color:var(--text-muted);margin-bottom:24px;line-height:1.5;">' + badge.req + '</div>' +
@@ -6724,7 +6842,7 @@ function showBadgeEarnModal(badge) {
 function shareOrCopyBadge(badgeId) {
   const badge = BADGE_DEFS.find(b => b.id === badgeId);
   if (!badge) return;
-  const text = 'I just earned the ' + badge.icon + ' ' + badge.name + ' badge on TrueStrokes! ' + badge.req + ' — truestrokes-app.vercel.app';
+  const text = 'I just earned the ' + badge.icon + ' ' + badge.name + ' trophy on TrueStrokes! ' + badge.req + ' — truestrokes-app.vercel.app';
   if (navigator.share) {
     // WHY navigator.share: this triggers the native iOS/Android share sheet —
     // iMessage, WhatsApp, Twitter, copy link, etc. One API call, every platform.
@@ -6838,6 +6956,16 @@ function checkBadges(currentKey) {
       if (!earned.has(ladder[i]) && streak >= t)
         newBadges.push({ id: ladder[i], earnedAt: now });
     });
+  });
+
+  // ── SCORE MILESTONES ─────────────────────────────
+  // Check sessionRounds for scores under each threshold.
+  // Award on first occurrence — count is computed live from rounds, not stored.
+  [['break-100',100],['break-90',90],['break-80',80],['break-70',70]].forEach(([id, threshold]) => {
+    if (!earned.has(id)) {
+      const hit = sessionRounds.find(r => parseInt(r.score) < threshold);
+      if (hit) newBadges.push({ id, earnedAt: now });
+    }
   });
 
   // ── TIER MILESTONES ──────────────────────────────
