@@ -2474,19 +2474,20 @@
       <div class="grid-2">
         <div>
           <label>Your Name</label>
-          <input type="text" id="golfer-name" placeholder="e.g. John Smith" />
+          <input type="text" id="golfer-name" placeholder="First name is fine" />
         </div>
         <div>
-          <label>Who do you want to be?</label>
+          <label>What's your goal?</label>
+          <p style="font-size:0.78rem;color:var(--text-muted);margin:-2px 0 8px;line-height:1.5;">The level you're working toward. Every stat, gap, and drill is built around closing the distance to this tier.</p>
           <select id="target-tier">
             <option value="">Choose your target level...</option>
-            <option value="90s">90s</option>
-            <option value="Mid80s">80s</option>
-            <option value="HighSD">Low 80s</option>
-            <option value="Single">Single Digit</option>
+            <option value="90s">Break 100 — shoot in the 90s</option>
+            <option value="Mid80s">Break 90 — shoot in the 80s</option>
+            <option value="HighSD">Break 85 — low 80s</option>
+            <option value="Single">Single Digit handicap</option>
             <option value="Low">Low Single Digit</option>
             <option value="Scratch">Scratch</option>
-            <option value="Plus">Plus</option>
+            <option value="Plus">Plus handicap</option>
           </select>
         </div>
       </div>
@@ -3353,6 +3354,16 @@ function _loadFromLocalStorage() {
 // Internal helper — populates the round form UI from an array of round objects
 function _populateRoundForm(rounds, name, targetKey) {
   if (document.getElementById('golfer-name')) {
+    // Auto-populate from auth metadata if no saved name yet.
+    // WHY: new users haven't entered a name but we captured it at signup.
+    // user_metadata.full_name comes from Google OAuth.
+    // user_metadata.name comes from email signup form's "Your Name" field.
+    // We take first name only — feels friendlier in the app.
+    if (!name && currentUser) {
+      const meta = currentUser.user_metadata || {};
+      const fullName = meta.full_name || meta.name || '';
+      name = fullName.split(' ')[0] || '';
+    }
     document.getElementById('golfer-name').value = name;
   }
   if (document.getElementById('target-tier') && targetKey) {
