@@ -2319,12 +2319,15 @@
       </div>
     </div>
 
+    <!-- Progress nudge — shown between round 1 and round 4 -->
+    <div id="dash-progress-nudge" style="display:none;background:var(--green-50);border:1.5px solid var(--green-200);border-radius:var(--radius-md);padding:14px 16px;margin-bottom:14px;"></div>
+
     <!-- Primary CTA — My Plan -->
     <div class="card" style="border:2px solid var(--green-100);background:var(--green-50);text-align:center;padding:32px;">
       <div style="font-size:0.68rem;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--green-700);margin-bottom:10px;">Your Practice Plan</div>
       <div id="dash-plan-headline" style="font-family:'Playfair Display',serif;font-size:1.3rem;font-weight:700;color:var(--green-900);margin-bottom:8px;">Ready when you are</div>
       <div id="dash-plan-sub" style="font-size:0.88rem;color:var(--text-muted);margin-bottom:24px;line-height:1.6;max-width:340px;margin-left:auto;margin-right:auto;">Tier-specific drills built around your game. Pick up where you left off.</div>
-      <button class="btn btn-green" style="padding:13px 32px;font-size:0.95rem;border-radius:50px;width:100%;max-width:280px;" onclick="showPage('plan')">
+      <button id="dash-plan-cta-btn" class="btn btn-green" style="padding:13px 32px;font-size:0.95rem;border-radius:50px;width:100%;max-width:280px;" onclick="showPage('plan')">
         View My Plan →
       </button>
     </div>
@@ -2756,6 +2759,51 @@
           ✓ Baseline cleared. Add 5 rounds and a new baseline will lock automatically.
         </div>
       </div>
+
+      <div style="height:1px;background:var(--border-light);margin:20px 0;"></div>
+
+      <!-- Trophy reset — default state -->
+      <div id="trophy-reset-default">
+        <div style="display:flex;align-items:flex-start;gap:16px;flex-wrap:wrap;">
+          <div style="flex:1;min-width:200px;">
+            <div style="font-size:0.9rem;font-weight:600;color:var(--text-primary);margin-bottom:4px;">Reset Trophies</div>
+            <div style="font-size:0.82rem;color:var(--text-muted);line-height:1.6;">
+              Clears all earned trophies and re-awards them correctly on your next Calculate. Use this if trophies appear out of order or incorrectly awarded.
+            </div>
+          </div>
+          <button onclick="showTrophyResetConfirm()"
+            style="padding:9px 20px;background:transparent;color:#c62828;border:1.5px solid #c62828;border-radius:var(--radius-sm);font-family:var(--font-ui);font-size:0.88rem;font-weight:600;cursor:pointer;white-space:nowrap;flex-shrink:0;">
+            Reset Trophies
+          </button>
+        </div>
+      </div>
+
+      <!-- Trophy reset — confirmation state -->
+      <div id="trophy-reset-confirm" style="display:none;">
+        <div style="background:#fff5f5;border:1px solid #ffd0d0;border-radius:var(--radius-sm);padding:16px;margin-bottom:16px;">
+          <div style="font-size:0.9rem;font-weight:600;color:#c62828;margin-bottom:6px;">Are you sure?</div>
+          <div style="font-size:0.83rem;color:var(--text-secondary);line-height:1.6;">
+            All trophies will be cleared. Hit Calculate after and they'll re-award correctly based on your actual rounds and sessions.
+          </div>
+        </div>
+        <div style="display:flex;gap:10px;">
+          <button onclick="confirmTrophyReset()"
+            style="padding:9px 20px;background:#c62828;color:white;border:none;border-radius:var(--radius-sm);font-family:var(--font-ui);font-size:0.88rem;font-weight:600;cursor:pointer;">
+            Yes, reset them
+          </button>
+          <button onclick="cancelTrophyReset()"
+            style="padding:9px 20px;background:transparent;color:var(--text-secondary);border:1.5px solid var(--border);border-radius:var(--radius-sm);font-family:var(--font-ui);font-size:0.88rem;cursor:pointer;">
+            Cancel
+          </button>
+        </div>
+      </div>
+
+      <!-- Trophy reset — done state -->
+      <div id="trophy-reset-done" style="display:none;">
+        <div style="background:var(--green-50);border:1px solid var(--green-100);border-radius:var(--radius-sm);padding:14px;font-size:0.88rem;color:var(--green-700);line-height:1.6;">
+          ✓ Trophies cleared. Hit Calculate to re-award them correctly.
+        </div>
+      </div>
     </div>
   </div>
 
@@ -3055,10 +3103,12 @@ async function loadSupabaseData() {
         console.log('Migrating localStorage data to Supabase...');
         await migrateLocalStorageToSupabase();
       } else {
-        // Truly new user — show the add round form
-        addRound();
-        addRound();
-        showPage('addround');
+        // Truly new user — show welcome dashboard, not the raw form
+        // WHY: dumping them straight into the round form with no context is abrupt.
+        // The welcome dashboard explains what to do and why before they start.
+        lastResults = null;
+        showPage('dashboard');
+        renderDashboard();
       }
     }
 
@@ -3189,7 +3239,7 @@ function _loadFromLocalStorage() {
   loadFromStorage();
   try {
     const raw = localStorage.getItem('truestrokes_data');
-    if (!raw) { addRound(); addRound(); showPage('addround'); return; }
+    if (!raw) { lastResults = null; showPage('dashboard'); renderDashboard(); return; }
     const payload = JSON.parse(raw);
     if (payload.rounds && payload.rounds.length && payload.targetKey) {
       silentCalculate(payload.rounds, payload.name || 'Golfer', payload.targetKey);
@@ -3816,11 +3866,25 @@ function displayResults(d) {
   // Post-baseline: gap is frozen, shows the fixed starting point.
   if (d.baselineMode === 'pre') {
     const remaining = Math.max(0, BASELINE_ROUNDS - d.roundCount);
+    let preMsg = '';
+    if (d.roundCount < 3) {
+      // Rounds 1–2: haven't unlocked analysis yet — shouldn't normally reach
+      // displayResults but handle gracefully just in case
+      const toUnlock = 3 - d.roundCount;
+      preMsg = 'Add ' + toUnlock + ' more round' + (toUnlock !== 1 ? 's' : '') +
+               ' to unlock your early TrueStrokes analysis — 5 rounds starts your journey.';
+    } else if (d.roundCount === 3) {
+      preMsg = 'This is your initial analysis — add 2 more rounds to lock your baseline and start your journey.';
+    } else if (d.roundCount === 4) {
+      preMsg = 'Almost there — 1 more round to lock your baseline and start your journey.';
+    } else {
+      preMsg = 'Enter ' + remaining + ' more round' + (remaining !== 1 ? 's' : '') + ' to lock your baseline.';
+    }
     document.getElementById('res-goal-statement').innerHTML =
-      `<span style="color:var(--green-700);font-size:0.85rem;display:block;margin-bottom:4px;">
-        ⏳ Early analysis — enter ${remaining} more round${remaining !== 1 ? 's' : ''} to lock your baseline
-      </span>
-      You are <strong>${d.totalGap.toFixed(1)} strokes</strong> away from ${d.target.label}.`;
+      '<span style="color:var(--green-700);font-size:0.85rem;display:block;margin-bottom:4px;">' +
+        '📍 ' + preMsg +
+      '</span>' +
+      'You are <strong>' + d.totalGap.toFixed(1) + ' strokes</strong> away from ' + d.target.label + '.';
   } else if (d.baselineMode === 'lock') {
     document.getElementById('res-goal-statement').innerHTML =
       `<div style="background:var(--green-50);border:1.5px solid var(--green-300);border-radius:var(--radius-sm);padding:12px 16px;margin-bottom:8px;text-align:center;">
@@ -3972,6 +4036,22 @@ function displayResults(d) {
   // Check badges and tier milestone (progress tracking removed from this page)
   checkBadges(d.currentKey);
   checkTierMilestonePrompt(d);
+
+  // ── AUTO-NAVIGATE LOGIC ──────────────────────────────────────────
+  // Round 3: first time analysis unlocks — take them straight to My Analysis
+  // as the "reveal" moment. They've earned it.
+  // WHY only round 3: rounds 1–2 shouldn't reach displayResults normally
+  // (calculate() requires a targetKey and all fields filled). Round 3 is the
+  // first meaningful payoff. Round 4+ they already know where to find results.
+  // We detect "first time at round 3" by checking if baseline is not locked
+  // and roundCount is exactly 3.
+  if (!baselineLocked && d.roundCount === 3) {
+    // Already on results page from displayResults routing above — just update dashboard
+    // in the background so it shows the nudge next time they visit
+    renderDashboard();
+  } else {
+    renderDashboard();
+  }
 }
 
 // ═══════════════════════════════════════════════════
@@ -5022,6 +5102,44 @@ async function confirmBaselineReset() {
     if (confirmBtn) confirmBtn.disabled = false;
     alert('Reset failed — please try again. If the problem persists, sign out and back in.');
   }
+}
+
+// ═══════════════════════════════════════════════════
+// TROPHY RESET
+// Same three-state pattern as baseline reset.
+// Trophies live only in localStorage (settings.badges[]).
+// No Supabase table to update — pure client-side clear.
+// WHY no Supabase: badges aren't stored in the DB yet.
+// They're re-computed from rounds + sessions on every
+// checkBadges() call, so clearing localStorage is enough.
+// ═══════════════════════════════════════════════════
+
+function showTrophyResetConfirm() {
+  document.getElementById('trophy-reset-default').style.display = 'none';
+  document.getElementById('trophy-reset-confirm').style.display = 'block';
+}
+
+function cancelTrophyReset() {
+  document.getElementById('trophy-reset-confirm').style.display = 'none';
+  document.getElementById('trophy-reset-default').style.display = 'block';
+}
+
+function confirmTrophyReset() {
+  const confirmBtn = document.querySelector('#trophy-reset-confirm button');
+  if (confirmBtn) confirmBtn.disabled = true;
+
+  // Clear badges array from localStorage settings
+  const settings   = getSettings();
+  settings.badges  = [];
+  localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+
+  // Show done state
+  document.getElementById('trophy-reset-confirm').style.display = 'none';
+  document.getElementById('trophy-reset-done').style.display    = 'block';
+
+  // Rebuild the badge shelf in My Plan (the small emoji row) immediately
+  buildBadgeShelf();
+  buildBadgesMini();
 }
 
 // ═══════════════════════════════════════════════════
@@ -7469,8 +7587,89 @@ function renderDashboard() {
   const sessions = getCompletedSessions();
   const log      = getLog();
   const streak   = calcStreak(sessions);
+  const roundCount = sessionRounds.length;
 
-  // Momentum stats — only forward-moving numbers
+  // ── NEW USER — no rounds at all ───────────────────────────────────
+  // Show a warm welcome that tells them exactly what to do.
+  // WHY separate state: "Welcome back / 0 / 0 / 0" is deflating.
+  // A new user needs direction, not a dashboard full of empty numbers.
+  if (!lastResults && roundCount === 0) {
+    const userName = currentUser
+      ? (currentUser.user_metadata?.first_name || currentUser.user_metadata?.name || '').split(' ')[0]
+      : '';
+
+    document.getElementById('dash-name').textContent = userName ? 'Hey ' + userName + ' 👋' : 'Welcome to TrueStrokes 👋';
+    document.getElementById('dash-tier').textContent = 'Let\'s get your game on paper.';
+    document.getElementById('dash-focus').textContent = '—';
+    document.getElementById('dash-streak').textContent  = '—';
+    document.getElementById('dash-sessions').textContent = '—';
+    document.getElementById('dash-drills').textContent   = '—';
+    document.getElementById('dash-current-tier').textContent = 'Your analysis lives here';
+    document.getElementById('dash-goal-line').textContent    = 'Once you\'ve entered your rounds, you\'ll see your tier, your gap, and exactly where you\'re losing strokes.';
+    document.getElementById('dash-plan-headline').textContent = 'Your plan is waiting';
+    document.getElementById('dash-plan-sub').textContent     = 'Enter at least 3 rounds to unlock your early TrueStrokes analysis. 5 rounds starts your journey.';
+
+    // Swap the primary CTA button to point to Add Round, not My Plan
+    const planBtn = document.querySelector('#dash-plan-cta-btn');
+    if (planBtn) {
+      planBtn.textContent = 'Add Your Rounds →';
+      planBtn.onclick = function() { showPage('addround'); };
+    }
+
+    // Hide the journey road — nothing to show yet
+    const journeyWrap = document.getElementById('dash-journey-wrap');
+    if (journeyWrap) journeyWrap.style.display = 'none';
+
+    // Hide progress nudge
+    const nudge = document.getElementById('dash-progress-nudge');
+    if (nudge) nudge.style.display = 'none';
+    return;
+  }
+
+  // ── RETURNING USER — restore the CTA to My Plan ──────────────────
+  const planBtn = document.querySelector('#dash-plan-cta-btn');
+  if (planBtn) {
+    planBtn.textContent = 'View My Plan →';
+    planBtn.onclick = function() { showPage('plan'); };
+  }
+
+  // ── PROGRESS NUDGE BANNER ────────────────────────────────────────
+  // Shows between round 1 and round 4 to keep users moving forward.
+  // Disappears once baseline is locked at round 5.
+  // WHY: without this, users who enter 1–2 rounds see a partial analysis
+  // and don't know if they should add more. The banner removes that ambiguity.
+  const nudgeEl = document.getElementById('dash-progress-nudge');
+  if (nudgeEl) {
+    if (!baselineLocked && roundCount >= 1 && roundCount < 5) {
+      let nudgeMsg = '';
+      if (roundCount === 1) {
+        nudgeMsg = 'Add 2 more rounds to unlock your early TrueStrokes analysis — 5 rounds starts your journey.';
+      } else if (roundCount === 2) {
+        nudgeMsg = 'Add 1 more round to unlock your early TrueStrokes analysis — 5 rounds starts your journey.';
+      } else if (roundCount === 3) {
+        nudgeMsg = 'This is your initial analysis — add 2 more rounds to lock your baseline and start your journey.';
+      } else if (roundCount === 4) {
+        nudgeMsg = 'Almost there — 1 more round to lock your baseline and start your journey.';
+      }
+      nudgeEl.style.display = 'block';
+      nudgeEl.innerHTML = (
+        '<div style="display:flex;align-items:center;gap:12px;">' +
+          '<div style="font-size:1.2rem;flex-shrink:0;">📍</div>' +
+          '<div style="flex:1;">' +
+            '<div style="font-size:0.82rem;font-weight:600;color:var(--green-800);margin-bottom:2px;">Round ' + roundCount + ' of 5</div>' +
+            '<div style="font-size:0.82rem;color:var(--green-700);line-height:1.5;">' + nudgeMsg + '</div>' +
+          '</div>' +
+          '<div style="flex-shrink:0;">' +
+            '<button onclick="showPage(\'addround\')" style="padding:7px 14px;background:var(--green-800);color:#fff;border:none;border-radius:var(--radius-sm);font-family:var(--font-ui);font-size:0.8rem;font-weight:600;cursor:pointer;">+ Add Round</button>' +
+          '</div>' +
+        '</div>'
+      );
+    } else {
+      nudgeEl.style.display = 'none';
+    }
+  }
+
+  // ── MOMENTUM STATS ───────────────────────────────────────────────
   document.getElementById('dash-streak').textContent   = streak;
   document.getElementById('dash-sessions').textContent = sessions.length;
   document.getElementById('dash-drills').textContent   = log.length;
@@ -7478,31 +7677,29 @@ function renderDashboard() {
   if (lastResults) {
     const d = lastResults;
     document.getElementById('dash-name').textContent  = d.name;
-    document.getElementById('dash-tier').textContent  = `${d.current.label} · Est. Handicap ${d.estHcp.toFixed(1)}`;
+    document.getElementById('dash-tier').textContent  = d.current.label + ' · Est. Handicap ' + d.estHcp.toFixed(1);
     document.getElementById('dash-focus').textContent = d.breakdown[0].category;
 
     // Analysis summary card
-    document.getElementById('dash-current-tier').textContent = `You are a ${d.current.label}.`;
-    // WHY conditional: post-baseline the gap is frozen at activeBaseline.gap_to_target.
-    // Pre-baseline it uses the live calculated gap. Dashboard reflects this split.
+    document.getElementById('dash-current-tier').textContent = 'You are a ' + d.current.label + '.';
     const dashGap = (baselineLocked && activeBaseline)
       ? activeBaseline.gap_to_target
       : d.totalGap;
     const dashGapLabel = (baselineLocked && activeBaseline)
-      ? `Baseline: ${dashGap.toFixed(1)} strokes to close`
-      : `Working toward ${d.target.label} · ${dashGap.toFixed(1)} strokes to close`;
+      ? 'Baseline: ' + dashGap.toFixed(1) + ' strokes to close'
+      : 'Working toward ' + d.target.label + ' · ' + dashGap.toFixed(1) + ' strokes to close';
     document.getElementById('dash-goal-line').textContent = dashGapLabel;
 
     // Plan headline based on session progress
-    const nextNum = sessions.length + 1;
+    const nextNum   = sessions.length + 1;
     const planHeadEl = document.getElementById('dash-plan-headline');
     const planSubEl  = document.getElementById('dash-plan-sub');
     if (sessions.length === 0) {
       planHeadEl.textContent = 'Start Session 1';
       planSubEl.textContent  = 'Your first practice session is ready. Drills are built around your game.';
     } else {
-      planHeadEl.textContent = `Session ${nextNum} is ready`;
-      planSubEl.textContent  = `${sessions.length} session${sessions.length !== 1 ? 's' : ''} completed. Keep the momentum going.`;
+      planHeadEl.textContent = 'Session ' + nextNum + ' is ready';
+      planSubEl.textContent  = sessions.length + ' session' + (sessions.length !== 1 ? 's' : '') + ' completed. Keep the momentum going.';
     }
 
     // Journey road preview
@@ -7518,23 +7715,25 @@ function renderDashboard() {
         const isCurrent=key===d.currentKey, isTarget=key===d.targetKey, isPassed=i<ciIdx;
         const el = document.createElement('div');
         el.className = 'journey-tier';
-        el.innerHTML = `
-          <div class="journey-dot ${isCurrent?'active':isTarget?'target':isPassed?'passed':''}"></div>
-          <div class="journey-tier-label ${isCurrent?'active':isTarget?'target':''}">${t.label}</div>
-          ${isCurrent ? '<div class="journey-you-label">▲ You</div>' : ''}
-          ${isTarget  ? '<div class="journey-you-label">🏁</div>' : ''}`;
+        el.innerHTML =
+          '<div class="journey-dot ' + (isCurrent?'active':isTarget?'target':isPassed?'passed':'') + '"></div>' +
+          '<div class="journey-tier-label ' + (isCurrent?'active':isTarget?'target':'') + '">' + t.label + '</div>' +
+          (isCurrent ? '<div class="journey-you-label">▲ You</div>' : '') +
+          (isTarget  ? '<div class="journey-you-label">🏁</div>' : '');
         tiersEl.appendChild(el);
       });
     }
   } else {
-    // No results yet — nudge them to add rounds
-    document.getElementById('dash-name').textContent  = 'Welcome';
-    document.getElementById('dash-tier').textContent  = 'Add your rounds to get started';
+    // Has some rounds but calculate hasn't run yet (e.g. 1–2 rounds, no targetKey set)
+    document.getElementById('dash-name').textContent  = 'Welcome back';
+    document.getElementById('dash-tier').textContent  = 'Keep adding rounds';
     document.getElementById('dash-focus').textContent = '—';
-    document.getElementById('dash-current-tier').textContent = 'No analysis yet';
-    document.getElementById('dash-goal-line').textContent    = 'Enter your rounds to see your analysis';
-    document.getElementById('dash-plan-headline').textContent = 'Get started';
-    document.getElementById('dash-plan-sub').textContent     = 'Enter your rounds first, then your personalized plan will be ready.';
+    document.getElementById('dash-current-tier').textContent = 'Analysis pending';
+    document.getElementById('dash-goal-line').textContent    = 'Add your rounds and hit Calculate to see your analysis.';
+    document.getElementById('dash-plan-headline').textContent = 'Almost ready';
+    document.getElementById('dash-plan-sub').textContent     = 'Enter at least 3 rounds to unlock your early TrueStrokes analysis.';
+    const journeyWrap = document.getElementById('dash-journey-wrap');
+    if (journeyWrap) journeyWrap.style.display = 'none';
   }
 }
 
