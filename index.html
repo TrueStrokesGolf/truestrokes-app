@@ -2028,7 +2028,7 @@
      MARKETING LANDING PAGE
      Shown to first-time visitors (no saved data)
 ═══════════════════════════════════════════ -->
-<div id="landing-page" style="display:none;">
+<div id="landing-page" style="display:flex; flex-direction:column;">
 
   <!-- Landing Nav -->
   <header class="landing-header">
@@ -2967,21 +2967,20 @@ function loadAccountInfo() {
 
 // Determines whether to show auth, landing, or the app
 async function initRouter() {
-  // WHY: First check if Supabase already has an active session for this browser.
-  // Sessions persist via a cookie/localStorage token that Supabase manages.
-  // If the user logged in yesterday, they're still logged in today.
+  // Landing page is already visible (set in HTML) so the user sees content
+  // immediately — no blank screen while we wait for Supabase.
+  // WHY: getSession() is a network call that can take 1–3 seconds.
+  // Showing the landing instantly, then swapping to the app if logged in,
+  // is far better than a blank page while we wait.
   const { data: { session } } = await sb.auth.getSession();
 
   if (session) {
-    // Already logged in — go straight to the app
+    // Already logged in — hide landing and go straight to the app
     currentUser = session.user;
+    document.getElementById('landing-page').style.display = 'none';
     enterApp();
-  } else {
-    // Not logged in — show the marketing page first.
-    // The "Get Started" and "Sign In" buttons on landing call showAuthPage().
-    document.getElementById('landing-page').style.display = 'flex';
-    document.getElementById('landing-page').style.flexDirection = 'column';
   }
+  // Not logged in — landing is already showing, nothing to do
 }
 
 // Called when user clicks "Get Started" or "Sign In" on the landing page
