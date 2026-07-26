@@ -3144,14 +3144,11 @@ async function loadSupabaseData() {
     // ── Load settings from profiles ──────────────────
     const { data: profile } = await sb
       .from('profiles')
-      .select('target_tier, practice_frequency, session_length, warmup_time, practice_location, baseline_locked')
+      .select('target_tier, practice_frequency, session_length, warmup_time, practice_location, baseline_locked, badges, practice_settings_set')
       .eq('id', currentUser.id)
       .single();
 
     if (profile) {
-      // Load baseline state into memory
-      // WHY: calculate() is synchronous — it reads baselineLocked and activeBaseline
-      // from memory rather than awaiting a DB call mid-calculation.
       baselineLocked = profile.baseline_locked || false;
       if (baselineLocked) {
         let bl = null;
@@ -3166,15 +3163,19 @@ async function loadSupabaseData() {
         if (bl) activeBaseline = bl;
       }
 
-      // Sync profile settings into localStorage so existing getSettings() calls work
+      // Merge profile into localStorage — Supabase is source of truth
       const existing = getSettings();
       const merged = {
         ...existing,
-        practiceFreq:  profile.practice_frequency || existing.practiceFreq,
-        sessionLength: profile.session_length      || existing.sessionLength,
-        warmupTime:    profile.warmup_time         || existing.warmupTime,
-        drillType:     profile.practice_location   || existing.drillType,
-        lastTier:      profile.target_tier         || existing.lastTier,
+        practiceFreq:        profile.practice_frequency  || existing.practiceFreq,
+        sessionLength:       profile.session_length       || existing.sessionLength,
+        warmupTime:          profile.warmup_time          || existing.warmupTime,
+        drillType:           profile.practice_location    || existing.drillType,
+        lastTier:            profile.target_tier          || existing.lastTier,
+        practiceSettingsSet: profile.practice_settings_set || existing.practiceSettingsSet,
+        badges: (profile.badges && profile.badges.length > (existing.badges || []).length)
+          ? profile.badges
+          : (existing.badges || []),
       };
       localStorage.setItem('truestrokes_settings', JSON.stringify(merged));
       loadSettingsUI();
@@ -3243,17 +3244,16 @@ async function loadSupabaseData() {
       .from('sessions')
       .select('*')
       .eq('user_id', currentUser.id)
-      .order('completed_at', { ascending: false });
+      .order('saved_at', { ascending: false });
 
     if (sbSessions && sbSessions.length > 0) {
-      // Sync into localStorage format so existing session logic works unchanged
       const sessions = sbSessions.map(s => ({
-        sessionNum:  s.session_number,
-        date:        s.completed_at ? s.completed_at.slice(0,10) : '',
-        savedAt:     s.completed_at,
-        focus:       s.focus_category,
-        drills:      [],
-        tierKey:     '',
+        sessionNum: s.session_num || null,
+        date:       s.date        || (s.saved_at ? s.saved_at.slice(0,10) : ''),
+        savedAt:    s.saved_at    || null,
+        focus:      s.focus       || null,
+        drills:     s.drills      || [],
+        tierKey:    s.tier_key    || '',
       }));
       localStorage.setItem('truestrokes_sessions', JSON.stringify(sessions));
     }
@@ -3263,18 +3263,18 @@ async function loadSupabaseData() {
       .from('drill_results')
       .select('*')
       .eq('user_id', currentUser.id)
-      .order('logged_at', { ascending: false });
+      .order('saved_at', { ascending: false });
 
     if (sbDrills && sbDrills.length > 0) {
       const drills = sbDrills.map(d => ({
-        drillId:   d.drill_name,
-        drillName: d.drill_name,
-        category:  d.category,
-        score:     d.score     !== null ? String(d.score) : '—',
-        scoreMax:  d.score_max !== null ? String(d.score_max) : '—',
-        feel:      d.feel      || '—',
-        date:      d.logged_at ? d.logged_at.slice(0,10) : '',
-        savedAt:   d.logged_at,
+        drillId:   d.drill_id   || d.drill_name,
+        drillName: d.drill_name || d.drill_id,
+        category:  d.category   || null,
+        score:     d.score      !== null ? String(d.score) : '—',
+        scoreMax:  d.score_max  !== null ? String(d.score_max) : '—',
+        tierKey:   d.tier_key   || '',
+        date:      d.saved_at   ? d.saved_at.slice(0,10) : '',
+        savedAt:   d.saved_at   || null,
       }));
       localStorage.setItem('truestrokes_drill_results', JSON.stringify(drills));
     }
@@ -5256,10 +5256,11 @@ function saveSettings() {
   // Write settings to Supabase profiles in the background
   if (currentUser) {
     sb.from('profiles').update({
-      practice_frequency: current.practiceFreq,
-      session_length:     current.sessionLength,
-      warmup_time:        current.warmupTime,
-      practice_location:  current.drillType,
+      practice_frequency:   current.practiceFreq,
+      session_length:       current.sessionLength,
+      warmup_time:          current.warmupTime,
+      practice_location:    current.drillType,
+      practice_settings_set: true,
     }).eq('id', currentUser.id)
     .then(() => {})
     .catch(e => console.warn('Settings sync failed:', e));
@@ -6117,14 +6118,17 @@ function saveCompletedSession(session) {
   sessions.unshift(session);
   localStorage.setItem('truestrokes_sessions', JSON.stringify(sessions));
 
-  // Write to Supabase in background
+  // Sync to Supabase in background — fire and forget
+  // WHY: UI updates from localStorage immediately; Supabase is the durable backup
   if (currentUser) {
     sb.from('sessions').insert({
-      user_id:        currentUser.id,
-      session_number: session.sessionNum  || null,
-      focus_category: session.focus       || null,
-      drill_count:    session.drills ? session.drills.length : null,
-      completed_at:   session.savedAt     || null,
+      user_id:    currentUser.id,
+      session_num: session.sessionNum || null,
+      focus:       session.focus      || null,
+      date:        session.date       || session.savedAt || null,
+      tier_key:    session.tierKey    || (lastResults ? lastResults.currentKey : null),
+      drills:      session.drills     || [],
+      saved_at:    session.savedAt    || new Date().toISOString(),
     }).then(() => {}).catch(e => console.warn('Session sync failed:', e));
   }
 }
@@ -6619,13 +6623,14 @@ function saveDrillResult(drillId, drillName, category, sessionNum) {
   if (currentUser) {
     const latest = results[0];
     sb.from('drill_results').insert({
-      user_id:   currentUser.id,
+      user_id:    currentUser.id,
+      drill_id:   latest.drillId   || null,
       drill_name: latest.drillName || latest.drillId || null,
       category:   latest.category  || null,
-      score:      latest.score && latest.score !== '—' ? parseInt(latest.score) : null,
-      score_max:  latest.scoreMax && latest.scoreMax !== '—' ? parseInt(latest.scoreMax) : null,
-      feel:       latest.feel && latest.feel !== '—' ? latest.feel : null,
-      logged_at:  latest.savedAt || null,
+      score:      latest.score && latest.score !== '—' ? latest.score : null,
+      score_max:  latest.scoreMax  || null,
+      tier_key:   lastResults ? lastResults.currentKey : null,
+      saved_at:   latest.savedAt   || new Date().toISOString(),
     }).then(() => {}).catch(e => console.warn('Drill result sync failed:', e));
   }
   delete _drillFeels[drillId];
@@ -7544,6 +7549,17 @@ function checkBadges(currentKey) {
       settings.badges = [...settings.badges, ...deduped];
       settings.lastTier = currentKey;
       localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+
+      // Sync updated badges array to Supabase profiles
+      // WHY: badges live in localStorage by default but need to survive
+      // across devices. Storing the full array on the profile row is the
+      // simplest approach — one column, one write per badge earn.
+      if (currentUser) {
+        sb.from('profiles')
+          .update({ badges: settings.badges })
+          .eq('id', currentUser.id)
+          .then(() => {}).catch(e => console.warn('Badge sync failed:', e));
+      }
 
       if (deduped.length === 1) {
         // Single trophy — show the individual earn modal
