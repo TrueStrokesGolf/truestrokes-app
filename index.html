@@ -5315,15 +5315,31 @@ function showRoundMilestoneModal(roundCount) {
   localStorage.setItem(key, '1');
 
   const milestones = {
-    1: { icon:'🎉', title:'First round in!',        msg:'Add 2 more rounds to unlock your early TrueStrokes analysis — your first real look at your game.' },
-    2: { icon:'💪', title:'Two rounds down!',        msg:'One more round to unlock your early TrueStrokes analysis. You\'re almost there.' },
-    3: { icon:'🔓', title:'Analysis unlocked!',      msg:'This is your initial analysis — your first TrueStrokes look at your game. Add 2 more rounds to lock your baseline and officially start your journey.' },
-    4: { icon:'🔥', title:'Four rounds in!',         msg:'Almost there — one more round locks your baseline and officially starts your TrueStrokes journey.' },
-    5: { icon:'🚀', title:'Your journey starts now!',msg:'Your baseline is locked. This is your fixed starting point — everything from here is measurable progress. Let\'s get to work.' },
+    1: { icon:'🎉', title:'First round in!',         msg:'Add 2 more rounds to unlock your early TrueStrokes analysis — your first real look at your game.' },
+    2: { icon:'💪', title:'Two rounds down!',         msg:'One more round to unlock your early TrueStrokes analysis. You\'re almost there.' },
+    3: { icon:'🔓', title:'Analysis unlocked!',       msg:'This is your initial analysis — your first TrueStrokes look at your game. Add 2 more rounds to lock your baseline and officially start your journey.' },
+    4: { icon:'🔥', title:'Four rounds in!',          msg:'Almost there — one more round locks your baseline and officially starts your TrueStrokes journey.' },
+    5: { icon:'🚀', title:'Your journey starts now!', msg:'Your baseline is locked. This is your fixed starting point — everything from here is measurable progress. Let\'s get to work.' },
   };
 
   const m = milestones[roundCount];
   if (!m) return;
+
+  // CTA logic:
+  // Rounds 1–4: "Add Another Round" only
+  // Round 5: "Add Another Round" + "Lock My Baseline"
+  // Round 6+: no modal (already returned above via localStorage check)
+  let ctaHTML = '';
+  if (roundCount <= 4) {
+    ctaHTML = (
+      '<button onclick="document.getElementById(\'round-milestone-modal\').remove();showPage(\'addround\');" style="padding:11px 22px;background:var(--green-700);color:#fff;border:none;border-radius:var(--radius-sm);font-family:var(--font-ui);font-size:0.9rem;font-weight:600;cursor:pointer;">+ Add Another Round</button>'
+    );
+  } else if (roundCount === 5) {
+    ctaHTML = (
+      '<button onclick="document.getElementById(\'round-milestone-modal\').remove();showPage(\'addround\');" style="padding:11px 22px;background:transparent;color:var(--green-700);border:1.5px solid var(--green-700);border-radius:var(--radius-sm);font-family:var(--font-ui);font-size:0.9rem;font-weight:600;cursor:pointer;">+ Add Another Round</button>' +
+      '<button onclick="document.getElementById(\'round-milestone-modal\').remove();" style="padding:11px 22px;background:var(--green-700);color:#fff;border:none;border-radius:var(--radius-sm);font-family:var(--font-ui);font-size:0.9rem;font-weight:600;cursor:pointer;">Lock My Baseline 🚀</button>'
+    );
+  }
 
   const modal = document.createElement('div');
   modal.id = 'round-milestone-modal';
@@ -5334,11 +5350,8 @@ function showRoundMilestoneModal(roundCount) {
       '<div style="font-size:11px;font-weight:700;color:var(--green-700);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px;">Round ' + roundCount + ' of 5</div>' +
       '<div style="font-size:20px;font-weight:700;color:var(--green-900);margin-bottom:12px;">' + m.title + '</div>' +
       '<div style="font-size:14px;color:var(--text-secondary);line-height:1.65;margin-bottom:24px;">' + m.msg + '</div>' +
-      '<div style="display:flex;gap:10px;justify-content:center;">' +
-        (roundCount < 5
-          ? '<button onclick="document.getElementById(\'round-milestone-modal\').remove();showPage(\'addround\');" style="padding:11px 22px;background:var(--green-700);color:#fff;border:none;border-radius:var(--radius-sm);font-family:var(--font-ui);font-size:0.9rem;font-weight:600;cursor:pointer;">+ Add Another Round</button>'
-          : '') +
-        '<button onclick="document.getElementById(\'round-milestone-modal\').remove();" style="padding:11px 22px;background:transparent;color:var(--text-secondary);border:1.5px solid var(--border);border-radius:var(--radius-sm);font-family:var(--font-ui);font-size:0.9rem;cursor:pointer;">' + (roundCount < 5 ? 'See My Analysis' : 'Let\'s Go! 🏌️') + '</button>' +
+      '<div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">' +
+        ctaHTML +
       '</div>' +
     '</div>'
   );
