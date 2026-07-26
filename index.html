@@ -2305,6 +2305,7 @@
     <button class="nav-btn"        id="nav-plan"     onclick="showPage('plan')">My Plan</button>
     <button class="nav-btn"        id="nav-addround" onclick="showPage('addround')">+ Add Round</button>
     <button class="nav-btn"        id="nav-settings" onclick="showPage('settings')">⚙ Settings</button>
+    <button class="nav-btn"        onclick="authSignOut()" style="color:var(--text-muted);">Sign Out</button>
   </nav>
 </header>
 
@@ -2933,10 +2934,6 @@
   <!-- Persistent sign out — bottom of app, always accessible -->
   <div style="text-align:center;padding:24px 0 8px;border-top:0.5px solid var(--border-light);margin-top:20px;">
     <button onclick="authSignOut()" style="background:none;border:none;color:var(--text-muted);font-size:0.82rem;cursor:pointer;font-family:var(--font-ui);">Sign Out</button>
-  </div>
-  <!-- Persistent sign out — always visible at bottom of every page -->
-  <div style="text-align:center;padding:24px 0 12px;margin-top:20px;">
-    <button onclick="authSignOut()" style="background:none;border:none;color:var(--text-muted);font-size:0.82rem;cursor:pointer;font-family:var(--font-ui);text-decoration:underline;">Sign Out</button>
   </div>
 
 </div><!-- /container -->
