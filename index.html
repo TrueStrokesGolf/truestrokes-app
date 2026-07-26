@@ -3154,12 +3154,15 @@ async function loadSupabaseData() {
       // from memory rather than awaiting a DB call mid-calculation.
       baselineLocked = profile.baseline_locked || false;
       if (baselineLocked) {
-        const { data: bl } = await sb.from('baselines')
-          .select('*')
-          .eq('user_id', currentUser.id)
-          .eq('is_active', true)
-          .single()
-          .catch(() => ({ data: null }));
+        let bl = null;
+        try {
+          const { data } = await sb.from('baselines')
+            .select('*')
+            .eq('user_id', currentUser.id)
+            .eq('is_active', true)
+            .single();
+          bl = data;
+        } catch(e) { bl = null; }
         if (bl) activeBaseline = bl;
       }
 
