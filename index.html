@@ -4919,8 +4919,8 @@ function renderMGBadges() {
         : '';
 
       return (
-        '<div style="display:flex;flex-direction:column;align-items:center;gap:4px;width:68px;cursor:default;" title="' + b.name + (detail ? ' · ' + detail : '') + (dateStr ? ' · ' + dateStr : '') + '">' +
-          '<div class="mg-trophy-bubble">' + b.icon + '</div>' +
+        '<div style="display:flex;flex-direction:column;align-items:center;gap:4px;width:68px;cursor:pointer;" onclick="showTrophyDetail(\'' + b.id + '\')">' +
+          '<div class="mg-trophy-bubble" style="transition:transform 0.15s;" onmouseover="this.style.transform=\'scale(1.1)\'" onmouseout="this.style.transform=\'scale(1)\'">' + b.icon + '</div>' +
           '<div style="font-size:9px;color:var(--text-primary);text-align:center;line-height:1.3;font-weight:600;">' + b.name + countLabel + '</div>' +
           '<div style="font-size:8px;color:var(--green-700);text-align:center;">' + dateStr + '</div>' +
         '</div>'
@@ -5075,6 +5075,53 @@ function toggleTrophyCategory(key) {
   const isOpen = panel.style.display !== 'none';
   panel.style.display = isOpen ? 'none' : 'block';
   if (arrow) arrow.style.transform = isOpen ? '' : 'rotate(180deg)';
+}
+
+// Show a detail modal when a user taps an earned trophy bubble.
+// Tells them exactly what they did to earn it — name, requirement,
+// unlock detail (drill name etc), and date earned.
+function showTrophyDetail(badgeId) {
+  const settings    = getSettings();
+  const def         = BADGE_DEFS.find(b => b.id === badgeId);
+  const storedBadge = settings.badges.find(b => b.id === badgeId);
+  if (!def || !storedBadge) return;
+
+  const dateStr = storedBadge.earnedAt
+    ? new Date(storedBadge.earnedAt).toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})
+    : '';
+  const detail = storedBadge.unlockDetail || '';
+
+  // Score trophy count
+  let countLine = '';
+  if (def.type === 'score') {
+    const scores = sessionRounds.map(r => parseInt(r.score)).filter(s => !isNaN(s));
+    const count  = scores.filter(s => s < def.threshold).length;
+    countLine = '<div style="font-size:13px;color:var(--green-700);margin-bottom:6px;">You\'ve done this <strong>' + count + ' time' + (count !== 1 ? 's' : '') + '</strong></div>';
+  }
+
+  const existing = document.getElementById('trophy-detail-modal');
+  if (existing) existing.remove();
+
+  const modal = document.createElement('div');
+  modal.id = 'trophy-detail-modal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.65);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;';
+  modal.innerHTML = (
+    '<div style="background:#fff;border-radius:20px;padding:36px 28px;max-width:320px;width:100%;text-align:center;">' +
+      '<div style="font-size:56px;margin-bottom:12px;line-height:1;">' + def.icon + '</div>' +
+      '<div style="font-size:11px;font-weight:700;color:var(--green-700);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:6px;">Trophy Earned</div>' +
+      '<div style="font-size:22px;font-weight:700;color:var(--green-900);margin-bottom:10px;">' + def.name + '</div>' +
+      '<div style="font-size:14px;color:var(--text-secondary);line-height:1.65;margin-bottom:8px;">' + def.req + '</div>' +
+      (detail ? '<div style="font-size:13px;color:var(--green-700);font-style:italic;margin-bottom:8px;">' + detail + '</div>' : '') +
+      countLine +
+      (dateStr ? '<div style="font-size:12px;color:var(--text-muted);margin-bottom:20px;">Earned ' + dateStr + '</div>' : '<div style="margin-bottom:20px;"></div>') +
+      '<div style="display:flex;gap:10px;justify-content:center;">' +
+        '<button onclick="shareOrCopyBadge(\'' + def.id + '\')" style="padding:10px 20px;background:var(--green-700);color:#fff;border:none;border-radius:var(--radius-sm);font-family:var(--font-ui);font-size:0.9rem;font-weight:600;cursor:pointer;">Share 🏆</button>' +
+        '<button onclick="document.getElementById(\'trophy-detail-modal\').remove()" style="padding:10px 20px;background:transparent;color:var(--text-secondary);border:1.5px solid var(--border);border-radius:var(--radius-sm);font-family:var(--font-ui);font-size:0.9rem;cursor:pointer;">Close</button>' +
+      '</div>' +
+    '</div>'
+  );
+  modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+  document.body.appendChild(modal);
 }
 
 // ── Badge progress calculator ─────────────────────────────────────────
