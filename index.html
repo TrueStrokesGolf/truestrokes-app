@@ -3136,7 +3136,6 @@ function enterApp() {
 
 async function loadSupabaseData() {
   if (!currentUser) {
-    // Not logged in — fall back to localStorage (dev/offline mode)
     _loadFromLocalStorage();
     return;
   }
@@ -3279,6 +3278,13 @@ async function loadSupabaseData() {
 
   } catch(err) {
     console.warn('Supabase load failed, falling back to localStorage:', err);
+    // Show a visible banner so we can diagnose Safari issues
+    const errMsg = err?.message || String(err);
+    const banner = document.createElement('div');
+    banner.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#c62828;color:#fff;padding:10px 14px;font-size:12px;z-index:99999;text-align:center;';
+    banner.textContent = 'Data load error: ' + errMsg + ' — tap to dismiss';
+    banner.onclick = () => banner.remove();
+    document.body.appendChild(banner);
     _loadFromLocalStorage();
   }
 }
