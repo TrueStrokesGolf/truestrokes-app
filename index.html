@@ -2589,8 +2589,12 @@
       <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;">
         <div>
           <div style="font-size:10px;color:var(--green-300);text-transform:uppercase;letter-spacing:0.09em;margin-bottom:4px;">Your journey</div>
-          <div id="mg-tier" style="font-size:22px;font-weight:700;color:#fff;line-height:1.1;">—</div>
-          <div id="mg-target" style="font-size:12px;color:var(--green-300);margin-top:4px;">—</div>
+          <!-- Target is the hero — big and aspirational -->
+          <div style="font-size:10px;color:var(--green-400);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:2px;">Working toward</div>
+          <div id="mg-target" style="font-size:26px;font-weight:700;color:#fff;line-height:1.1;font-family:'Playfair Display',serif;">—</div>
+          <!-- Current tier is secondary — where you are today -->
+          <div style="font-size:10px;color:var(--green-400);text-transform:uppercase;letter-spacing:0.07em;margin-top:8px;margin-bottom:2px;">Where you are today</div>
+          <div id="mg-tier" style="font-size:14px;font-weight:500;color:var(--green-200);line-height:1.1;">—</div>
         </div>
         <div style="text-align:right;">
           <div style="font-size:10px;color:var(--green-300);text-transform:uppercase;letter-spacing:0.09em;margin-bottom:4px;">Baseline gap</div>
@@ -4405,8 +4409,8 @@ function renderMGScoreboard() {
   if (!lastResults) return;
   const d = lastResults;
 
+  document.getElementById('mg-target').textContent  = d.target.label;
   document.getElementById('mg-tier').textContent    = d.current.label;
-  document.getElementById('mg-target').textContent  = `target: ${d.target.label}`;
   document.getElementById('mg-rounds-count').textContent = sessionRounds.length;
   document.getElementById('mg-sessions-count').textContent = getCompletedSessions().length;
 
@@ -5326,11 +5330,17 @@ function showRoundMilestoneModal(roundCount) {
   if (!m) return;
 
   // CTA logic:
-  // Rounds 1–4: "Add Another Round" only
+  // Round 1–2: "Add Another Round" only
+  // Round 3: "See My Early Analysis" (primary) + "Add Another Round" (secondary)
+  // Round 4: "Add Another Round" only
   // Round 5: "Add Another Round" + "Lock My Baseline"
-  // Round 6+: no modal (already returned above via localStorage check)
   let ctaHTML = '';
-  if (roundCount <= 4) {
+  if (roundCount === 3) {
+    ctaHTML = (
+      '<button onclick="document.getElementById(\'round-milestone-modal\').remove();" style="padding:11px 22px;background:var(--green-700);color:#fff;border:none;border-radius:var(--radius-sm);font-family:var(--font-ui);font-size:0.9rem;font-weight:600;cursor:pointer;">See My Early Analysis →</button>' +
+      '<button onclick="document.getElementById(\'round-milestone-modal\').remove();showPage(\'addround\');" style="padding:11px 22px;background:transparent;color:var(--green-700);border:1.5px solid var(--green-700);border-radius:var(--radius-sm);font-family:var(--font-ui);font-size:0.9rem;font-weight:600;cursor:pointer;">+ Add Another Round</button>'
+    );
+  } else if (roundCount <= 4) {
     ctaHTML = (
       '<button onclick="document.getElementById(\'round-milestone-modal\').remove();showPage(\'addround\');" style="padding:11px 22px;background:var(--green-700);color:#fff;border:none;border-radius:var(--radius-sm);font-family:var(--font-ui);font-size:0.9rem;font-weight:600;cursor:pointer;">+ Add Another Round</button>'
     );
@@ -7197,6 +7207,37 @@ function showBadgeEarnModal(badge) {
   document.body.appendChild(modal);
 }
 
+// Show a summary modal when multiple trophies fire at once
+function showTrophyBatchModal(badges) {
+  const existing = document.getElementById('badge-earn-modal');
+  if (existing) existing.remove();
+
+  const count = badges.length;
+  // Show up to 4 trophy icons as a preview
+  const preview = badges.slice(0, 4).map(b => {
+    const def = BADGE_DEFS.find(d => d.id === b.id);
+    return def ? def.icon : '🏆';
+  }).join(' ');
+
+  const modal = document.createElement('div');
+  modal.id = 'badge-earn-modal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.65);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;';
+  modal.innerHTML = (
+    '<div style="background:#fff;border-radius:20px;padding:36px 28px;max-width:320px;width:100%;text-align:center;">' +
+      '<div style="font-size:42px;margin-bottom:12px;line-height:1;">' + preview + '</div>' +
+      '<div style="font-size:11px;font-weight:700;color:var(--green-700);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px;">Trophies Unlocked</div>' +
+      '<div style="font-size:22px;font-weight:700;color:var(--green-900);margin-bottom:10px;">You earned ' + count + ' trophies!</div>' +
+      '<div style="font-size:14px;color:var(--text-secondary);line-height:1.65;margin-bottom:24px;">Visit your Trophy Case to see everything you\'ve unlocked.</div>' +
+      '<div style="display:flex;gap:10px;justify-content:center;">' +
+        '<button onclick="document.getElementById(\'badge-earn-modal\').remove();switchMyGameTab(\'badges\');showPage(\'mygame\');" style="padding:10px 20px;background:var(--green-700);color:#fff;border:none;border-radius:var(--radius-sm);font-family:var(--font-ui);font-size:0.9rem;font-weight:600;cursor:pointer;">View Trophy Case</button>' +
+        '<button onclick="document.getElementById(\'badge-earn-modal\').remove();" style="padding:10px 20px;background:transparent;color:var(--text-secondary);border:1.5px solid var(--border);border-radius:var(--radius-sm);font-family:var(--font-ui);font-size:0.9rem;cursor:pointer;">Nice!</button>' +
+      '</div>' +
+    '</div>'
+  );
+  modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+  document.body.appendChild(modal);
+}
+
 // Share the badge via Web Share API (iOS native sheet) or copy to clipboard
 function shareOrCopyBadge(badgeId) {
   const badge = BADGE_DEFS.find(b => b.id === badgeId);
@@ -7363,14 +7404,20 @@ function checkBadges(currentKey) {
       settings.lastTier = currentKey;
       localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
 
-      // Show modal for each new badge in sequence, 400ms apart
-      // WHY setTimeout chain: we want one modal at a time, not a stack
-      deduped.forEach((b, i) => {
-        const def = BADGE_DEFS.find(d => d.id === b.id);
-        if (!def) return;
-        const badgeWithDetail = { ...def, unlockDetail: b.unlockDetail || '' };
-        setTimeout(() => showBadgeEarnModal(badgeWithDetail), i * 400);
-      });
+      if (deduped.length === 1) {
+        // Single trophy — show the individual earn modal
+        const def = BADGE_DEFS.find(d => d.id === deduped[0].id);
+        if (def) {
+          const badgeWithDetail = { ...def, unlockDetail: deduped[0].unlockDetail || '' };
+          setTimeout(() => showBadgeEarnModal(badgeWithDetail), 400);
+        }
+      } else {
+        // Multiple trophies — show a single summary modal so users
+        // aren't hit with a cascade of popups.
+        // WHY: 9 sequential modals feels like spam, not celebration.
+        // One summary modal with a clear CTA to the Trophy Case is cleaner.
+        setTimeout(() => showTrophyBatchModal(deduped), 400);
+      }
     }
   }
 }
