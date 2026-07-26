@@ -2934,6 +2934,10 @@
   <div style="text-align:center;padding:24px 0 8px;border-top:0.5px solid var(--border-light);margin-top:20px;">
     <button onclick="authSignOut()" style="background:none;border:none;color:var(--text-muted);font-size:0.82rem;cursor:pointer;font-family:var(--font-ui);">Sign Out</button>
   </div>
+  <!-- Persistent sign out — always visible at bottom of every page -->
+  <div style="text-align:center;padding:24px 0 12px;margin-top:20px;">
+    <button onclick="authSignOut()" style="background:none;border:none;color:var(--text-muted);font-size:0.82rem;cursor:pointer;font-family:var(--font-ui);text-decoration:underline;">Sign Out</button>
+  </div>
 
 </div><!-- /container -->
 </div><!-- /app-shell -->
@@ -5174,15 +5178,16 @@ function getSettings() {
     const raw = localStorage.getItem(SETTINGS_KEY);
     const s   = raw ? JSON.parse(raw) : {};
     return {
-      practiceFreq:  s.practiceFreq  || '3x',
-      sessionLength: s.sessionLength || '60min',
-      warmupTime:    s.warmupTime    || '30min',
-      drillType:     s.drillType     || 'both',
-      lastTier:      s.lastTier      || null,
-      badges:        s.badges        || [],
+      practiceFreq:       s.practiceFreq       || '3x',
+      sessionLength:      s.sessionLength       || '60min',
+      warmupTime:         s.warmupTime          || '30min',
+      drillType:          s.drillType           || 'both',
+      lastTier:           s.lastTier            || null,
+      badges:             s.badges              || [],
+      practiceSettingsSet: s.practiceSettingsSet || false,
     };
   } catch(e) {
-    return { practiceFreq:'3x', sessionLength:'60min', warmupTime:'30min', drillType:'both', lastTier:null, badges:[] };
+    return { practiceFreq:'3x', sessionLength:'60min', warmupTime:'30min', drillType:'both', lastTier:null, badges:[], practiceSettingsSet:false };
   }
 }
 
@@ -5196,6 +5201,7 @@ function saveSettings() {
   if (slEl)  current.sessionLength = slEl.value;
   if (wtEl)  current.warmupTime    = wtEl.value;
   if (dtEl)  current.drillType     = dtEl.value;
+  current.practiceSettingsSet = true; // user has explicitly configured their settings
   localStorage.setItem(SETTINGS_KEY, JSON.stringify(current));
 
   // Write settings to Supabase profiles in the background
@@ -5871,20 +5877,60 @@ function checkTierMilestonePrompt(d) {
   }
 }
 function renderPlanPage() {
-  const noResultsEl   = document.getElementById('plan-no-results');
-  const progressMain  = document.getElementById('plan-progress-main');
-  const sessionSection= document.getElementById('plan-session-section');
+  const noResultsEl    = document.getElementById('plan-no-results');
+  const progressMain   = document.getElementById('plan-progress-main');
+  const sessionSection = document.getElementById('plan-session-section');
+  const settings       = getSettings();
 
+  // Gate 1 — no analysis yet
   if (!lastResults) {
-    noResultsEl.style.display   = 'block';
-    progressMain.style.display  = 'none';
-    sessionSection.style.display= 'none';
+    noResultsEl.style.display    = 'block';
+    progressMain.style.display   = 'none';
+    sessionSection.style.display = 'none';
+    noResultsEl.innerHTML = `
+      <div style="font-size:2.5rem;margin-bottom:12px;">⛳</div>
+      <div style="font-family:'Playfair Display',serif;font-size:1.2rem;font-weight:700;color:var(--green-800);margin-bottom:10px;">Add Your Rounds First</div>
+      <div style="font-size:0.88rem;color:var(--text-muted);margin-bottom:24px;line-height:1.65;max-width:360px;margin-left:auto;margin-right:auto;">
+        Enter at least 3 rounds to unlock your early analysis — 5 rounds locks your baseline and activates your practice plan.
+      </div>
+      <button class="btn btn-green" onclick="showPage('addround')">Add Your Rounds →</button>`;
     return;
   }
 
-  noResultsEl.style.display   = 'none';
-  progressMain.style.display  = 'block';
-  sessionSection.style.display= 'block';
+  // Gate 2 — baseline not locked yet
+  if (!baselineLocked) {
+    noResultsEl.style.display    = 'block';
+    progressMain.style.display   = 'none';
+    sessionSection.style.display = 'none';
+    noResultsEl.innerHTML = `
+      <div style="font-size:2.5rem;margin-bottom:12px;">📍</div>
+      <div style="font-family:'Playfair Display',serif;font-size:1.2rem;font-weight:700;color:var(--green-800);margin-bottom:10px;">Your Plan Unlocks at 5 Rounds</div>
+      <div style="font-size:0.88rem;color:var(--text-muted);margin-bottom:24px;line-height:1.65;max-width:360px;margin-left:auto;margin-right:auto;">
+        You're seeing your early analysis. Add ${Math.max(0, 5 - sessionRounds.length)} more round${5 - sessionRounds.length !== 1 ? 's' : ''} to lock your baseline and activate your personalized practice plan.
+      </div>
+      <button class="btn btn-green" onclick="showPage('addround')">Add Another Round →</button>`;
+    return;
+  }
+
+  // Gate 3 — practice settings not configured
+  if (!settings.practiceSettingsSet) {
+    noResultsEl.style.display    = 'block';
+    progressMain.style.display   = 'none';
+    sessionSection.style.display = 'none';
+    noResultsEl.innerHTML = `
+      <div style="font-size:2.5rem;margin-bottom:12px;">⚙️</div>
+      <div style="font-family:'Playfair Display',serif;font-size:1.2rem;font-weight:700;color:var(--green-800);margin-bottom:10px;">Set Up Your Practice Schedule</div>
+      <div style="font-size:0.88rem;color:var(--text-muted);margin-bottom:24px;line-height:1.65;max-width:360px;margin-left:auto;margin-right:auto;">
+        Tell us how often you can practice and for how long — your plan is built around your real schedule, not a generic template.
+      </div>
+      <button class="btn btn-green" onclick="showPage('settings')">Set It Up →</button>`;
+    return;
+  }
+
+  // All gates passed — show the full plan
+  noResultsEl.style.display    = 'none';
+  progressMain.style.display   = 'block';
+  sessionSection.style.display = 'block';
 
   updatePlanStats();
   buildProgressBars();
