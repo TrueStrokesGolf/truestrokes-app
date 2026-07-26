@@ -7408,7 +7408,7 @@ function shareOrCopyBadge(badgeId) {
 // Evaluates all badge conditions and saves newly earned ones.
 // Shows earn modal for each new badge (in sequence if multiple).
 // ═══════════════════════════════════════════════════
-function checkBadges(currentKey) {
+function checkBadges(currentKey, silent = false) {
   const settings  = getSettings();
   const earned    = new Set(settings.badges.map(b => b.id));
   const sessions  = getCompletedSessions();
@@ -7562,17 +7562,12 @@ function checkBadges(currentKey) {
       }
 
       if (deduped.length === 1) {
-        // Single trophy — show the individual earn modal
         const def = BADGE_DEFS.find(d => d.id === deduped[0].id);
-        if (def) {
+        if (def && !silent) {
           const badgeWithDetail = { ...def, unlockDetail: deduped[0].unlockDetail || '' };
           setTimeout(() => showBadgeEarnModal(badgeWithDetail), 400);
         }
-      } else {
-        // Multiple trophies — show a single summary modal so users
-        // aren't hit with a cascade of popups.
-        // WHY: 9 sequential modals feels like spam, not celebration.
-        // One summary modal with a clear CTA to the Trophy Case is cleaner.
+      } else if (!silent) {
         setTimeout(() => showTrophyBatchModal(deduped), 400);
       }
     }
@@ -8020,6 +8015,15 @@ function silentCalculate(rounds, name, targetKey) {
         scram: {you:userScram, target:target.scramble, pct:ratioScram, peer:current.scramble, higherBetter:true},
       }
     };
+
+    // Re-check badges after login load — awards any trophies the user has earned
+    // that aren't in their current (possibly cleared) localStorage badge array.
+    // WHY: badges are now stored in Supabase profiles.badges and loaded back
+    // on login. But if localStorage was cleared, checkBadges needs to run
+    // against the fresh round data to confirm what's already been earned.
+    // We pass the silent flag so no earn modals fire — they've already seen them.
+    checkBadges(currentKey, true);
+
   } catch(e) {
     console.warn('silentCalculate failed:', e);
   }
