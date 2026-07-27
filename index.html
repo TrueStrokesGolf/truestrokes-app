@@ -3856,7 +3856,7 @@ function calculate() {
     if (validationError === '__par3_warning__') return;
     if (validationError) return showError(validationError);
 
-    sessionRounds = rounds.map(r => ({...r, diff: (r.score - r.rating) * (113 / r.slope)}));
+    sessionRounds = rounds.map(r => ({...r, diff: (r.score - r.rating) * (113 / r.slope)})).reverse();
     saveToStorage(rounds, name, targetKey);
     document.querySelectorAll('.round-card').forEach(c => c.classList.add('collapsed'));
 
@@ -3939,7 +3939,7 @@ function calculate() {
   ].map(item => ({...item, pct:(item.strokes/gapForRatios)*100}))
    .sort((a,b) => b.strokes-a.strokes);
 
-  sessionRounds = rounds.map((r,i) => ({...r, diff:diffs[i]}));
+  sessionRounds = rounds.map((r,i) => ({...r, diff:diffs[i]})).reverse();
   saveToStorage(rounds, name, targetKey);
 
   // Collapse all round cards after calculating — keeps the form tidy
@@ -4807,14 +4807,13 @@ function renderMGRounds() {
   function buildTierPills(r, isExpanded) {
     if (!targetTier || !isExpanded) return '';
     const par3s   = parseInt(r.par3s) || 4;
-    const par     = parseInt(r.par)   || 72;
-    const fwAvail = par - par3s;
+    const fwAvail = Math.max(1, 18 - par3s); // non-par-3 holes, not par minus par3s
     const holes   = 18;
     const fw      = parseInt(r.fw)        || 0;
     const gir     = parseInt(r.gir)       || 0;
     const putts   = parseInt(r.putts)     || 0;
     const scram   = parseInt(r.scrambles) || 0;
-    const missed  = holes - gir;
+    const missed  = Math.max(0, holes - gir);
 
     const fwPct    = fwAvail > 0 ? fw / fwAvail : 0;
     const girPct   = gir / holes;
@@ -8147,7 +8146,7 @@ function silentCalculate(rounds, name, targetKey) {
     ].map(item => ({...item, pct:(item.strokes/totalGap)*100}))
      .sort((a,b) => b.strokes-a.strokes);
 
-    sessionRounds = rounds.map((r,i) => ({...r, diff:diffs[i]}));
+    sessionRounds = rounds.map((r,i) => ({...r, diff:diffs[i]})).reverse();
 
     // Use frozen baseline gap if locked, otherwise live gap
     const displayGap = (baselineLocked && activeBaseline)
