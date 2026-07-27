@@ -4509,7 +4509,12 @@ function renderMGProgress() {
 
   const d  = lastResults;
   const bl = activeBaseline;
-  const rounds = sessionRounds;
+  // Sort newest-first by date for reliable momentum calculation
+  const rounds = [...sessionRounds].sort((a, b) => {
+    const da = new Date((a.date || '').replace(/-/g,'/') || 0).getTime();
+    const db = new Date((b.date || '').replace(/-/g,'/') || 0).getTime();
+    return db - da;
+  });
 
   // Momentum — trend over last 3 rounds
   let momentumHTML = '';
@@ -4854,14 +4859,19 @@ function renderMGRounds() {
     '</div>';
   }
 
-  // sessionRounds is stored newest-first (Supabase orders by played_on DESC)
-  // so index 0 = most recent. No need to reverse — just map directly.
-  const rows = sessionRounds.map((r, idx) => {
-    const origIdx    = idx;
+  // Sort by date descending at render time — reliable regardless of sessionRounds source order
+  const sortedRounds = [...sessionRounds].sort((a, b) => {
+    const da = new Date((a.date || '').replace(/-/g,'/') || 0).getTime();
+    const db = new Date((b.date || '').replace(/-/g,'/') || 0).getTime();
+    return db - da;
+  });
+
+  const rows = sortedRounds.map((r, idx) => {
+    const origIdx    = sessionRounds.indexOf(r);
     const isLatest   = idx === 0;
-    const isBaseline = baselineLocked && idx === n - 1; // oldest 5 = baseline
+    const isBaseline = baselineLocked && idx === sortedRounds.length - 1;
     const isBest     = parseFloat(r.score) === bestScore;
-    const nextRound  = sessionRounds[idx + 1]; // next = older round
+    const nextRound  = sortedRounds[idx + 1];
     const improving  = nextRound && parseFloat(r.score) < parseFloat(nextRound.score);
     const declining  = nextRound && parseFloat(r.score) > parseFloat(nextRound.score) + 2;
     const chip = isBaseline
