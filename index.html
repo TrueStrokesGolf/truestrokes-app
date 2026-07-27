@@ -4850,15 +4850,16 @@ function renderMGRounds() {
     '</div>';
   }
 
-  // Newest-first display
-  const rows = [...sessionRounds].reverse().map((r, revIdx) => {
-    const origIdx   = n - 1 - revIdx;
-    const isLatest  = revIdx === 0; // expand most recent by default
-    const isBaseline = origIdx === baselineIdx;
-    const isBest    = parseFloat(r.score) === bestScore;
-    const prevRound = origIdx > 0 ? sessionRounds[origIdx - 1] : null;
-    const improving = prevRound && parseFloat(r.score) < parseFloat(prevRound.score);
-    const declining = prevRound && parseFloat(r.score) > parseFloat(prevRound.score) + 2;
+  // sessionRounds is stored newest-first (Supabase orders by played_on DESC)
+  // so index 0 = most recent. No need to reverse — just map directly.
+  const rows = sessionRounds.map((r, idx) => {
+    const origIdx    = idx;
+    const isLatest   = idx === 0;
+    const isBaseline = baselineLocked && idx === n - 1; // oldest 5 = baseline
+    const isBest     = parseFloat(r.score) === bestScore;
+    const nextRound  = sessionRounds[idx + 1]; // next = older round
+    const improving  = nextRound && parseFloat(r.score) < parseFloat(nextRound.score);
+    const declining  = nextRound && parseFloat(r.score) > parseFloat(nextRound.score) + 2;
     const chip = isBaseline
       ? `<span class="mg-chip mg-chip-base">baseline</span>`
       : isBest ? `<span class="mg-chip mg-chip-up">best</span>`
