@@ -4562,7 +4562,7 @@ function renderMGProgress() {
   }
 
   // Stat cards — last round vs baseline
-  const lastRound = rounds[rounds.length - 1];
+  const lastRound = rounds[0]; // rounds is sorted newest-first, so [0] is most recent
 
   const statDefs = [
     { label: 'Fairways hit',         key: 'fw',
