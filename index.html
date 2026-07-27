@@ -2631,7 +2631,7 @@
       <button class="mg-tab active" onclick="switchMyGameTab('progress')">Progress</button>
       <button class="mg-tab" onclick="switchMyGameTab('rounds')">Rounds</button>
       <button class="mg-tab" onclick="switchMyGameTab('practice')">Practice</button>
-      <button class="mg-tab" onclick="switchMyGameTab('badges')">Trophies</button>
+      <button class="mg-tab" onclick="switchMyGameTab('badges')">Trophy Case</button>
     </div>
 
     <!-- Progress pane -->
@@ -4786,56 +4786,131 @@ function renderMGRounds() {
     el.innerHTML = `<div class="card"><div class="no-rounds-msg">No rounds entered yet.</div></div>`;
     return;
   }
-  const n = sessionRounds.length;
-  const avgScore = (sessionRounds.reduce((s,r) => s + r.score, 0) / n).toFixed(1);
-  const bestScore = Math.min(...sessionRounds.map(r => r.score));
-  const avgDiff   = (sessionRounds.reduce((s,r) => s + r.diff, 0) / n).toFixed(1);
 
-  // Find baseline round index (first 5 rounds)
+  const n         = sessionRounds.length;
+  const avgScore  = (sessionRounds.reduce((s,r) => s + parseFloat(r.score), 0) / n).toFixed(1);
+  const bestScore = Math.min(...sessionRounds.map(r => parseFloat(r.score)));
   const baselineIdx = baselineLocked ? Math.min(4, n - 1) : -1;
 
+  // Get goal tier targets for comparison
+  const targetTier = lastResults ? TIERS[lastResults.targetKey] : null;
+  const targetLabel = lastResults ? lastResults.target.label : 'your goal';
+
+  // Build pill HTML for a round's stats vs goal tier
+  // WHY inline function: each round needs its own pill set,
+  // so we compute per-round and call this per row.
+  function buildTierPills(r, isExpanded) {
+    if (!targetTier || !isExpanded) return '';
+    const par3s   = parseInt(r.par3s) || 4;
+    const par     = parseInt(r.par)   || 72;
+    const fwAvail = par - par3s;
+    const holes   = 18;
+    const fw      = parseInt(r.fw)        || 0;
+    const gir     = parseInt(r.gir)       || 0;
+    const putts   = parseInt(r.putts)     || 0;
+    const scram   = parseInt(r.scrambles) || 0;
+    const missed  = holes - gir;
+
+    const fwPct    = fwAvail > 0 ? fw / fwAvail : 0;
+    const girPct   = gir / holes;
+    const puttsGIR = gir > 0 ? putts / gir : 2.5;
+    const scramPct = missed > 0 ? scram / missed : 0;
+
+    function pill(label, value, target, higherBetter, unit, totalAvail) {
+      const hit = higherBetter ? value >= target : value <= target;
+      const pct = Math.round(value * 100);
+      const tgtPct = Math.round(target * 100);
+
+      if (hit) {
+        return '<span style="font-size:10px;padding:3px 8px;border-radius:12px;background:#e8f5e9;border:0.5px solid #a5d6a7;color:#2e7d32;margin:2px;">' +
+          label + ' ' + (unit === 'putts' ? value.toFixed(2) : pct + '%') + ' ✓</span>';
+      } else {
+        // Compute how many more/fewer needed
+        let nudge = '';
+        if (unit === 'pct' && totalAvail) {
+          const currentN  = Math.round(value * totalAvail);
+          const targetN   = Math.ceil(target * totalAvail);
+          const diff      = targetN - currentN;
+          nudge = diff + ' more ' + label.toLowerCase() + (diff !== 1 ? 's' : '');
+        } else if (unit === 'putts') {
+          const diff = (value - target).toFixed(2);
+          nudge = diff + ' fewer putts/GIR';
+        }
+        return '<span style="font-size:10px;padding:3px 8px;border-radius:12px;background:#fdecea;border:0.5px solid #ef9a9a;color:#c62828;margin:2px;" title="' + nudge + ' to play like ' + targetLabel + '">' +
+          label + ' ' + (unit === 'putts' ? value.toFixed(2) : pct + '%') + ' — ' + nudge + ' for ' + targetLabel + '</span>';
+      }
+    }
+
+    return '<div style="display:flex;flex-wrap:wrap;gap:2px;padding:0 0 10px 52px;">' +
+      (fwAvail > 0 ? pill('FW', fwPct, targetTier.fw, true, 'pct', fwAvail) : '') +
+      pill('GIR', girPct, targetTier.gir, true, 'pct', holes) +
+      pill('Putts', puttsGIR, targetTier.putts, false, 'putts', null) +
+      (missed > 0 ? pill('Scram', scramPct, targetTier.scramble, true, 'pct', missed) : '') +
+      '<div style="width:100%;font-size:10px;color:var(--text-muted);padding-top:4px;padding-left:4px;">vs ' + targetLabel + ' targets</div>' +
+    '</div>';
+  }
+
+  // Newest-first display
   const rows = [...sessionRounds].reverse().map((r, revIdx) => {
-    const origIdx = n - 1 - revIdx;
+    const origIdx   = n - 1 - revIdx;
+    const isLatest  = revIdx === 0; // expand most recent by default
     const isBaseline = origIdx === baselineIdx;
-    const isBest = r.score === bestScore;
+    const isBest    = parseFloat(r.score) === bestScore;
     const prevRound = origIdx > 0 ? sessionRounds[origIdx - 1] : null;
-    const improving = prevRound && r.score < prevRound.score;
-    const declining = prevRound && r.score > prevRound.score + 2;
+    const improving = prevRound && parseFloat(r.score) < parseFloat(prevRound.score);
+    const declining = prevRound && parseFloat(r.score) > parseFloat(prevRound.score) + 2;
     const chip = isBaseline
       ? `<span class="mg-chip mg-chip-base">baseline</span>`
       : isBest ? `<span class="mg-chip mg-chip-up">best</span>`
       : improving ? `<span class="mg-chip mg-chip-up">↑ improving</span>`
       : declining ? `<span class="mg-chip mg-chip-down">↓ off day</span>` : '';
-    const dateStr = r.date ? new Date(r.date + 'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'}) : '—';
-    const roundIdStr = JSON.stringify(r.roundId || '');
-    return `
-      <div class="mg-round-row" style="cursor:pointer;" onclick="showRoundStatsModal(${origIdx})">
-        <div style="font-size:11px;color:var(--text-muted);width:48px;flex-shrink:0;">${dateStr}</div>
-        <div style="font-size:12px;color:var(--text-primary);flex:1;">${r.course || '—'}</div>
-        <div style="font-size:13px;font-weight:600;">${r.score}</div>
-        ${chip}
-        <button onclick="event.stopPropagation();editRound(${origIdx})" style="margin-left:8px;padding:3px 10px;font-size:11px;background:transparent;border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-muted);cursor:pointer;flex-shrink:0;">Edit</button>
-      </div>`; 
+    const dateStr = r.date
+      ? new Date(r.date + 'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'})
+      : '—';
+
+    const rowId   = 'round-expand-' + origIdx;
+    const pillsId = 'round-pills-' + origIdx;
+
+    // Toggle expand for older rounds on tap
+    const expandToggle = !isLatest
+      ? 'onclick="(function(){var p=document.getElementById(\'' + pillsId + '\');p.style.display=p.style.display===\'none\'?\'block\':\'none\';})()"'
+      : '';
+
+    return (
+      '<div class="mg-round-row" id="' + rowId + '" style="cursor:' + (!isLatest ? 'pointer' : 'default') + ';" ' + expandToggle + '>' +
+        '<div style="font-size:11px;color:var(--text-muted);width:48px;flex-shrink:0;">' + dateStr + '</div>' +
+        '<div style="font-size:12px;color:var(--text-primary);flex:1;">' + (r.course || '—') + '</div>' +
+        '<div style="font-size:13px;font-weight:600;">' + r.score + '</div>' +
+        chip +
+        '<button onclick="event.stopPropagation();showRoundStatsModal(' + origIdx + ')" style="margin-left:4px;padding:3px 8px;font-size:11px;background:transparent;border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-muted);cursor:pointer;flex-shrink:0;">Stats</button>' +
+        '<button onclick="event.stopPropagation();editRound(' + origIdx + ')" style="margin-left:4px;padding:3px 8px;font-size:11px;background:transparent;border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-muted);cursor:pointer;flex-shrink:0;">Edit</button>' +
+      '</div>' +
+      '<div id="' + pillsId + '" style="display:' + (isLatest ? 'block' : 'none') + ';">' +
+        buildTierPills(r, true) +
+      '</div>'
+    );
   }).join('');
 
-  el.innerHTML = `
-    <div class="card">
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:14px;">
-        <div style="background:var(--green-50);border-radius:var(--radius-sm);padding:8px;text-align:center;">
-          <div style="font-size:15px;font-weight:600;">${n}</div>
-          <div style="font-size:10px;color:var(--text-muted);">rounds</div>
-        </div>
-        <div style="background:var(--green-50);border-radius:var(--radius-sm);padding:8px;text-align:center;">
-          <div style="font-size:15px;font-weight:600;">${avgScore}</div>
-          <div style="font-size:10px;color:var(--text-muted);">avg score</div>
-        </div>
-        <div style="background:var(--green-50);border-radius:var(--radius-sm);padding:8px;text-align:center;">
-          <div style="font-size:15px;font-weight:600;">${bestScore}</div>
-          <div style="font-size:10px;color:var(--text-muted);">best score</div>
-        </div>
-      </div>
-      ${rows}
-    </div>`;
+  el.innerHTML = (
+    '<div class="card">' +
+      '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:14px;">' +
+        '<div style="background:var(--green-50);border-radius:var(--radius-sm);padding:8px;text-align:center;">' +
+          '<div style="font-size:15px;font-weight:600;">' + n + '</div>' +
+          '<div style="font-size:10px;color:var(--text-muted);">rounds</div>' +
+        '</div>' +
+        '<div style="background:var(--green-50);border-radius:var(--radius-sm);padding:8px;text-align:center;">' +
+          '<div style="font-size:15px;font-weight:600;">' + avgScore + '</div>' +
+          '<div style="font-size:10px;color:var(--text-muted);">avg score</div>' +
+        '</div>' +
+        '<div style="background:var(--green-50);border-radius:var(--radius-sm);padding:8px;text-align:center;">' +
+          '<div style="font-size:15px;font-weight:600;">' + bestScore + '</div>' +
+          '<div style="font-size:10px;color:var(--text-muted);">best score</div>' +
+        '</div>' +
+      '</div>' +
+      (targetTier ? '<div style="font-size:11px;color:var(--text-muted);margin-bottom:8px;">Tap any round to see how you compared to ' + targetLabel + '</div>' : '') +
+      rows +
+    '</div>'
+  );
 }
 
 // Show stats for a specific round when tapped
