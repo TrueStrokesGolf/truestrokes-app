@@ -3394,7 +3394,11 @@ function _populateRoundForm(rounds, name, targetKey) {
   }
   document.getElementById('rounds-container').innerHTML = '';
   roundCount = 0;
-  rounds.forEach(r => {
+  // Supabase loads rounds newest-first. Reverse so the form shows
+  // oldest round at top (Round 1) and newest at bottom — matches
+  // how a user thinks about entering rounds chronologically.
+  const orderedRounds = [...rounds].reverse();
+  orderedRounds.forEach(r => {
     addRound();
     const cards = document.querySelectorAll('.round-card');
     const card  = cards[cards.length - 1];
@@ -4510,8 +4514,9 @@ function renderMGProgress() {
   // Momentum — trend over last 3 rounds
   let momentumHTML = '';
   if (rounds.length >= 2) {
-    const last3 = rounds.slice(-3);
-    const prev3 = rounds.length >= 4 ? rounds.slice(-6, -3) : rounds.slice(0, -3);
+  // sessionRounds is newest-first — slice(0,3) gets the 3 most recent rounds
+  const last3 = rounds.slice(0, 3);
+  const prev3 = rounds.length >= 4 ? rounds.slice(3, 6) : [];
 
     const statFns = {
       FW:    r => r.par3s > 0 ? r.fw / (18 - r.par3s) : 0,
@@ -7441,9 +7446,9 @@ function calcStatStreak(stat, higherBetter) {
   const targetVal = targetTier[stat === 'scram' ? 'scramble' : stat];
   let streak = 0;
 
-  // sessionRounds is stored in form-entry order (oldest first after Calculate).
-  // Reverse to get newest first.
-  const rounds = [...sessionRounds].reverse();
+  // sessionRounds is newest-first from Supabase — no reverse needed.
+  // Walk from index 0 (most recent) and count consecutive rounds hitting target.
+  const rounds = sessionRounds;
 
   for (const r of rounds) {
     // Compute this round's stat value — same formula as the engine
