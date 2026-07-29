@@ -4627,12 +4627,12 @@ function renderMGProgress() {
     const rows = lrStats.map(s => {
       const hitCur = s.hb ? s.you >= s.curT : s.you <= s.curT;
       const hitTgt = s.hb ? s.you >= s.tgtT : s.you <= s.tgtT;
-      const youColor = (hitCur || hitTgt) ? 'var(--text-success)' : 'var(--text-danger)';
+      const youColor = (hitCur || hitTgt) ? '#2e7d32' : '#c62828';
       return '<tr>' +
         '<td style="padding:8px 6px;border-top:0.5px solid var(--border);color:var(--text-secondary);font-size:12px;">' + s.name + '</td>' +
         '<td style="padding:8px 6px;border-top:0.5px solid var(--border);text-align:center;font-size:12px;font-weight:500;color:' + youColor + ';">' + s.fmt(s.you) + '</td>' +
-        '<td style="padding:8px 6px;border-top:0.5px solid var(--border);text-align:center;font-size:12px;color:' + (hitCur ? 'var(--text-success)' : 'var(--text-danger)') + ';">' + s.fmt(s.curT) + (hitCur ? ' ✓' : ' ✗') + '</td>' +
-        '<td style="padding:8px 6px;border-top:0.5px solid var(--border);text-align:center;font-size:12px;color:' + (hitTgt ? 'var(--text-success)' : 'var(--text-danger)') + ';">' + s.fmt(s.tgtT) + (hitTgt ? ' ✓' : ' ✗') + '</td>' +
+        '<td style="padding:8px 6px;border-top:0.5px solid var(--border);text-align:center;font-size:12px;color:' + (hitCur ? '#2e7d32' : '#c62828') + ';">' + s.fmt(s.curT) + (hitCur ? ' ✓' : ' ✗') + '</td>' +
+        '<td style="padding:8px 6px;border-top:0.5px solid var(--border);text-align:center;font-size:12px;color:' + (hitTgt ? '#2e7d32' : '#c62828') + ';">' + s.fmt(s.tgtT) + (hitTgt ? ' ✓' : ' ✗') + '</td>' +
       '</tr>';
     }).join('');
 
