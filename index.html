@@ -4626,31 +4626,36 @@ function renderMGProgress() {
     const rows = lrStats.map(s => {
       const hitCur = s.hb ? s.you >= s.curT : s.you <= s.curT;
       const hitTgt = s.hb ? s.you >= s.tgtT : s.you <= s.tgtT;
-      const youColor = (hitCur||hitTgt) ? '#2e7d32' : '#c62828';
+      // YOU column: white if hitting either tier, bright red if missing both
+      const youColor = (hitCur||hitTgt) ? '#fff' : '#ef9a9a';
+      const youSize  = '14px';
+      // Tier columns: bright green tick, muted red cross
+      const curColor = hitCur ? '#86d37f' : 'rgba(255,255,255,0.35)';
+      const tgtColor = hitTgt ? '#f5e6c8' : 'rgba(255,255,255,0.35)';
       return '<tr>' +
-        '<td style="padding:9px 6px;border-top:0.5px solid rgba(255,255,255,0.12);color:rgba(255,255,255,0.6);font-size:12px;">'+s.name+'</td>' +
-        '<td style="padding:9px 6px;border-top:0.5px solid rgba(255,255,255,0.12);text-align:center;font-size:13px;font-weight:500;color:'+youColor+';">'+s.fmt(s.you)+'</td>' +
-        '<td style="padding:9px 6px;border-top:0.5px solid rgba(255,255,255,0.12);text-align:center;font-size:12px;color:'+(hitCur?'#86d37f':'rgba(255,255,255,0.4)')+';">'+s.fmt(s.curT)+(hitCur?' \u2713':' \u2717')+'</td>' +
-        '<td style="padding:9px 6px;border-top:0.5px solid rgba(255,255,255,0.12);text-align:center;font-size:12px;color:'+(hitTgt?'#f5e6c8':'rgba(255,255,255,0.4)')+';">'+s.fmt(s.tgtT)+(hitTgt?' \u2713':' \u2717')+'</td>' +
+        '<td style="padding:10px 8px;border-top:0.5px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.55);font-size:12px;">'+s.name+'</td>' +
+        '<td style="padding:10px 8px;border-top:0.5px solid rgba(255,255,255,0.1);text-align:center;font-size:'+youSize+';font-weight:600;color:'+youColor+';">'+s.fmt(s.you)+'</td>' +
+        '<td style="padding:10px 8px;border-top:0.5px solid rgba(255,255,255,0.1);text-align:center;font-size:12px;color:'+curColor+';">'+s.fmt(s.curT)+(hitCur?' \u2713':' \u00d7')+'</td>' +
+        '<td style="padding:10px 8px;border-top:0.5px solid rgba(255,255,255,0.1);text-align:center;font-size:12px;color:'+tgtColor+';">'+s.fmt(s.tgtT)+(hitTgt?' \u2713':' \u00d7')+'</td>' +
       '</tr>';
     }).join('');
 
     lastRoundHTML =
-      '<div style="border-radius:12px;overflow:hidden;margin-bottom:10px;border:0.5px solid #2d5a3d;">' +
-        '<div style="background:#1b4332;padding:14px 18px;">' +
-          '<div style="display:flex;justify-content:space-between;align-items:flex-start;">' +
+      '<div style="border-radius:12px;overflow:hidden;margin-bottom:10px;">' +
+        '<div style="background:#1b4332;padding:16px 18px 18px;">' +
+          '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;">' +
             '<div>' +
-              '<div style="font-size:15px;font-weight:500;color:#fff;margin-bottom:2px;">Last Round \u2014 '+lrDate+' \u00b7 '+lrCourse+'</div>' +
-              '<div style="font-size:11px;color:rgba(255,255,255,0.5);">How you compared across both tiers</div>' +
+              '<div style="font-size:15px;font-weight:500;color:#fff;margin-bottom:3px;">Last Round \u2014 '+lrDate+' \u00b7 '+lrCourse+'</div>' +
+              '<div style="font-size:11px;color:rgba(255,255,255,0.45);">How you compared across both tiers</div>' +
             '</div>' +
-            '<div style="font-size:32px;font-weight:500;color:#f5e6c8;font-family:\'Playfair Display\',serif;line-height:1;">'+lr.score+'</div>' +
+            '<div style="font-size:36px;font-weight:500;color:#f5e6c8;font-family:\'Playfair Display\',serif;line-height:1;">'+lr.score+'</div>' +
           '</div>' +
-          '<table style="width:100%;border-collapse:collapse;margin-top:10px;">' +
+          '<table style="width:100%;border-collapse:collapse;">' +
             '<thead><tr>' +
-              '<th style="text-align:left;font-size:10px;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:0.08em;padding:0 6px 8px;font-weight:500;">Stat</th>' +
-              '<th style="text-align:center;font-size:10px;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:0.08em;padding:0 6px 8px;font-weight:500;">You</th>' +
-              '<th style="text-align:center;font-size:10px;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:0.08em;padding:0 6px 8px;font-weight:500;">'+d.current.label+'</th>' +
-              '<th style="text-align:center;font-size:10px;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:0.08em;padding:0 6px 8px;font-weight:500;">'+d.target.label+'</th>' +
+              '<th style="text-align:left;font-size:10px;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:0.08em;padding:0 8px 8px;font-weight:500;">Stat</th>' +
+              '<th style="text-align:center;font-size:10px;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:0.08em;padding:0 8px 8px;font-weight:500;">You</th>' +
+              '<th style="text-align:center;font-size:10px;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:0.08em;padding:0 8px 8px;font-weight:500;">'+d.current.label+'</th>' +
+              '<th style="text-align:center;font-size:10px;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:0.08em;padding:0 8px 8px;font-weight:500;">'+d.target.label+'</th>' +
             '</tr></thead>' +
             '<tbody>'+rows+'</tbody>' +
           '</table>' +
@@ -4684,35 +4689,43 @@ function renderMGProgress() {
   const bl    = activeBaseline;
 
   const cats = [
-    {name:'Driving',    stat:'Fairways',      hb:true,  tgt:target.fw,       blVal:bl?bl.fw_baseline:null,    fn:r=>{const a=Math.max(1,18-(parseInt(r.par3s)||4));return (parseInt(r.fw)||0)/a;},         fmt:v=>Math.round(v*100)+'%', deltaFmt:v=>(v>=0?'+':'')+Math.round(Math.abs(v)*100)+'%'},
-    {name:'Approach',   stat:'GIR',           hb:true,  tgt:target.gir,      blVal:bl?bl.gir_baseline:null,   fn:r=>(parseInt(r.gir)||0)/18,                                                              fmt:v=>Math.round(v*100)+'%', deltaFmt:v=>(v>=0?'+':'')+Math.round(Math.abs(v)*100)+'%'},
-    {name:'Putting',    stat:'Putts per GIR', hb:false, tgt:target.putts,    blVal:bl?bl.putts_baseline:null, fn:r=>parseInt(r.gir)>0?(parseInt(r.putts)||0)/parseInt(r.gir):2.5,                          fmt:v=>v.toFixed(2),          deltaFmt:v=>(v>=0?'+':'')+Math.abs(v).toFixed(2)},
-    {name:'Short Game', stat:'Scrambling',    hb:true,  tgt:target.scramble, blVal:bl?bl.scram_baseline:null, fn:r=>{const m=Math.max(1,18-(parseInt(r.gir)||0));return (parseInt(r.scrambles)||0)/m;},    fmt:v=>Math.round(v*100)+'%', deltaFmt:v=>(v>=0?'+':'')+Math.round(Math.abs(v)*100)+'%'},
+    {name:'Driving',    stat:'Fairways',      hb:true,  tgt:target.fw,       blVal:bl?bl.fw_baseline:null,    fn:r=>{const a=Math.max(1,18-(parseInt(r.par3s)||4));return (parseInt(r.fw)||0)/a;},         fmt:v=>Math.round(v*100)+'%', isPct:true},
+    {name:'Approach',   stat:'GIR',           hb:true,  tgt:target.gir,      blVal:bl?bl.gir_baseline:null,   fn:r=>(parseInt(r.gir)||0)/18,                                                              fmt:v=>Math.round(v*100)+'%', isPct:true},
+    {name:'Putting',    stat:'Putts per GIR', hb:false, tgt:target.putts,    blVal:bl?bl.putts_baseline:null, fn:r=>parseInt(r.gir)>0?(parseInt(r.putts)||0)/parseInt(r.gir):2.5,                          fmt:v=>v.toFixed(2),          isPct:false},
+    {name:'Short Game', stat:'Scrambling',    hb:true,  tgt:target.scramble, blVal:bl?bl.scram_baseline:null, fn:r=>{const m=Math.max(1,18-(parseInt(r.gir)||0));return (parseInt(r.scrambles)||0)/m;},    fmt:v=>Math.round(v*100)+'%', isPct:true},
   ];
 
   const catHTML = cats.map(c => {
     const avg3   = last3.length ? last3.reduce((s,r)=>s+c.fn(r),0)/last3.length : null;
     const avgAll = sorted.length ? sorted.reduce((s,r)=>s+c.fn(r),0)/sorted.length : null;
     const blVal  = c.blVal || 0;
+    // progress delta: positive = moving toward goal
     const delta  = avg3!==null ? (c.hb ? avg3-blVal : blVal-avg3) : null;
     const improving = delta!==null && delta>0.005;
     const declining  = delta!==null && delta<-0.005;
     const hitGoal   = avg3!==null && (c.hb ? avg3>=c.tgt : avg3<=c.tgt);
-
-    // State: ontrack (improving + hit goal), closer (improving, not at goal), needs (declining)
     const state = declining ? 'needs' : (improving && hitGoal) ? 'ontrack' : improving ? 'closer' : 'neutral';
 
     const colors = {
-      ontrack: {hdrBg:'#e8f5e9', hdrBorder:'#c8e6c9', nameColor:'#1b5e20', catColor:'#2e7d32', pillBg:'#c8e6c9', pillColor:'#1b5e20', barBg:'#c8e6c9', barFill:'#2e7d32', nowColor:'#2e7d32', bestBg:'#e8f5e9', bestColor:'#2e7d32', bestStrong:'#1b5e20', status:'On track \u2014 hitting your goal'},
-      closer:  {hdrBg:'#fff8e1', hdrBorder:'#ffe082', nameColor:'#6d4c00', catColor:'#c8960a', pillBg:'#ffe082', pillColor:'#6d4c00', barBg:'#ffe082', barFill:'#c8960a', nowColor:'#c8960a', bestBg:'#fff8e1', bestColor:'#c8960a', bestStrong:'#6d4c00', status:'Getting closer \u2014 not at goal yet'},
-      needs:   {hdrBg:'#fdecea', hdrBorder:'#ffcdd2', nameColor:'#7f0000', catColor:'#c62828', pillBg:'#ffcdd2', pillColor:'#7f0000', barBg:'#ffcdd2', barFill:'#c62828', nowColor:'#c62828', bestBg:'#fdecea', bestColor:'#c62828', bestStrong:'#7f0000', status:'Needs attention \u2014 trending wrong direction'},
-      neutral: {hdrBg:'#f5f0e8', hdrBorder:'#e0dbd0', nameColor:'#3d3228', catColor:'#6b6358', pillBg:'#e0dbd0', pillColor:'#3d3228', barBg:'#e0dbd0', barFill:'#6b6358', nowColor:'#6b6358', bestBg:'#f5f0e8', bestColor:'#6b6358', bestStrong:'#3d3228', status:'Holding steady'},
+      ontrack: {hdrBg:'#e8f5e9',hdrBorder:'#c8e6c9',nameColor:'#1b5e20',catColor:'#2e7d32',barBg:'#c8e6c9',barFill:'#2e7d32',nowColor:'#1b5e20',bestBg:'#d7eeda',bestColor:'#1b5e20',pillBg:'#c8e6c9',pillColor:'#1b5e20',pillArrow:'\u2191',status:'On track \u2014 hitting your goal'},
+      closer:  {hdrBg:'#fff8e1',hdrBorder:'#ffe082',nameColor:'#6d4c00',catColor:'#c8960a',barBg:'#ffe082',barFill:'#c8960a',nowColor:'#6d4c00',bestBg:'#fdefc3',bestColor:'#6d4c00',pillBg:'#ffe082',pillColor:'#6d4c00',pillArrow:'\u2191',status:'Getting closer \u2014 not at goal yet'},
+      needs:   {hdrBg:'#fdecea',hdrBorder:'#ffcdd2',nameColor:'#7f0000',catColor:'#c62828',barBg:'#ffcdd2',barFill:'#c62828',nowColor:'#c62828',bestBg:'#fcd5d5',bestColor:'#7f0000',pillBg:'#ffcdd2',pillColor:'#c62828',pillArrow:'\u2193',status:'Needs attention \u2014 trending wrong direction'},
+      neutral: {hdrBg:'#f5f0e8',hdrBorder:'#e0dbd0',nameColor:'#3d3228',catColor:'#6b6358',barBg:'#e0dbd0',barFill:'#6b6358',nowColor:'#3d3228',bestBg:'#ede8e0',bestColor:'#3d3228',pillBg:'#e0dbd0',pillColor:'#3d3228',pillArrow:'\u2192',status:'Holding steady'},
     };
     const co = colors[state];
 
-    const deltaSign = delta!==null && delta>=0 ? '+' : '';
-    const deltaStr  = delta!==null ? deltaSign+c.deltaFmt(delta) : '';
+    // Delta pill: arrow + number + "from baseline"
+    // For pct stats: show integer points. For putts: show 2dp.
+    let pillText = '';
+    if (delta !== null) {
+      const absDelta = Math.abs(delta);
+      const deltaStr = c.isPct
+        ? Math.round(absDelta*100)+'%'
+        : absDelta.toFixed(2)+' putts';
+      pillText = co.pillArrow+' '+deltaStr+' from baseline';
+    }
 
+    // Numbers are the hero — bar is slim and contextual
     const maxVal  = Math.max(blVal||0,c.tgt||0,avg3||0)*1.3||1;
     const nowPct  = avg3!==null ? Math.min(100,(avg3/maxVal)*100) : 0;
     const blPct   = Math.min(100,((blVal||0)/maxVal)*100);
@@ -4725,36 +4738,54 @@ function renderMGProgress() {
 
     return (
       '<div style="border-radius:12px;overflow:hidden;margin-bottom:10px;border:0.5px solid '+co.hdrBorder+';">' +
-        // Header
-        '<div style="background:'+co.hdrBg+';padding:12px 16px;">' +
-          '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;">' +
+
+        // ── Header: category name, stat name, status label, delta pill
+        '<div style="background:'+co.hdrBg+';padding:12px 16px 10px;">' +
+          '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px;">' +
             '<div>' +
-              '<div style="font-size:10px;color:'+co.catColor+';text-transform:uppercase;letter-spacing:0.08em;margin-bottom:2px;font-weight:500;">'+c.name+'</div>' +
-              '<div style="font-size:15px;font-weight:500;color:'+co.nameColor+';">'+c.stat+'</div>' +
+              '<div style="font-size:10px;color:'+co.catColor+';text-transform:uppercase;letter-spacing:0.08em;font-weight:500;margin-bottom:2px;">'+c.name+'</div>' +
+              '<div style="font-size:17px;font-weight:500;color:'+co.nameColor+';">'+c.stat+'</div>' +
             '</div>' +
-            (deltaStr ? '<div style="font-size:11px;font-weight:500;padding:3px 10px;border-radius:20px;background:'+co.pillBg+';color:'+co.pillColor+';">'+deltaStr+' vs where you started</div>' : '') +
+            (pillText ? '<div style="font-size:12px;font-weight:500;padding:4px 11px;border-radius:20px;background:'+co.pillBg+';color:'+co.pillColor+';white-space:nowrap;">'+pillText+'</div>' : '') +
           '</div>' +
-          '<div style="font-size:11px;color:'+co.catColor+';font-style:italic;">'+co.status+'</div>' +
+          '<div style="font-size:11px;color:'+co.catColor+';font-style:italic;margin-top:2px;">'+co.status+'</div>' +
         '</div>' +
-        // Body
-        '<div style="background:var(--surface-2);padding:12px 16px;">' +
-          '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:14px;">' +
-            '<div style="text-align:center;"><div style="font-size:17px;font-weight:500;color:'+co.nowColor+';line-height:1;margin-bottom:2px;">'+(avg3!==null?c.fmt(avg3):'\u2014')+'</div><div style="font-size:10px;color:var(--text-muted);">last 3 rounds</div></div>' +
-            '<div style="text-align:center;"><div style="font-size:17px;font-weight:500;color:var(--text-primary);line-height:1;margin-bottom:2px;">'+(avgAll!==null?c.fmt(avgAll):'\u2014')+'</div><div style="font-size:10px;color:var(--text-muted);">all rounds avg</div></div>' +
-            '<div style="text-align:center;"><div style="font-size:17px;font-weight:500;color:var(--text-primary);line-height:1;margin-bottom:2px;">'+c.fmt(c.tgt)+'</div><div style="font-size:10px;color:var(--text-muted);">'+d.target.label+' target</div></div>' +
+
+        // ── Body: big numbers first, then slim bar, then best round
+        '<div style="background:var(--surface-2,#fafafa);padding:14px 16px;">' +
+
+          // Numbers — the hero
+          '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:0;margin-bottom:16px;">' +
+            '<div style="text-align:center;padding:0 8px;">' +
+              '<div style="font-size:28px;font-weight:600;color:'+co.nowColor+';line-height:1;margin-bottom:4px;">'+(avg3!==null?c.fmt(avg3):'\u2014')+'</div>' +
+              '<div style="font-size:11px;color:var(--text-muted,#999);font-weight:400;">last 3 rounds</div>' +
+            '</div>' +
+            '<div style="text-align:center;padding:0 8px;border-left:0.5px solid var(--border,#eee);border-right:0.5px solid var(--border,#eee);">' +
+              '<div style="font-size:28px;font-weight:500;color:var(--text-primary,#222);line-height:1;margin-bottom:4px;">'+(avgAll!==null?c.fmt(avgAll):'\u2014')+'</div>' +
+              '<div style="font-size:11px;color:var(--text-muted,#999);font-weight:400;">all rounds avg</div>' +
+            '</div>' +
+            '<div style="text-align:center;padding:0 8px;">' +
+              '<div style="font-size:28px;font-weight:500;color:var(--text-primary,#222);line-height:1;margin-bottom:4px;">'+c.fmt(c.tgt)+'</div>' +
+              '<div style="font-size:11px;color:var(--text-muted,#999);font-weight:400;">'+d.target.label+' target</div>' +
+            '</div>' +
           '</div>' +
-          '<div style="height:10px;background:'+co.barBg+';border-radius:5px;position:relative;margin-bottom:8px;">' +
-            '<div style="height:100%;border-radius:5px;background:'+co.barFill+';width:'+nowPct.toFixed(1)+'%;"></div>' +
-            '<div style="position:absolute;top:-5px;width:2px;height:20px;background:'+co.nameColor+';border-radius:1px;opacity:0.35;left:'+blPct.toFixed(1)+'%;"></div>' +
-            '<div style="position:absolute;top:-5px;width:2px;height:20px;background:#f9a825;border-radius:1px;left:'+tgtPct.toFixed(1)+'%;"></div>' +
+
+          // Slim bar with tick marks — supporting context
+          '<div style="position:relative;height:6px;background:'+co.barBg+';border-radius:3px;margin-bottom:6px;">' +
+            '<div style="position:absolute;left:0;top:0;height:100%;border-radius:3px;background:'+co.barFill+';width:'+nowPct.toFixed(1)+'%;"></div>' +
+            '<div style="position:absolute;top:-3px;width:2px;height:12px;background:rgba(0,0,0,0.25);border-radius:1px;left:'+blPct.toFixed(1)+'%;" title="Where you started"></div>' +
+            '<div style="position:absolute;top:-3px;width:2px;height:12px;background:#f9a825;border-radius:1px;left:'+tgtPct.toFixed(1)+'%;" title="Your goal"></div>' +
           '</div>' +
-          '<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:10px;">' +
-            '<div style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--text-muted);"><div style="width:7px;height:7px;border-radius:50%;background:'+co.nameColor+';opacity:0.4;flex-shrink:0;"></div>Where you started ('+c.fmt(blVal)+')</div>' +
-            '<div style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--text-muted);"><div style="width:7px;height:7px;border-radius:50%;background:#f9a825;flex-shrink:0;"></div>Your goal ('+c.fmt(c.tgt)+')</div>' +
-            '<div style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--text-muted);"><div style="width:7px;height:7px;border-radius:50%;background:'+co.barFill+';flex-shrink:0;"></div>You now ('+(avg3!==null?c.fmt(avg3):'\u2014')+')</div>' +
+          '<div style="display:flex;gap:12px;margin-bottom:12px;flex-wrap:wrap;">' +
+            '<div style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--text-muted,#999);"><div style="width:6px;height:6px;border-radius:50%;background:rgba(0,0,0,0.2);"></div>Started ('+c.fmt(blVal)+')</div>' +
+            '<div style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--text-muted,#999);"><div style="width:6px;height:6px;border-radius:50%;background:#f9a825;"></div>Goal ('+c.fmt(c.tgt)+')</div>' +
+            '<div style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--text-muted,#999);"><div style="width:6px;height:6px;border-radius:50%;background:'+co.barFill+';"></div>Now ('+(avg3!==null?c.fmt(avg3):'\u2014')+')</div>' +
           '</div>' +
-          '<div style="padding:8px 10px;background:'+co.bestBg+';border-radius:6px;font-size:12px;color:'+co.bestColor+';">Best round: <strong style="color:'+co.bestStrong+';">'+bestVal+(bestDt?' \u00b7 '+bestDt:'')+(bestCrs2?' \u00b7 '+bestCrs2:'')+'</strong></div>' +
+
+          // Best round footer
+          '<div style="padding:8px 10px;background:'+co.bestBg+';border-radius:6px;font-size:12px;color:'+co.bestColor+';">Best round: <strong>'+bestVal+(bestDt?' \u00b7 '+bestDt:'')+(bestCrs2?' \u00b7 '+bestCrs2:'')+'</strong></div>' +
         '</div>' +
+
       '</div>'
     );
   }).join('');
