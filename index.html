@@ -4603,40 +4603,49 @@ function renderMGProgress() {
     new Date((b.date||'').replace(/-/g,'/') || 0) - new Date((a.date||'').replace(/-/g,'/') || 0)
   );
 
-  // ── LAST ROUND ───────────────────────────────────────────────────
+  // ── LAST ROUND TABLE ─────────────────────────────────────────────
   const lr = sorted[0];
   let lastRoundHTML = '';
   if (lr) {
     const lrDate   = lr.date ? new Date(lr.date+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'}) : '';
     const lrCourse = lr.course || 'Unknown Course';
     const par3s    = parseInt(lr.par3s)||4;
-    const fwAvail  = Math.max(1, 18-par3s);
+    const fwAvail  = Math.max(1,18-par3s);
     const lrFW     = (parseInt(lr.fw)||0)/fwAvail;
     const lrGIR    = (parseInt(lr.gir)||0)/18;
-    const lrPutts  = parseInt(lr.gir)>0 ? (parseInt(lr.putts)||0)/parseInt(lr.gir) : 2.5;
-    const lrScram  = (18-(parseInt(lr.gir)||0))>0 ? (parseInt(lr.scrambles)||0)/(18-(parseInt(lr.gir)||0)) : 0;
+    const lrPutts  = parseInt(lr.gir)>0?(parseInt(lr.putts)||0)/parseInt(lr.gir):2.5;
+    const lrScram  = (18-(parseInt(lr.gir)||0))>0?(parseInt(lr.scrambles)||0)/(18-(parseInt(lr.gir)||0)):0;
 
     const lrStats = [
-      {name:'Fairways',   you:lrFW,    curT:cur.fw,       tgtT:target.fw,       hb:true,  fmt:v=>Math.round(v*100)+'%'},
-      {name:'GIR',        you:lrGIR,   curT:cur.gir,      tgtT:target.gir,      hb:true,  fmt:v=>Math.round(v*100)+'%'},
-      {name:'Putts/GIR',  you:lrPutts, curT:cur.putts,    tgtT:target.putts,    hb:false, fmt:v=>v.toFixed(2)},
-      {name:'Scrambling', you:lrScram, curT:cur.scramble, tgtT:target.scramble, hb:true,  fmt:v=>Math.round(v*100)+'%'},
+      {name:'Fairways',   you:lrFW,    curT:cur.fw,       tgtT:target.fw,       hb:true,  fmt:v=>Math.round(v*100)+'%',
+       nudge:(you,tgt,hb)=>{ const diff=hb?tgt-you:you-tgt; const holes=Math.ceil(diff*fwAvail); return holes>0?holes+' more fairway'+(holes!==1?'s':''):''; }},
+      {name:'GIR',        you:lrGIR,   curT:cur.gir,      tgtT:target.gir,      hb:true,  fmt:v=>Math.round(v*100)+'%',
+       nudge:(you,tgt,hb)=>{ const diff=hb?tgt-you:you-tgt; const g=Math.ceil(diff*18); return g>0?g+' more green'+(g!==1?'s':''):''; }},
+      {name:'Putts/GIR',  you:lrPutts, curT:cur.putts,    tgtT:target.putts,    hb:false, fmt:v=>v.toFixed(2),
+       nudge:(you,tgt,hb)=>{ const diff=hb?tgt-you:you-tgt; return diff>0.01?diff.toFixed(2)+' fewer putts/GIR':''; }},
+      {name:'Scrambling', you:lrScram, curT:cur.scramble, tgtT:target.scramble, hb:true,  fmt:v=>Math.round(v*100)+'%',
+       nudge:(you,tgt,hb)=>{ const diff=hb?tgt-you:you-tgt; const s=Math.ceil(diff*9); return s>0?s+' more scramble'+(s!==1?'s':''):''; }},
     ];
 
     const rows = lrStats.map(s => {
-      const hitCur = s.hb ? s.you >= s.curT : s.you <= s.curT;
-      const hitTgt = s.hb ? s.you >= s.tgtT : s.you <= s.tgtT;
-      // YOU column: white if hitting either tier, bright red if missing both
+      const hitCur = s.hb ? s.you>=s.curT : s.you<=s.curT;
+      const hitTgt = s.hb ? s.you>=s.tgtT : s.you<=s.tgtT;
       const youColor = (hitCur||hitTgt) ? '#fff' : '#ef9a9a';
-      const youSize  = '14px';
-      // Tier columns: bright green tick, muted red cross
       const curColor = hitCur ? '#86d37f' : 'rgba(255,255,255,0.35)';
       const tgtColor = hitTgt ? '#f5e6c8' : 'rgba(255,255,255,0.35)';
+      const curNudge = !hitCur ? s.nudge(s.you,s.curT,s.hb) : '';
+      const tgtNudge = !hitTgt ? s.nudge(s.you,s.tgtT,s.hb) : '';
       return '<tr>' +
         '<td style="padding:10px 8px;border-top:0.5px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.55);font-size:12px;">'+s.name+'</td>' +
-        '<td style="padding:10px 8px;border-top:0.5px solid rgba(255,255,255,0.1);text-align:center;font-size:'+youSize+';font-weight:600;color:'+youColor+';">'+s.fmt(s.you)+'</td>' +
-        '<td style="padding:10px 8px;border-top:0.5px solid rgba(255,255,255,0.1);text-align:center;font-size:12px;color:'+curColor+';">'+s.fmt(s.curT)+(hitCur?' \u2713':' \u00d7')+'</td>' +
-        '<td style="padding:10px 8px;border-top:0.5px solid rgba(255,255,255,0.1);text-align:center;font-size:12px;color:'+tgtColor+';">'+s.fmt(s.tgtT)+(hitTgt?' \u2713':' \u00d7')+'</td>' +
+        '<td style="padding:10px 8px;border-top:0.5px solid rgba(255,255,255,0.1);text-align:center;font-size:14px;font-weight:600;color:'+youColor+';">'+s.fmt(s.you)+'</td>' +
+        '<td style="padding:10px 8px;border-top:0.5px solid rgba(255,255,255,0.1);text-align:center;font-size:12px;color:'+curColor+';">'+
+          s.fmt(s.curT)+(hitCur?' \u2713':' \u00d7')+
+          (curNudge?'<div style="font-size:10px;font-style:italic;margin-top:2px;opacity:0.8;">need '+curNudge+'</div>':'')+
+        '</td>' +
+        '<td style="padding:10px 8px;border-top:0.5px solid rgba(255,255,255,0.1);text-align:center;font-size:12px;color:'+tgtColor+';">'+
+          s.fmt(s.tgtT)+(hitTgt?' \u2713':' \u00d7')+
+          (tgtNudge?'<div style="font-size:10px;font-style:italic;margin-top:2px;opacity:0.8;">need '+tgtNudge+'</div>':'')+
+        '</td>' +
       '</tr>';
     }).join('');
 
@@ -4665,13 +4674,13 @@ function renderMGProgress() {
 
   // ── OVERALL ──────────────────────────────────────────────────────
   const n        = sorted.length;
-  const avgScore = n>0 ? (sorted.reduce((s,r)=>s+parseFloat(r.score),0)/n).toFixed(1) : '\u2014';
+  const avgScore = n>0?(sorted.reduce((s,r)=>s+parseFloat(r.score),0)/n).toFixed(1):'\u2014';
   const bestR    = sorted.reduce((b,r)=>!b||parseFloat(r.score)<parseFloat(b.score)?r:b,null);
-  const bestScore = bestR ? bestR.score : '\u2014';
-  const bestDate  = bestR&&bestR.date ? new Date(bestR.date+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'}) : '';
-  const bestCrs   = bestR ? (bestR.course||'') : '';
-  const avgDiff   = n>0 ? (sorted.reduce((s,r)=>s+((parseFloat(r.score)-parseFloat(r.rating))*113/parseFloat(r.slope)),0)/n).toFixed(1) : '\u2014';
-  const firstDate = sorted.length>0&&sorted[sorted.length-1].date ? 'since '+new Date(sorted[sorted.length-1].date+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'}) : '';
+  const bestScore = bestR?bestR.score:'\u2014';
+  const bestDate  = bestR&&bestR.date?new Date(bestR.date+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'}):'';
+  const bestCrs   = bestR?(bestR.course||''):'';
+  const avgDiff   = n>0?(sorted.reduce((s,r)=>s+((parseFloat(r.score)-parseFloat(r.rating))*113/parseFloat(r.slope)),0)/n).toFixed(1):'\u2014';
+  const firstDate = sorted.length>0&&sorted[sorted.length-1].date?'since '+new Date(sorted[sorted.length-1].date+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'}):'';
 
   const overallHTML =
     '<div style="background:#faf7f0;border:0.5px solid #e8e0d0;border-radius:12px;padding:1rem 1.25rem;margin-bottom:10px;">' +
@@ -4696,94 +4705,108 @@ function renderMGProgress() {
   ];
 
   const catHTML = cats.map(c => {
-    const avg3   = last3.length ? last3.reduce((s,r)=>s+c.fn(r),0)/last3.length : null;
-    const avgAll = sorted.length ? sorted.reduce((s,r)=>s+c.fn(r),0)/sorted.length : null;
-    const blVal  = c.blVal || 0;
-    // progress delta: positive = moving toward goal
-    const delta  = avg3!==null ? (c.hb ? avg3-blVal : blVal-avg3) : null;
-    const improving = delta!==null && delta>0.005;
-    const declining  = delta!==null && delta<-0.005;
-    const hitGoal   = avg3!==null && (c.hb ? avg3>=c.tgt : avg3<=c.tgt);
-    const state = declining ? 'needs' : (improving && hitGoal) ? 'ontrack' : improving ? 'closer' : 'neutral';
+    const avg3   = last3.length?last3.reduce((s,r)=>s+c.fn(r),0)/last3.length:null;
+    const avgAll = sorted.length?sorted.reduce((s,r)=>s+c.fn(r),0)/sorted.length:null;
+    const blVal  = c.blVal||0;
 
-    const colors = {
-      ontrack: {hdrBg:'#e8f5e9',hdrBorder:'#c8e6c9',nameColor:'#1b5e20',catColor:'#2e7d32',barBg:'#c8e6c9',barFill:'#2e7d32',nowColor:'#1b5e20',bestBg:'#d7eeda',bestColor:'#1b5e20',pillBg:'#c8e6c9',pillColor:'#1b5e20',pillArrow:'\u2191',status:'On track \u2014 hitting your goal'},
-      closer:  {hdrBg:'#fff8e1',hdrBorder:'#ffe082',nameColor:'#6d4c00',catColor:'#c8960a',barBg:'#ffe082',barFill:'#c8960a',nowColor:'#6d4c00',bestBg:'#fdefc3',bestColor:'#6d4c00',pillBg:'#ffe082',pillColor:'#6d4c00',pillArrow:'\u2191',status:'Getting closer \u2014 not at goal yet'},
-      needs:   {hdrBg:'#fdecea',hdrBorder:'#ffcdd2',nameColor:'#7f0000',catColor:'#c62828',barBg:'#ffcdd2',barFill:'#c62828',nowColor:'#c62828',bestBg:'#fcd5d5',bestColor:'#7f0000',pillBg:'#ffcdd2',pillColor:'#c62828',pillArrow:'\u2193',status:'Needs attention \u2014 trending wrong direction'},
-      neutral: {hdrBg:'#f5f0e8',hdrBorder:'#e0dbd0',nameColor:'#3d3228',catColor:'#6b6358',barBg:'#e0dbd0',barFill:'#6b6358',nowColor:'#3d3228',bestBg:'#ede8e0',bestColor:'#3d3228',pillBg:'#e0dbd0',pillColor:'#3d3228',pillArrow:'\u2192',status:'Holding steady'},
+    // Baseline delta — pill only, informational
+    const blDelta   = avg3!==null?(c.hb?avg3-blVal:blVal-avg3):null;
+    const blImproving = blDelta!==null&&blDelta>0.005;
+    const blDeclining = blDelta!==null&&blDelta<-0.005;
+    const pillText = blDelta!==null
+      ? (blImproving?'\u2191 ':'\u2193 ')+(c.isPct?Math.round(Math.abs(blDelta)*100)+'%':Math.abs(blDelta).toFixed(2)+' putts')+' from baseline'
+      : '';
+    const pillStyle = blImproving
+      ? 'background:#c8e6c9;color:#1b5e20;'
+      : blDeclining
+      ? 'background:#ffcdd2;color:#c62828;'
+      : 'background:#e0dbd0;color:#6b6358;';
+
+    // Recent form state — driven by last 3 vs goal target
+    const hitGoal  = avg3!==null&&(c.hb?avg3>=c.tgt:avg3<=c.tgt);
+    const gapToGoal = avg3!==null?(c.hb?c.tgt-avg3:avg3-c.tgt):null;
+    const nearGoal  = gapToGoal!==null&&gapToGoal>0&&gapToGoal<(c.isPct?0.08:0.15);
+    const recentState = hitGoal?'green':nearGoal?'amber':'red';
+
+    const recentColors = {
+      green: {bg:'#e8f5e9',border:'#c8e6c9',numColor:'#1b5e20',labelColor:'#2e7d32',statusColor:'#2e7d32',statusBg:'#d7eeda',
+              status:'On track \u2014 hitting your '+d.target.label+' target'},
+      amber: {bg:'#fff8e1',border:'#ffe082',numColor:'#6d4c00',labelColor:'#c8960a',statusColor:'#6d4c00',statusBg:'#fdefc3',
+              status:'Getting closer \u2014 '+(gapToGoal?((c.isPct?Math.round(gapToGoal*100)+'%':gapToGoal.toFixed(2))+' below your '+d.target.label+' target'):'')},
+      red:   {bg:'#fdecea',border:'#ffcdd2',numColor:'#c62828',labelColor:'#c62828',statusColor:'#7f0000',statusBg:'#fcd5d5',
+              status:'Needs attention \u2014 '+(gapToGoal?((c.isPct?Math.round(gapToGoal*100)+'%':gapToGoal.toFixed(2))+' below your '+d.target.label+' target'):'')},
     };
-    const co = colors[state];
+    const rc = recentColors[recentState];
 
-    // Delta pill: arrow + number + "from baseline"
-    // For pct stats: show integer points. For putts: show 2dp.
-    let pillText = '';
-    if (delta !== null) {
-      const absDelta = Math.abs(delta);
-      const deltaStr = c.isPct
-        ? Math.round(absDelta*100)+'%'
-        : absDelta.toFixed(2)+' putts';
-      pillText = co.pillArrow+' '+deltaStr+' from baseline';
-    }
-
-    // Numbers are the hero — bar is slim and contextual
-    const maxVal  = Math.max(blVal||0,c.tgt||0,avg3||0)*1.3||1;
-    const nowPct  = avg3!==null ? Math.min(100,(avg3/maxVal)*100) : 0;
-    const blPct   = Math.min(100,((blVal||0)/maxVal)*100);
-    const tgtPct  = Math.min(100,((c.tgt||0)/maxVal)*100);
+    // All time — bar context
+    const maxVal = Math.max(blVal||0,c.tgt||0,avgAll||0)*1.3||1;
+    const allPct = avgAll!==null?Math.min(100,(avgAll/maxVal)*100):0;
+    const blPct  = Math.min(100,((blVal||0)/maxVal)*100);
+    const tgtPct = Math.min(100,((c.tgt||0)/maxVal)*100);
 
     const bestR   = sorted.reduce((b,r)=>{const v=c.fn(r);if(!b)return r;const bv=c.fn(b);return c.hb?(v>bv?r:b):(v<bv?r:b);},null);
-    const bestVal  = bestR ? c.fmt(c.fn(bestR)) : '\u2014';
-    const bestDt   = bestR&&bestR.date ? new Date(bestR.date+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'}) : '';
-    const bestCrs2 = bestR ? (bestR.course||'') : '';
+    const bestVal  = bestR?c.fmt(c.fn(bestR)):'\u2014';
+    const bestDt   = bestR&&bestR.date?new Date(bestR.date+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'}):'';
+    const bestCrs2 = bestR?(bestR.course||''):'';
 
     return (
-      '<div style="border-radius:12px;overflow:hidden;margin-bottom:10px;border:0.5px solid '+co.hdrBorder+';">' +
+      // ── Neutral card shell ──────────────────────────────────────
+      '<div style="border-radius:12px;overflow:hidden;margin-bottom:10px;border:0.5px solid #e0dbd0;">' +
 
-        // ── Header: category name, stat name, status label, delta pill
-        '<div style="background:'+co.hdrBg+';padding:12px 16px 10px;">' +
-          '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px;">' +
+        // Neutral header — category name + baseline pill
+        '<div style="background:#faf7f0;padding:12px 16px 10px;">' +
+          '<div style="display:flex;justify-content:space-between;align-items:center;">' +
             '<div>' +
-              '<div style="font-size:10px;color:'+co.catColor+';text-transform:uppercase;letter-spacing:0.08em;font-weight:500;margin-bottom:2px;">'+c.name+'</div>' +
-              '<div style="font-size:17px;font-weight:500;color:'+co.nameColor+';">'+c.stat+'</div>' +
+              '<div style="font-size:10px;color:#9a8f7e;text-transform:uppercase;letter-spacing:0.08em;font-weight:500;margin-bottom:2px;">'+c.name+'</div>' +
+              '<div style="font-size:17px;font-weight:500;color:#1b4332;">'+c.stat+'</div>' +
             '</div>' +
-            (pillText ? '<div style="font-size:12px;font-weight:500;padding:4px 11px;border-radius:20px;background:'+co.pillBg+';color:'+co.pillColor+';white-space:nowrap;">'+pillText+'</div>' : '') +
+            (pillText?'<div style="font-size:11px;font-weight:500;padding:3px 11px;border-radius:20px;'+pillStyle+'white-space:nowrap;">'+pillText+'</div>':'') +
           '</div>' +
-          '<div style="font-size:11px;color:'+co.catColor+';font-style:italic;margin-top:2px;">'+co.status+'</div>' +
         '</div>' +
 
-        // ── Body: big numbers first, then slim bar, then best round
-        '<div style="background:var(--surface-2,#fafafa);padding:14px 16px;">' +
-
-          // Numbers — the hero
-          '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:0;margin-bottom:16px;">' +
+        // Recent form section — colored by state
+        '<div style="background:'+rc.bg+';padding:12px 16px;border-top:0.5px solid '+rc.border+';">' +
+          '<div style="font-size:10px;color:'+rc.labelColor+';text-transform:uppercase;letter-spacing:0.07em;font-weight:500;margin-bottom:10px;">Recent Form \u2014 last 3 rounds</div>' +
+          '<div style="display:grid;grid-template-columns:1fr 1fr;gap:0;margin-bottom:10px;">' +
             '<div style="text-align:center;padding:0 8px;">' +
-              '<div style="font-size:28px;font-weight:600;color:'+co.nowColor+';line-height:1;margin-bottom:4px;">'+(avg3!==null?c.fmt(avg3):'\u2014')+'</div>' +
-              '<div style="font-size:11px;color:var(--text-muted,#999);font-weight:400;">last 3 rounds</div>' +
+              '<div style="font-size:30px;font-weight:600;color:'+rc.numColor+';line-height:1;margin-bottom:4px;">'+(avg3!==null?c.fmt(avg3):'\u2014')+'</div>' +
+              '<div style="font-size:11px;color:'+rc.labelColor+';">your avg</div>' +
             '</div>' +
-            '<div style="text-align:center;padding:0 8px;border-left:0.5px solid var(--border,#eee);border-right:0.5px solid var(--border,#eee);">' +
-              '<div style="font-size:28px;font-weight:500;color:var(--text-primary,#222);line-height:1;margin-bottom:4px;">'+(avgAll!==null?c.fmt(avgAll):'\u2014')+'</div>' +
-              '<div style="font-size:11px;color:var(--text-muted,#999);font-weight:400;">all rounds avg</div>' +
+            '<div style="text-align:center;padding:0 8px;border-left:0.5px solid '+rc.border+';">' +
+              '<div style="font-size:30px;font-weight:500;color:#555;line-height:1;margin-bottom:4px;">'+c.fmt(c.tgt)+'</div>' +
+              '<div style="font-size:11px;color:#999;">'+d.target.label+' target</div>' +
+            '</div>' +
+          '</div>' +
+          '<div style="font-size:11px;font-style:italic;color:'+rc.statusColor+';padding:7px 10px;background:'+rc.statusBg+';border-radius:6px;">'+rc.status+'</div>' +
+        '</div>' +
+
+        // All time section — always neutral/cream
+        '<div style="background:#faf7f0;padding:12px 16px;border-top:0.5px solid #e0dbd0;">' +
+          '<div style="font-size:10px;color:#9a8f7e;text-transform:uppercase;letter-spacing:0.07em;font-weight:500;margin-bottom:10px;">All Time \u2014 since you started</div>' +
+          '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:0;margin-bottom:12px;">' +
+            '<div style="text-align:center;padding:0 8px;">' +
+              '<div style="font-size:20px;font-weight:500;color:#1b4332;line-height:1;margin-bottom:4px;">'+(avgAll!==null?c.fmt(avgAll):'\u2014')+'</div>' +
+              '<div style="font-size:10px;color:#9a8f7e;">all rounds avg</div>' +
+            '</div>' +
+            '<div style="text-align:center;padding:0 8px;border-left:0.5px solid #e0dbd0;border-right:0.5px solid #e0dbd0;">' +
+              '<div style="font-size:20px;font-weight:500;color:#1b4332;line-height:1;margin-bottom:4px;">'+c.fmt(blVal)+'</div>' +
+              '<div style="font-size:10px;color:#9a8f7e;">where you started</div>' +
             '</div>' +
             '<div style="text-align:center;padding:0 8px;">' +
-              '<div style="font-size:28px;font-weight:500;color:var(--text-primary,#222);line-height:1;margin-bottom:4px;">'+c.fmt(c.tgt)+'</div>' +
-              '<div style="font-size:11px;color:var(--text-muted,#999);font-weight:400;">'+d.target.label+' target</div>' +
+              '<div style="font-size:20px;font-weight:500;color:#1b4332;line-height:1;margin-bottom:4px;">'+bestVal+'</div>' +
+              '<div style="font-size:10px;color:#9a8f7e;">best round'+(bestDt?' \u00b7 '+bestDt:'')+'</div>' +
             '</div>' +
           '</div>' +
-
-          // Slim bar with tick marks — supporting context
-          '<div style="position:relative;height:6px;background:'+co.barBg+';border-radius:3px;margin-bottom:6px;">' +
-            '<div style="position:absolute;left:0;top:0;height:100%;border-radius:3px;background:'+co.barFill+';width:'+nowPct.toFixed(1)+'%;"></div>' +
-            '<div style="position:absolute;top:-3px;width:2px;height:12px;background:rgba(0,0,0,0.25);border-radius:1px;left:'+blPct.toFixed(1)+'%;" title="Where you started"></div>' +
-            '<div style="position:absolute;top:-3px;width:2px;height:12px;background:#f9a825;border-radius:1px;left:'+tgtPct.toFixed(1)+'%;" title="Your goal"></div>' +
+          '<div style="height:6px;background:#e0dbd0;border-radius:3px;position:relative;margin-bottom:6px;">' +
+            '<div style="height:100%;border-radius:3px;background:#1b4332;width:'+allPct.toFixed(1)+'%;"></div>' +
+            '<div style="position:absolute;top:-3px;width:2px;height:12px;background:rgba(0,0,0,0.2);border-radius:1px;left:'+blPct.toFixed(1)+'%;"></div>' +
+            '<div style="position:absolute;top:-3px;width:2px;height:12px;background:#f9a825;border-radius:1px;left:'+tgtPct.toFixed(1)+'%;"></div>' +
           '</div>' +
-          '<div style="display:flex;gap:12px;margin-bottom:12px;flex-wrap:wrap;">' +
-            '<div style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--text-muted,#999);"><div style="width:6px;height:6px;border-radius:50%;background:rgba(0,0,0,0.2);"></div>Started ('+c.fmt(blVal)+')</div>' +
-            '<div style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--text-muted,#999);"><div style="width:6px;height:6px;border-radius:50%;background:#f9a825;"></div>Goal ('+c.fmt(c.tgt)+')</div>' +
-            '<div style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--text-muted,#999);"><div style="width:6px;height:6px;border-radius:50%;background:'+co.barFill+';"></div>Now ('+(avg3!==null?c.fmt(avg3):'\u2014')+')</div>' +
+          '<div style="display:flex;gap:12px;flex-wrap:wrap;">' +
+            '<div style="display:flex;align-items:center;gap:4px;font-size:10px;color:#9a8f7e;"><div style="width:6px;height:6px;border-radius:50%;background:rgba(0,0,0,0.2);"></div>Started ('+c.fmt(blVal)+')</div>' +
+            '<div style="display:flex;align-items:center;gap:4px;font-size:10px;color:#9a8f7e;"><div style="width:6px;height:6px;border-radius:50%;background:#f9a825;"></div>Goal ('+c.fmt(c.tgt)+')</div>' +
+            '<div style="display:flex;align-items:center;gap:4px;font-size:10px;color:#9a8f7e;"><div style="width:6px;height:6px;border-radius:50%;background:#1b4332;"></div>Now ('+(avgAll!==null?c.fmt(avgAll):'\u2014')+')</div>' +
           '</div>' +
-
-          // Best round footer
-          '<div style="padding:8px 10px;background:'+co.bestBg+';border-radius:6px;font-size:12px;color:'+co.bestColor+';">Best round: <strong>'+bestVal+(bestDt?' \u00b7 '+bestDt:'')+(bestCrs2?' \u00b7 '+bestCrs2:'')+'</strong></div>' +
         '</div>' +
 
       '</div>'
