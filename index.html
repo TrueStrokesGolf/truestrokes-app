@@ -4898,8 +4898,7 @@ function renderMGRounds() {
     const chip = isBaseline
       ? `<span class="mg-chip mg-chip-base">baseline</span>`
       : isBest ? `<span class="mg-chip mg-chip-up">best</span>`
-      : improving ? `<span class="mg-chip mg-chip-up">↑ improving</span>`
-      : declining ? `<span class="mg-chip mg-chip-down">↓ off day</span>` : '';
+      : '';
     const dateStr = r.date
       ? new Date(r.date + 'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'})
       : '—';
